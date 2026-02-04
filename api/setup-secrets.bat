@@ -8,6 +8,7 @@ echo This script will prompt you to enter your API keys.
 echo Each key will be stored securely as a Cloudflare Worker secret.
 echo.
 echo Available secrets to configure:
+echo   - OPENROUTER_API_KEY  (OpenRouter - RECOMMENDED, supports many providers)
 echo   - OPENAI_API_KEY      (OpenAI)
 echo   - GROQ_API_KEY        (Groq)
 echo   - TOGETHER_API_KEY    (Together AI)
@@ -62,6 +63,7 @@ if not "%SECRET_VALUE%"=="" (
 
 echo.
 
+call :set_secret "OPENROUTER_API_KEY" "Enter OpenRouter API key (RECOMMENDED - supports many providers)"
 call :set_secret "OPENAI_API_KEY" "Enter OpenAI API key (skip if not using)"
 call :set_secret "GROQ_API_KEY" "Enter Groq API key"
 call :set_secret "TOGETHER_API_KEY" "Enter Together AI API key"

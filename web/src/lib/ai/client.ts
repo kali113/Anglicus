@@ -228,11 +228,32 @@ export async function testConnection(
   tier: "backend" | "byok" | "puter",
 ): Promise<boolean> {
   try {
-    const result = await getCompletion([{ role: "user", content: "Hello" }], {
-      maxTokens: 10,
-    });
+    const testRequest: ChatCompletionRequest = {
+      model: "llama-3.1-8b", // Use a small, fast model for testing
+      messages: [{ role: "user", content: "Hi" }],
+      max_tokens: 5,
+    };
+
+    let result: AiResponse;
+
+    // Test the specific tier
+    switch (tier) {
+      case "backend":
+        result = await tryBackend(testRequest);
+        break;
+      case "byok":
+        result = await tryByok(testRequest);
+        break;
+      case "puter":
+        result = await tryPuter(testRequest.messages);
+        break;
+      default:
+        return false;
+    }
+
     return result.content.length > 0;
-  } catch {
+  } catch (error) {
+    console.error(`Connection test failed for ${tier}:`, error);
     return false;
   }
 }

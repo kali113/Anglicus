@@ -17,6 +17,7 @@ import { handleFeedback } from "./routes/feedback.js";
 export interface Env {
   // AI Provider API Keys (set via wrangler secret)
   OPENAI_API_KEY?: string;
+  OPENROUTER_API_KEY?: string;
   GROQ_API_KEY?: string;
   TOGETHER_API_KEY?: string;
   GEMINI_API_KEY?: string;

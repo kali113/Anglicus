@@ -13,6 +13,12 @@ const PROVIDERS = {
     header: "Authorization",
     headerPrefix: "Bearer ",
   },
+  openrouter: {
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    key: "OPENROUTER_API_KEY",
+    header: "Authorization",
+    headerPrefix: "Bearer ",
+  },
   groq: {
     url: "https://api.groq.com/openai/v1/chat/completions",
     key: "GROQ_API_KEY",
@@ -94,6 +100,15 @@ const MODEL_PROVIDERS: Record<string, Provider> = {
   "o1-preview": "openai",
   "o1-mini": "openai",
 
+  // OpenRouter models (supports many providers)
+  "meta-llama/llama-3.3-70b-instruct": "openrouter",
+  "google/gemini-flash-1.5-8b": "openrouter",
+  "google/gemini-2.0-flash-exp:free": "openrouter",
+  "meta-llama/llama-3.1-8b-instruct:free": "openrouter",
+  "mistralai/mistral-7b-instruct:free": "openrouter",
+  "nousresearch/hermes-3-llama-3.1-405b:free": "openrouter",
+  "qwen/qwen-2-7b-instruct:free": "openrouter",
+
   // Groq models
   "llama-3.3-70b-versatile": "groq",
   "llama-3.1-8b-instant": "groq",
@@ -161,6 +176,7 @@ const MODEL_PROVIDERS: Record<string, Provider> = {
 // Provider aliases for quick access
 const DEFAULT_MODEL_BY_PROVIDER: Record<Provider, string> = {
   openai: "gpt-4o-mini",
+  openrouter: "google/gemini-2.0-flash-exp:free",
   groq: "llama-3.3-70b-versatile",
   together: "meta-llama/Llama-3-70b-chat-hf",
   gemini: "gemini-1.5-flash",
@@ -184,16 +200,15 @@ function getProviderForModel(model: string): Provider {
 
   // Try to detect from model name prefix
   if (model.startsWith("gpt-") || model.startsWith("o1-")) return "openai";
+  if (model.includes("/") && !model.startsWith("@cf/")) return "openrouter"; // OpenRouter uses provider/model format
   if (model.startsWith("llama-")) return "groq";
   if (model.startsWith("mistral")) return "mistral";
   if (model.startsWith("command")) return "cohere";
   if (model.startsWith("gemini")) return "gemini";
   if (model.includes("nvidia")) return "nvidia";
-  if (model.includes("huggingface") || model.includes("/"))
-    return "huggingface";
 
-  // Default to OpenAI for unknown models
-  return "openai";
+  // Default to OpenRouter for unknown models (most flexible)
+  return "openrouter";
 }
 
 /**
@@ -259,13 +274,14 @@ export async function handleChatCompletions(
     // Get list of available providers (with API keys) in priority order
     // Prioritized by: free tier availability, speed, and reliability
     const providerPriority: Provider[] = [
-      "cerebras",   // Very fast, free tier
-      "mistral",    // Free tier available
+      "openrouter",  // Very flexible, supports many providers, has free models
+      "cerebras",    // Very fast, free tier
+      "groq",        // Fast, free tier
+      "mistral",     // Free tier available
       "huggingface", // Free tier
-      "groq",       // Fast, free tier (but may have issues)
-      "nvidia",     // Free tier
-      "cohere",     // Has free tier
-      "gemini",     // Has free tier
+      "nvidia",      // Free tier
+      "cohere",      // Has free tier
+      "gemini",      // Has free tier
       "together",
       "openai",
     ];

@@ -7,6 +7,10 @@
 .dev.vars
 *.vars
 
+# Cloudflare Wrangler
+.wrangler/
+wrangler.toml.bak
+
 # Dependencies
 node_modules/
 .pnpm-store/
