@@ -43,6 +43,34 @@ export interface Env {
 // Create Hono app
 const app = new Hono<{ Bindings: Env }>();
 
+// Apply CORS middleware globally
+app.use("*", async (c, next) => {
+  const allowedOrigins = parseAllowedOrigins(
+    c.env.ALLOWED_ORIGINS || "http://localhost:5173,http://localhost:4173",
+  );
+  
+  const origin = c.req.header("Origin") || "";
+  
+  // Handle preflight requests
+  if (c.req.method === "OPTIONS") {
+    return c.json(null, 204, {
+      "Access-Control-Allow-Origin": origin || "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true",
+    });
+  }
+  
+  // Continue to next handler
+  await next();
+  
+  // Add CORS headers to response
+  c.header("Access-Control-Allow-Origin", origin || "*");
+  c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  c.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  c.header("Access-Control-Allow-Credentials", "true");
+});
+
 // Health check endpoint
 app.get("/", (c) => {
   return c.json({
