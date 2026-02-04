@@ -228,8 +228,28 @@ export async function testConnection(
   tier: "backend" | "byok" | "puter",
 ): Promise<boolean> {
   try {
+    // Use different models based on tier capabilities
+    let testModel: string;
+    
+    switch (tier) {
+      case "backend":
+        // Backend supports all models, use a fast free one
+        testModel = "llama-3.1-8b"; // Will be routed to appropriate provider
+        break;
+      case "byok":
+        // BYOK uses user's own key, try a common model
+        testModel = "gpt-3.5-turbo"; // Most common model across providers
+        break;
+      case "puter":
+        // Puter.js uses its own models
+        testModel = "gpt-3.5-turbo"; // Standard OpenAI-compatible model
+        break;
+      default:
+        testModel = "gpt-3.5-turbo";
+    }
+
     const testRequest: ChatCompletionRequest = {
-      model: "llama-3.1-8b", // Use a small, fast model for testing
+      model: testModel,
       messages: [{ role: "user", content: "Hi" }],
       max_tokens: 5,
     };

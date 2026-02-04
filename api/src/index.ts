@@ -53,11 +53,14 @@ app.use("*", async (c, next) => {
   
   // Handle preflight requests
   if (c.req.method === "OPTIONS") {
-    return c.json(null, 204, {
-      "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+      },
     });
   }
   

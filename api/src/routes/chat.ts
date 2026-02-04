@@ -200,12 +200,18 @@ function getProviderForModel(model: string): Provider {
 
   // Try to detect from model name prefix
   if (model.startsWith("gpt-") || model.startsWith("o1-")) return "openai";
-  if (model.includes("/") && !model.startsWith("@cf/")) return "openrouter"; // OpenRouter uses provider/model format
-  if (model.startsWith("llama-")) return "groq";
-  if (model.startsWith("mistral")) return "mistral";
+  if (model.startsWith("llama-") && !model.includes("/")) return "groq"; // Groq uses simple names like "llama-3.1-8b"
+  if (model.startsWith("mistral") && !model.includes("/")) return "mistral";
   if (model.startsWith("command")) return "cohere";
   if (model.startsWith("gemini")) return "gemini";
   if (model.includes("nvidia")) return "nvidia";
+  
+  // OpenRouter specific patterns
+  if (model.includes("/") && !model.startsWith("@cf/")) {
+    // OpenRouter uses formats like: provider/model-name or provider/model:free
+    // e.g., meta-llama/llama-3.1-8b-instruct:free, google/gemini-2.0-flash-exp:free
+    return "openrouter";
+  }
 
   // Default to OpenRouter for unknown models (most flexible)
   return "openrouter";
