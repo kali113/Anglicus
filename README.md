@@ -37,6 +37,16 @@ Una app gratuita para aprender inglés, creada especialmente para hispanohablant
 
 Si quieres contribuir al proyecto o entender cómo funciona, lee la [documentación técnica](docs/CONTRIBUTING.md).
 
+### Configuración rápida para desarrolladores
+
+1. **Obtén una API key gratis** (ver [QUICK_START.md](QUICK_START.md))
+2. **Configura:** Edita `api/.dev.vars` con tu API key
+3. **Inicia API:** `cd api && npm install && npm run dev`
+4. **Inicia Web:** `cd web && npm install && npm run dev`
+5. **Prueba:** Abre http://localhost:5173/settings y haz clic en "Probar Servidor"
+
+Ver [API_KEYS_NEEDED.md](API_KEYS_NEEDED.md) para más detalles.
+
 ---
 
 <p align="center">
