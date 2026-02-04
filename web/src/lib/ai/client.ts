@@ -228,11 +228,52 @@ export async function testConnection(
   tier: "backend" | "byok" | "puter",
 ): Promise<boolean> {
   try {
-    const result = await getCompletion([{ role: "user", content: "Hello" }], {
-      maxTokens: 10,
-    });
+    // Use different models based on tier capabilities
+    let testModel: string;
+    
+    switch (tier) {
+      case "backend":
+        // Backend supports all models, use a fast free one
+        testModel = "llama-3.1-8b"; // Will be routed to appropriate provider
+        break;
+      case "byok":
+        // BYOK uses user's own key, try a common model
+        testModel = "gpt-3.5-turbo"; // Most common model across providers
+        break;
+      case "puter":
+        // Puter.js uses its own models
+        testModel = "gpt-3.5-turbo"; // Standard OpenAI-compatible model
+        break;
+      default:
+        testModel = "gpt-3.5-turbo";
+    }
+
+    const testRequest: ChatCompletionRequest = {
+      model: testModel,
+      messages: [{ role: "user", content: "Hi" }],
+      max_tokens: 5,
+    };
+
+    let result: AiResponse;
+
+    // Test the specific tier
+    switch (tier) {
+      case "backend":
+        result = await tryBackend(testRequest);
+        break;
+      case "byok":
+        result = await tryByok(testRequest);
+        break;
+      case "puter":
+        result = await tryPuter(testRequest.messages);
+        break;
+      default:
+        return false;
+    }
+
     return result.content.length > 0;
-  } catch {
+  } catch (error) {
+    console.error(`Connection test failed for ${tier}:`, error);
     return false;
   }
 }
