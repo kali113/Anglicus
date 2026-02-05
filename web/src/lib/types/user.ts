@@ -22,6 +22,24 @@ export interface UserProfile {
   createdAt: string; // ISO timestamp
   lastActiveAt: string; // ISO timestamp
   streakDays: number;
+  totalXP: number;
+  wordsLearned: number;
+  weeklyActivity: number[]; // 7 values for Sun-Sat
+  achievements: Achievement[];
+  skills: SkillProgress[];
+}
+
+export interface SkillProgress {
+  id: string;
+  status: 'locked' | 'unlocked' | 'current' | 'completed';
+  stars: number; // 0-3
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  icon: string;
+  unlocked: boolean;
 }
 
 export interface UserStats {
@@ -32,12 +50,12 @@ export interface UserStats {
 }
 
 export const LEVELS: Record<EnglishLevel, string> = {
-  A1: "Beginner",
-  A2: "Elementary",
-  B1: "Intermediate",
-  B2: "Upper Intermediate",
-  C1: "Advanced",
-  C2: "Proficient",
+  A1: "Principiante",
+  A2: "Elemental",
+  B1: "Intermedio",
+  B2: "Intermedio Alto",
+  C1: "Avanzado",
+  C2: "Competente",
 };
 
 export const GOALS: Record<LearningGoal, string> = {
@@ -57,3 +75,29 @@ export const WEAK_AREAS: Record<WeakArea, string> = {
   conditionals: "Condicionales",
   phrasal_verbs: "Phrasal verbs",
 };
+
+// Mistake tracking types (merged from mistake.ts)
+export interface Mistake {
+  id: string;
+  timestamp: string;
+  original: string;
+  corrected: string;
+  category: WeakArea;
+  explanation?: string;
+  exerciseId?: string;
+}
+
+export interface MistakeStats {
+  category: WeakArea;
+  total: number;
+  correct: number;
+  accuracy: number;
+  lastMistakeAt?: string;
+}
+
+export interface MistakePattern {
+  category: WeakArea;
+  pattern: string;
+  frequency: number;
+  examples: string[];
+}

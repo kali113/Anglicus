@@ -8,6 +8,8 @@ export interface ApiConfig {
   tier: ApiTier;
   customBaseUrl?: string; // For BYOK
   apiKeyEncrypted?: string; // For BYOK - encrypted in storage
+  model?: string; // Selected AI model
+  cloudUnlocked?: boolean; // Cloud key access unlocked
 }
 
 export interface ChatCompletionRequest {
@@ -48,3 +50,13 @@ export interface ApiError {
     code?: string;
   };
 }
+
+// Chat message types (merged from chat.ts)
+export interface Message {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: string;
+}
+
+export type ChatMessage = Message;

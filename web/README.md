@@ -1,42 +1,42 @@
 # sv
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Todo lo que necesitas para construir un proyecto Svelte, impulsado por [`sv`](https://github.com/sveltejs/cli).
 
-## Creating a project
+## Creando un proyecto
 
-If you're seeing this, you've probably already done this step. Congrats!
+Si estás viendo esto, probablemente ya hayas realizado este paso. ¡Felicidades!
 
 ```sh
-# create a new project
+# crear un nuevo proyecto
 npx sv create my-app
 ```
 
-To recreate this project with the same configuration:
+Para recrear este proyecto con la misma configuración:
 
 ```sh
-# recreate this project
+# recrear este proyecto
 npx sv create --template minimal --types ts --install npm web
 ```
 
-## Developing
+## Desarrollo
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Una vez creado el proyecto e instalado las dependencias con `npm install` (o `pnpm install` o `yarn`), inicia el servidor de desarrollo:
 
 ```sh
 npm run dev
 
-# or start the server and open the app in a new browser tab
+# o inicia el servidor y abre la aplicación en una nueva pestaña del navegador
 npm run dev -- --open
 ```
 
-## Building
+## Construcción
 
-To create a production version of your app:
+Para crear una versión de producción de tu aplicación:
 
 ```sh
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+Puedes previsualizar la compilación de producción con `npm run preview`.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+> Para desplegar tu aplicación, es posible que necesites instalar un [adaptador](https://svelte.dev/docs/kit/adapters) para tu entorno de destino.

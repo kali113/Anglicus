@@ -1,0 +1,84 @@
+
+> web@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web
+Getting Svelte diagnostics...
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\lib\components\CircularProgress.svelte[39m:5:19
+[33mWarn[39m: This reference only captures the initial value of `size`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m  const strokeWidth = 10;
+  const radius = ([35msize[36m - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;[39m
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\lib\components\CircularProgress.svelte[39m:7:35
+[33mWarn[39m: This reference only captures the initial value of `percentage`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - ([35mpercentage[36m / 100) * circumference;
+</script>[39m
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\routes\lesson\+page.svelte[39m:76:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m  <header class="header">
+    [35m<button class="back-btn" onclick={() => goto("/")}>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><path d="M19 12H5" /><path d="M12 19l-7-7 7-7" /></svg
+      >
+    </button>[36m
+    <div class="progress-container">[39m
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\routes\settings\+page.svelte[39m:134:9
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m      <div class="input-group">
+        [35m<label>Base URL (opcional - por defecto: api.openai.com)</label>[36m
+        <input[39m
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\routes\settings\+page.svelte[39m:333:3
+[33mWarn[39m: Unused CSS selector ".btn.primary"
+https://svelte.dev/e/css_unused_selector (svelte)
+[36m
+  [35m.btn.primary[36m {
+    background: var(--primary);[39m
+
+c:\Users\Nexia\OneDrive\Escritorio\Anglicus\web\[32msrc\routes\tutor\+page.svelte[39m:160:5
+[33mWarn[39m: Buttons and links should either contain text or have an `aria-label`, `aria-labelledby` or `title` attribute
+https://svelte.dev/e/a11y_consider_explicit_label (svelte)
+[36m    />
+    [35m<button
+      type="submit"
+      disabled={!inputMessage.trim() || isLoading}
+      class="send-btn"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        ><line x1="22" y1="2" x2="11" y2="13" /><polygon
+          points="22 2 15 22 11 13 11 2"
+        /></svg
+      >
+    </button>[36m
+  </form>[39m
+
+====================================
+[33msvelte-check found 0 errors and 6 warnings in 4 files
+[39m

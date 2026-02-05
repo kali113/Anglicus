@@ -13,9 +13,11 @@ Build Anglicus - an English learning platform for Spanish speakers.
 
 ### PWA Requirements
 ```
-/manifest.json       - App name, icons, theme color
-/service-worker.js   - Offline caching
-HTTPS                - Required (free via Cloudflare/Netlify)
+
+/manifest.json - App name, icons, theme color
+/service-worker.js - Offline caching
+HTTPS - Required (free via Cloudflare/Netlify)
+
 ```
 
 ### PWA Features to Implement
@@ -68,11 +70,13 @@ HTTPS                - Required (free via Cloudflare/Netlify)
 
 ### Reduce Input Tokens
 - Compress user context into ~100-200 tokens max:
-  ```
-  User: Maria, B1 level, goal: business English
-  Weak: articles, present perfect, false friends
-  Recent errors: "I am agree", "depend of"
-  ```
+```
+
+User: Maria, B1 level, goal: business English
+Weak: articles, present perfect, false friends
+Recent errors: "I am agree", "depend of"
+
+```
 - Don't send full conversation history, send summary
 - Cache static prompts, only send dynamic parts
 
@@ -105,63 +109,23 @@ HTTPS                - Required (free via Cloudflare/Netlify)
 
 ## Architecture
 ```
+
 [Client App]
-     │
-     ├─► Tier 1: Your Backend Router ─► AI API (your keys)
-     │
-     ├─► Tier 2: Direct to OpenAI-compatible API (user's keys)
-     │
-     └─► Tier 3: Puter.js API (free fallback)
+│
+├─► Tier 1: Your Backend Router ─► AI API (your keys)
+│
+├─► Tier 2: Direct to OpenAI-compatible API (user's keys)
+│
+└─► Tier 3: Puter.js API (free fallback)
+
 ```
 
 ## Build Order
-1. **Backend API router (FIRST)**
-2. Web app with tutor chat
+1. ~~Backend API router~~ ✅ Complete
+2. Web app with tutor chat (in progress)
 3. Exercise system
 4. User memory/profiles
 5. Android app
-
----
-
-## FIRST TASK: Build the API Router
-
-Create a secure backend router that:
-
-1. **Proxies requests** from client apps to AI providers
-2. **Hides owner's API keys** (stored in .env, never exposed)
-3. **Supports multiple providers** via environment variables:
-   ```
-   OPENAI_API_KEY=sk-...
-   GROQ_API_KEY=gsk_...
-   TOGETHER_API_KEY=...
-   # Add more as needed
-   ```
-4. **OpenAI-compatible endpoint**: `/v1/chat/completions`
-5. **Basic security**:
-   - Rate limiting (per IP or user)
-   - Request validation
-   - CORS for your domains only
-6. **Free hosting** (100% free, no credit card):
-   - **Cloudflare Workers**: 100k requests/DAY free ← recommended
-   - **Vercel**: 100k requests/month free
-   - **Netlify**: 125k requests/month free
-
-### Router should accept:
-```json
-POST /v1/chat/completions
-{
-  "model": "gpt-4o-mini",  // or "llama-3", etc.
-  "messages": [...]
-}
-```
-
-### Router logic:
-1. Receive request from client
-2. Pick correct API key based on model/provider
-3. Forward to provider API
-4. Return response to client
-
-Owner's keys file location: Check with owner for path to keys file.
 
 ---
 

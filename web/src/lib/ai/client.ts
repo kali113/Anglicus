@@ -65,6 +65,9 @@ async function tryBackend(request: ChatCompletionRequest): Promise<AiResponse> {
   };
 }
 
+// Default base URL for BYOK when none is specified (OpenAI-compatible)
+const DEFAULT_BYOK_BASE_URL = "https://api.openai.com";
+
 /**
  * Try Tier 2: User's own API key (BYOK)
  */
@@ -72,11 +75,12 @@ async function tryByok(request: ChatCompletionRequest): Promise<AiResponse> {
   const settings = getSettings();
   const apiKey = await getApiKey();
 
-  if (!apiKey || !settings.apiConfig.customBaseUrl) {
-    throw new Error("BYOK not configured");
+  if (!apiKey) {
+    throw new Error("BYOK no configurado: falta la API key");
   }
 
-  const baseUrl = settings.apiConfig.customBaseUrl.replace(/\/$/, "");
+  // Use custom base URL if set, otherwise default to OpenAI
+  const baseUrl = (settings.apiConfig.customBaseUrl || DEFAULT_BYOK_BASE_URL).replace(/\/$/, "");
   const response = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: "POST",
     headers: {
@@ -221,18 +225,102 @@ export async function getCompletion(
   );
 }
 
+export interface ConnectionTestResult {
+  success: boolean;
+  error?: string;
+}
+
 /**
  * Test connection to a specific tier
  */
 export async function testConnection(
   tier: "backend" | "byok" | "puter",
-): Promise<boolean> {
-  try {
-    const result = await getCompletion([{ role: "user", content: "Hello" }], {
-      maxTokens: 10,
-    });
-    return result.content.length > 0;
-  } catch {
-    return false;
+): Promise<ConnectionTestResult> {
+  const settings = getSettings();
+  
+  // Pre-flight checks based on tier
+  if (tier === "byok") {
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+      return { success: false, error: "No API key configurada. Guarda tu API key primero." };
+    }
+    // Note: customBaseUrl is optional - we default to OpenAI if not set
   }
+
+  try {
+    // Create a minimal test request
+    const request: ChatCompletionRequest = {
+      model: DEFAULT_MODEL,
+      messages: [{ role: "user", content: "Hello" }],
+      max_tokens: 10,
+    };
+
+    let result: AiResponse;
+    
+    // Test specific tier
+    switch (tier) {
+      case "backend":
+        result = await tryBackend(request);
+        break;
+      case "byok":
+        result = await tryByok(request);
+        break;
+      case "puter":
+        result = await tryPuter(request.messages);
+        break;
+      default:
+        return { success: false, error: "Tier no válido" };
+    }
+
+    return { success: result.content.length > 0 };
+  } catch (e) {
+    const error = e as Error;
+    const errorMessage = parseErrorMessage(error);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
+ * Parse error message to provide user-friendly feedback
+ */
+function parseErrorMessage(error: Error): string {
+  const message = error.message.toLowerCase();
+  
+  // Network errors
+  if (message.includes("failed to fetch") || message.includes("networkerror")) {
+    return "Error de red - verifica tu conexión";
+  }
+  
+  // CORS errors
+  if (message.includes("cors") || message.includes("cross-origin")) {
+    return "Error CORS - el servidor no permite esta conexión";
+  }
+  
+  // Authentication errors
+  if (message.includes("401") || message.includes("unauthorized") || message.includes("invalid api key")) {
+    return "API key inválida o expirada";
+  }
+  
+  // Rate limiting
+  if (message.includes("429") || message.includes("rate limit") || message.includes("too many requests")) {
+    return "Límite de peticiones excedido";
+  }
+  
+  // Server errors
+  if (message.includes("500") || message.includes("502") || message.includes("503") || message.includes("504")) {
+    return "Error del servidor - intenta más tarde";
+  }
+  
+  // Timeout
+  if (message.includes("timeout") || message.includes("timed out")) {
+    return "Tiempo de espera agotado";
+  }
+  
+  // Configuration errors
+  if (message.includes("byok no configurado") || message.includes("falta la api key")) {
+    return "Falta configurar la API key";
+  }
+  
+  // Return original message if no pattern matched (truncated if too long)
+  return error.message.length > 50 ? error.message.substring(0, 47) + "..." : error.message;
 }

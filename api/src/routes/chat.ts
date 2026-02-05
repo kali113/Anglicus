@@ -4,213 +4,26 @@
  */
 
 import type { Env } from "../index.js";
-
-// Provider base URLs with their API key headers
-const PROVIDERS = {
-  openai: {
-    url: "https://api.openai.com/v1/chat/completions",
-    key: "OPENAI_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  groq: {
-    url: "https://api.groq.com/openai/v1/chat/completions",
-    key: "GROQ_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  together: {
-    url: "https://api.together.xyz/v1/chat/completions",
-    key: "TOGETHER_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  gemini: {
-    url: "https://generativelanguage.googleapis.com/v1beta/chat/completions",
-    key: "GEMINI_API_KEY",
-    header: "x-goog-api-key",
-    headerPrefix: "",
-  },
-  mistral: {
-    url: "https://api.mistral.ai/v1/chat/completions",
-    key: "MISTRAL_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  cohere: {
-    url: "https://api.cohere.ai/v1/chat",
-    key: "COHERE_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  nvidia: {
-    url: "https://integrate.api.nvidia.com/v1/chat/completions",
-    key: "NVIDIA_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  huggingface: {
-    url: "https://router.huggingface.co/v1/chat/completions",
-    key: "HUGGINGFACE_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  cloudflare: {
-    url: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/",
-    key: "CLOUDFLARE_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  ollama: {
-    url: "http://localhost:11434/v1/chat/completions",
-    key: "OLLAMA_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  opencode: {
-    url: "https://opencode.dev/api/v1/chat/completions",
-    key: "OPENCODE_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-  cerebras: {
-    url: "https://api.cerebras.ai/v1/chat/completions",
-    key: "CEREBRAS_API_KEY",
-    header: "Authorization",
-    headerPrefix: "Bearer ",
-  },
-} as const;
-
-type Provider = keyof typeof PROVIDERS;
-
-// Model to provider mapping
-const MODEL_PROVIDERS: Record<string, Provider> = {
-  // OpenAI models
-  "gpt-4o": "openai",
-  "gpt-4o-mini": "openai",
-  "gpt-4-turbo": "openai",
-  "gpt-4": "openai",
-  "gpt-3.5-turbo": "openai",
-  "o1-preview": "openai",
-  "o1-mini": "openai",
-
-  // Groq models
-  "llama-3.3-70b-versatile": "groq",
-  "llama-3.1-8b-instant": "groq",
-  "mixtral-8x7b-32768": "groq",
-  "gemma2-9b-it": "groq",
-  "llama-3.3-70b-specdec": "groq",
-  "llama-3.1-70b-versatile": "groq",
-
-  // Together models
-  "mistralai/Mixtral-8x7B-Instruct-v0.1": "together",
-  "meta-llama/Llama-3-70b-chat-hf": "together",
-  "meta-llama/Llama-3-8b-chat-hf": "together",
-  "Qwen/Qwen2-72B-Instruct": "together",
-
-  // Gemini models
-  "gemini-2.0-flash-exp": "gemini",
-  "gemini-1.5-pro": "gemini",
-  "gemini-1.5-flash": "gemini",
-  "gemini-pro": "gemini",
-  "gemini-flash": "gemini",
-
-  // Mistral models
-  "mistral-large-latest": "mistral",
-  "mistral-medium": "mistral",
-  "mistral-small-latest": "mistral",
-  "mistral-tiny": "mistral",
-  "codestral-mamba-latest": "mistral",
-  "mistral-nemo": "mistral",
-  "pixtral-12b": "mistral",
-  "open-mistral-7b": "mistral",
-  "open-mixtral-8x7b": "mistral",
-  "open-mixtral-8x22b": "mistral",
-
-  // Cohere models
-  "command-r-plus": "cohere",
-  "command-r": "cohere",
-  command: "cohere",
-  "command-light": "cohere",
-  "command-nightly": "cohere",
-  "command-light-nightly": "cohere",
-
-  // Nvidia models
-  "nvidia/llama-3.1-mini": "nvidia",
-  "nvidia/llama-3.1-hf": "nvidia",
-  "meta/llama-3.1-405b-instruct": "nvidia",
-  "meta/llama-3.1-405b": "nvidia",
-  "mistralai/mixtral-8x7b-instruct-v0.1": "nvidia",
-  "google/gemma-2-27b-it": "nvidia",
-
-  // Hugging Face models
-  "meta-llama/Llama-3.1-70B-Instruct": "huggingface",
-  "google/gemma-7b": "huggingface",
-  "Qwen/Qwen2-72B-Instruct": "huggingface",
-
-  // Cerebras models
-  "llama-3.3-70b": "cerebras",
-  "llama-3.1-70b": "cerebras",
-  "llama-3.1-8b": "cerebras",
-  "llama-3-8b": "cerebras",
-
-  // OpenCode models (if applicable)
-  "opencode-coder": "opencode",
-} as const;
-
-// Provider aliases for quick access
-const DEFAULT_MODEL_BY_PROVIDER: Record<Provider, string> = {
-  openai: "gpt-4o-mini",
-  groq: "llama-3.3-70b-versatile",
-  together: "meta-llama/Llama-3-70b-chat-hf",
-  gemini: "gemini-1.5-flash",
-  mistral: "mistral-small-latest",
-  cohere: "command-light",
-  nvidia: "nvidia/llama-3.1-mini",
-  huggingface: "meta-llama/Llama-3.1-70B-Instruct",
-  cloudflare: "@cf/meta/llama-3.1-70b-instruct",
-  ollama: "llama-3.3-70b-versatile",
-  opencode: "opencode-coder",
-  cerebras: "llama-3.3-70b",
-};
-
-/**
- * Determine which provider to use based on model name
- */
-function getProviderForModel(model: string): Provider {
-  if (model in MODEL_PROVIDERS) {
-    return MODEL_PROVIDERS[model];
-  }
-
-  // Try to detect from model name prefix
-  if (model.startsWith("gpt-") || model.startsWith("o1-")) return "openai";
-  if (model.startsWith("llama-")) return "groq";
-  if (model.startsWith("mistral")) return "mistral";
-  if (model.startsWith("command")) return "cohere";
-  if (model.startsWith("gemini")) return "gemini";
-  if (model.includes("nvidia")) return "nvidia";
-  if (model.includes("huggingface") || model.includes("/"))
-    return "huggingface";
-
-  // Default to OpenAI for unknown models
-  return "openai";
-}
-
-/**
- * Get API key for provider from environment
- */
-function getApiKey(env: Env, provider: Provider): string {
-  const keyName = PROVIDERS[provider].key;
-  return (env[keyName as keyof Env] as string) || "";
-}
+import {
+  PROVIDERS,
+  getApiKey,
+  getAvailableProviders,
+  type Provider,
+} from "../lib/providers.js";
+import {
+  MODEL_PROVIDERS,
+  DEFAULT_MODEL_BY_PROVIDER,
+  getProviderForModel,
+  getModelForProvider,
+} from "../lib/models.js";
+import { jsonError, jsonSuccess } from "../lib/response.js";
 
 /**
  * Transform request body for provider-specific formats
  */
 function transformRequestBody(provider: Provider, body: any): any {
-  // Most providers are OpenAI-compatible
+  // Cohere uses slightly different format
   if (provider === "cohere") {
-    // Cohere uses slightly different format
     return {
       message: body.messages?.[body.messages.length - 1]?.content || "",
       chat_history:
@@ -223,13 +36,97 @@ function transformRequestBody(provider: Provider, body: any): any {
     };
   }
 
-  // Gemini API has different format
-  if (provider === "gemini") {
-    // Google Gemini uses a different endpoint format
-    // The URL transformation is handled separately
+  // Most providers are OpenAI-compatible
+  return body;
+}
+
+/**
+ * Build request headers for a provider
+ */
+function buildProviderHeaders(
+  provider: Provider,
+  apiKey: string
+): Record<string, string> {
+  const config = PROVIDERS[provider];
+  return {
+    "Content-Type": "application/json",
+    [config.header]: config.headerPrefix + apiKey,
+  };
+}
+
+/**
+ * Get the provider URL, handling special cases
+ */
+function getProviderUrl(provider: Provider, env: Env): string {
+  let url = PROVIDERS[provider].url;
+
+  // Handle Cloudflare's account_id placeholder
+  if (provider === "cloudflare" && env.CLOUDFLARE_ACCOUNT_ID) {
+    url = url.replace("{account_id}", env.CLOUDFLARE_ACCOUNT_ID);
   }
 
-  return body;
+  return url;
+}
+
+/**
+ * Try to complete a request with a specific provider
+ */
+async function tryProvider(
+  provider: Provider,
+  body: any,
+  env: Env,
+  isVirtualModel: boolean
+): Promise<Response | null> {
+  const apiKey = getApiKey(env, provider);
+  if (!apiKey) {
+    console.log(`Skipping ${provider}: no API key`);
+    return null;
+  }
+
+  try {
+    const providerUrl = getProviderUrl(provider, env);
+    const requestedProvider = getProviderForModel(body.model);
+    const modelForProvider = getModelForProvider(
+      body.model,
+      provider,
+      isVirtualModel
+    );
+
+    // Build request
+    const requestBody = { ...body, model: modelForProvider };
+    const transformedBody = transformRequestBody(provider, requestBody);
+    const headers = buildProviderHeaders(provider, apiKey);
+
+    const proxyRequest = new Request(providerUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(transformedBody),
+    });
+
+    const response = await fetch(proxyRequest);
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      console.error(
+        `${provider} returned ${response.status}, trying next provider... Error: ${responseText}`
+      );
+      return null;
+    }
+
+    // Success!
+    return new Response(responseText, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Provider": provider,
+        "X-Model": modelForProvider,
+      },
+    });
+  } catch (error) {
+    console.error(`Error with ${provider}:`, error);
+    return null;
+  }
 }
 
 /**
@@ -238,162 +135,54 @@ function transformRequestBody(provider: Provider, body: any): any {
  */
 export async function handleChatCompletions(
   request: Request,
-  env: Env,
+  env: Env
 ): Promise<Response> {
   try {
-    // Parse request body
     const body = (await request.json()) as { model?: string };
 
     if (!body.model) {
-      return new Response(
-        JSON.stringify({
-          error: {
-            message: "model is required",
-            type: "invalid_request_error",
-          },
-        }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return jsonError("model is required", "invalid_request_error", 400);
     }
 
-    // Get list of available providers (with API keys) in priority order
-    // Prioritized by: free tier availability, speed, and reliability
-    const providerPriority: Provider[] = [
-      "cerebras",   // Very fast, free tier
-      "mistral",    // Free tier available
-      "huggingface", // Free tier
-      "groq",       // Fast, free tier (but may have issues)
-      "nvidia",     // Free tier
-      "cohere",     // Has free tier
-      "gemini",     // Has free tier
-      "together",
-      "openai",
-    ];
-
-    // Filter providers that have API keys configured
-    const availableProviders = providerPriority.filter((p) => {
-      const keyName = PROVIDERS[p].key;
-      return !!(env[keyName as keyof Env] as string);
-    });
-
+    // Get available providers
+    const availableProviders = getAvailableProviders(env);
     if (availableProviders.length === 0) {
-      return new Response(
-        JSON.stringify({
-          error: {
-            message:
-              "No API keys configured. Please configure at least one provider.",
-            type: "server_error",
-          },
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
+      return jsonError(
+        "No API keys configured. Please configure at least one provider.",
+        "server_error",
+        500
       );
     }
 
     // Determine primary provider from model
     const requestedProvider = getProviderForModel(body.model);
+    const isVirtualModel = body.model === "anglicus-tutor";
 
     // Try the requested provider first, then fallback to others
     const providersToTry = [
       requestedProvider,
       ...availableProviders.filter((p) => p !== requestedProvider),
-    ].filter((p, index, self) => self.indexOf(p) === index); // Remove duplicates
+    ].filter((p, index, self) => self.indexOf(p) === index);
 
-    let lastError: Error | null = null;
+    let lastError: string = "Unknown error";
 
     for (const provider of providersToTry) {
-      // Check if this provider has an API key
-      const apiKey = getApiKey(env, provider);
-      if (!apiKey) {
-        console.log(`Skipping ${provider}: no API key`);
-        continue;
+      const result = await tryProvider(provider, body, env, isVirtualModel);
+      if (result) {
+        return result;
       }
-
-      try {
-        // Get provider config
-        const providerConfig = PROVIDERS[provider];
-        let providerUrl = providerConfig.url;
-
-        // Handle Cloudflare's account_id placeholder
-        if (provider === "cloudflare" && env.CLOUDFLARE_ACCOUNT_ID) {
-          providerUrl = providerUrl.replace(
-            "{account_id}",
-            env.CLOUDFLARE_ACCOUNT_ID,
-          );
-        }
-
-        // Get appropriate model for this provider
-        const modelForProvider =
-          provider === requestedProvider
-            ? body.model
-            : DEFAULT_MODEL_BY_PROVIDER[provider];
-
-        // Build request body with the correct model for this provider
-        const requestBody = { ...body, model: modelForProvider };
-        const transformedBody = transformRequestBody(provider, requestBody);
-
-        // Build headers
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-        headers[providerConfig.header] = providerConfig.headerPrefix + apiKey;
-
-        // Forward request to provider
-        const proxyRequest = new Request(providerUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(transformedBody),
-        });
-
-        const response = await fetch(proxyRequest);
-        const responseText = await response.text();
-
-        // Check for rate limit or server errors
-        if (response.status === 429 || response.status >= 500) {
-          console.error(
-            `${provider} returned ${response.status}, trying next provider...`,
-          );
-          lastError = new Error(`${provider} error: ${response.status}`);
-          continue; // Try next provider
-        }
-
-        // Success! Return the response
-        return new Response(responseText, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: {
-            "Content-Type": "application/json",
-            "X-Provider": provider,
-            "X-Model": modelForProvider,
-          },
-        });
-      } catch (error) {
-        console.error(`Error with ${provider}:`, error);
-        lastError = error as Error;
-        continue; // Try next provider
-      }
+      lastError = `${provider} failed`;
     }
 
     // All providers failed
-    return new Response(
-      JSON.stringify({
-        error: {
-          message: `All providers failed. Last error: ${lastError?.message || "Unknown error"}`,
-          type: "server_error",
-        },
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+    return jsonError(
+      `All providers failed. Last error: ${lastError}`,
+      "server_error",
+      500
     );
   } catch (error) {
     console.error("Chat completions error:", error);
-    return new Response(
-      JSON.stringify({
-        error: {
-          message: "Internal server error",
-          type: "server_error",
-        },
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
-    );
+    return jsonError("Internal server error", "server_error", 500);
   }
 }
 
@@ -403,9 +192,14 @@ export async function handleChatCompletions(
  */
 export async function handleListModels(
   _request: Request,
-  _env: Env,
+  _env: Env
 ): Promise<Response> {
-  const models = Object.entries(MODEL_PROVIDERS).map(([model, provider]) => ({
+  const models: Array<{
+    id: string;
+    object: string;
+    created: number;
+    owned_by: string;
+  }> = Object.entries(MODEL_PROVIDERS).map(([model, provider]) => ({
     id: model,
     object: "model",
     created: Date.now(),
@@ -424,7 +218,5 @@ export async function handleListModels(
     }
   });
 
-  return new Response(JSON.stringify({ object: "list", data: models }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonSuccess({ object: "list", data: models });
 }

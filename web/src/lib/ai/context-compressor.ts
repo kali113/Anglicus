@@ -4,8 +4,8 @@
  */
 
 import type { UserProfile, WeakArea, LearningGoal } from "$lib/types/user.js";
-import type { ChatMessage } from "$lib/types/chat.js";
-import type { Mistake, MistakeStats } from "$lib/types/mistake.js";
+import type { ChatMessage } from "$lib/types/api.js";
+import type { Mistake, MistakeStats } from "$lib/types/user.js";
 import { getRecentMistakes, getMistakeStats } from "$lib/storage/index.js";
 
 interface CompressedContext {

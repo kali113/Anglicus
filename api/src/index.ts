@@ -16,7 +16,7 @@ import { handleFeedback } from "./routes/feedback.js";
 // Type definition for Cloudflare Worker environment
 export interface Env {
   // AI Provider API Keys (set via wrangler secret)
-  OPENAI_API_KEY?: string;
+  OPENROUTER_API_KEY?: string;
   GROQ_API_KEY?: string;
   TOGETHER_API_KEY?: string;
   GEMINI_API_KEY?: string;
@@ -39,8 +39,27 @@ export interface Env {
   ALLOWED_ORIGINS?: string;
 }
 
+// Module-level rate limiter (persists within isolate lifecycle)
+// Note: Still resets between isolate cold starts. For true persistence, use Durable Objects or KV.
+let rateLimiter: RateLimiter | null = null;
+
+function getRateLimiter(env: Env): RateLimiter {
+  if (!rateLimiter) {
+    const rateLimitPerMinute = parseInt(env.RATE_LIMIT_PER_MINUTE || "20", 10);
+    rateLimiter = new RateLimiter({ requestsPerMinute: rateLimitPerMinute });
+  }
+  return rateLimiter;
+}
+
 // Create Hono app
 const app = new Hono<{ Bindings: Env }>();
+
+// Apply CORS middleware to all routes
+app.use("*", async (c, next) => {
+  const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS ?? "");
+  const corsMiddleware = cors({ allowedOrigins });
+  return corsMiddleware(c, next);
+});
 
 // Health check endpoint
 app.get("/", (c) => {
@@ -55,17 +74,17 @@ app.get("/", (c) => {
 // OpenAI-compatible endpoints
 app.get("/v1/models", async (c) => {
   const response = await handleListModels(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
-    response.status,
-    response.headers as HeadersInit,
+    response.status as 200 | 400 | 500,
+    headers,
   );
 });
 
 app.post("/v1/chat/completions", async (c) => {
-  // Initialize rate limiter
-  const rateLimitPerMinute = parseInt(c.env.RATE_LIMIT_PER_MINUTE || "20", 10);
-  const limiter = new RateLimiter({ requestsPerMinute: rateLimitPerMinute });
+  // Get module-level rate limiter
+  const limiter = getRateLimiter(c.env);
 
   // Get client IP
   const clientIp = getClientIp(c.req.raw);
@@ -94,20 +113,22 @@ app.post("/v1/chat/completions", async (c) => {
 
   // Handle chat completions request
   const response = await handleChatCompletions(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
-    response.status,
-    response.headers as HeadersInit,
+    response.status as 200 | 400 | 429 | 500,
+    headers,
   );
 });
 
 // Feedback endpoint
 app.post("/api/feedback", async (c) => {
   const response = await handleFeedback(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
-    response.status,
-    response.headers as HeadersInit,
+    response.status as 200 | 400 | 500,
+    headers,
   );
 });
 

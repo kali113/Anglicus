@@ -20,16 +20,15 @@
 - [architecture.md](architecture.md) - Diseño del sistema
 - [exercises.md](exercises.md) - Tipos de ejercicios
 - [spanish-errors.md](spanish-errors.md) - Errores comunes de hispanohablantes
-- [guidelines.md](guidelines.md) - Guía para escribir AGENTS.md
 
 ## 🚀 Stack Tecnológico
 
-| Componente | Tecnología |
-|------------|------------|
-| Web | Por definir (hosting gratuito) |
-| Android | Por definir (probablemente Kotlin) |
-| Backend | Router API propio (para claves del dueño) |
-| IA | APIs compatibles con OpenAI (3 niveles) |
+| Componente | Tecnología                              |
+| ---------- | --------------------------------------- |
+| Web        | SvelteKit + Vite (PWA)                  |
+| Android    | Por definir (TWA o Capacitor)           |
+| Backend    | Cloudflare Workers + Hono               |
+| IA         | APIs compatibles con OpenAI (3 niveles) |
 
 ## ⚠️ Seguridad
 

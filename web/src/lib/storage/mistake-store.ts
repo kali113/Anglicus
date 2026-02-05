@@ -3,7 +3,7 @@
  * Stores user mistakes for personalized exercises
  */
 
-import type { Mistake, MistakeStats } from "$lib/types/mistake.js";
+import type { Mistake, MistakeStats } from "$lib/types/user.js";
 import type { WeakArea } from "$lib/types/user.js";
 
 const DB_NAME = "AnglicusMistakes";
@@ -175,59 +175,32 @@ export async function clearAllMistakes(): Promise<void> {
 // Track correct answers for accuracy calculation
 const STATS_STORE_NAME = "mistake_stats";
 
-export async function recordCorrectAnswer(category: WeakArea): Promise<void> {
+async function recordAnswer(category: WeakArea, isCorrect: boolean): Promise<void> {
   const database = await getDb();
-
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STATS_STORE_NAME], "readwrite");
-    let store: IDBObjectStore;
-
     if (!database.objectStoreNames.contains(STATS_STORE_NAME)) {
-      store = transaction.db.createObjectStore(STATS_STORE_NAME, {
-        keyPath: "category",
-      });
-    } else {
-      store = transaction.objectStore(STATS_STORE_NAME);
+      resolve();
+      return;
     }
-
+    const store = transaction.objectStore(STATS_STORE_NAME);
     const request = store.get(category);
 
     request.onsuccess = () => {
       const data = request.result || { category, correct: 0, total: 0 };
-      data.correct++;
+      if (isCorrect) data.correct++;
       data.total++;
       store.put(data);
       resolve();
     };
-
     request.onerror = () => reject(request.error);
   });
 }
 
+export async function recordCorrectAnswer(category: WeakArea): Promise<void> {
+  return recordAnswer(category, true);
+}
+
 export async function recordIncorrectAnswer(category: WeakArea): Promise<void> {
-  const database = await getDb();
-
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STATS_STORE_NAME], "readwrite");
-    let store: IDBObjectStore;
-
-    if (!database.objectStoreNames.contains(STATS_STORE_NAME)) {
-      store = transaction.db.createObjectStore(STATS_STORE_NAME, {
-        keyPath: "category",
-      });
-    } else {
-      store = transaction.objectStore(STATS_STORE_NAME);
-    }
-
-    const request = store.get(category);
-
-    request.onsuccess = () => {
-      const data = request.result || { category, correct: 0, total: 0 };
-      data.total++;
-      store.put(data);
-      resolve();
-    };
-
-    request.onerror = () => reject(request.error);
-  });
+  return recordAnswer(category, false);
 }
