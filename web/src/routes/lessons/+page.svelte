@@ -5,7 +5,7 @@
     getUserProfile,
   } from "$lib/storage/user-store";
   import type { UserProfile } from "$lib/types/user";
-  import SkillTree from "$lib/components/SkillTree.svelte";
+  import InteractiveTree from "$lib/components/InteractiveTree.svelte";
 
   let user = $state<UserProfile | null>(null);
 
@@ -26,26 +26,26 @@
 
   {#if user}
     <div class="tree-container">
-      <SkillTree skills={user.skills} />
+      <InteractiveTree userSkills={user.skills} />
     </div>
   {/if}
 </div>
 
 <style>
   .lessons-page {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
     width: 100%;
   }
 
   .page-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
   }
 
   h1 {
     font-size: 2.5rem;
-    background: linear-gradient(to right, #2dd4bf, #3b82f6);
+    background: linear-gradient(to right, #2dd4bf, #8b5cf6);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -61,7 +61,7 @@
     background: rgba(31, 41, 55, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 24px;
-    padding: 3rem;
+    padding: 1rem;
     backdrop-filter: blur(12px);
   }
 </style>
