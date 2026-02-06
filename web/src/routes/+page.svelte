@@ -14,6 +14,22 @@
   import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
 
   let user = $state<UserProfile | null>(null);
+  let todayActivity = $state(0);
+  let currentLesson = $state({ title: "Start Learning", id: "greetings" });
+
+  const skillTitles: Record<string, string> = {
+    greetings: "Greetings",
+    food: "Food & Drink",
+    directions: "Directions",
+    travel: "Travel Basics",
+    family: "Family",
+    hobbies: "Hobbies",
+    shopping: "Shopping",
+    food2: "Dining Out",
+    emotions: "Emotions",
+    weather: "Weather",
+    nature: "Nature",
+  };
 
   onMount(() => {
     if (!hasCompletedOnboarding()) {
@@ -21,10 +37,30 @@
       return;
     }
     user = getUserProfile();
+
+    if (user) {
+      // Calculate today's activity
+      const dayIndex = new Date().getDay();
+      todayActivity = user.weeklyActivity[dayIndex] || 0;
+
+      // Find current lesson
+      const currentSkill =
+        user.skills.find((s) => s.status === "current") ||
+        user.skills.find((s) => s.status === "locked");
+
+      if (currentSkill) {
+        currentLesson = {
+          title: skillTitles[currentSkill.id] || currentSkill.id,
+          id: currentSkill.id,
+        };
+      }
+    }
   });
 
   function navigateToLesson() {
-    window.location.href = "/lessons/travel-basics";
+    // If no specific lesson logic, default to the detected current one
+    // In a real app, this might route more dynamically
+    window.location.href = `/lesson`;
   }
 </script>
 
@@ -43,7 +79,7 @@
       <div class="hero-section">
         <!-- Next Lesson Card -->
         <NextLessonCard
-          lessonTitle="Travel Basics"
+          lessonTitle={currentLesson.title}
           progress={60}
           onContinue={navigateToLesson}
         />
@@ -52,14 +88,14 @@
         <div class="quick-stats">
           <StatCard
             title="Meta diaria"
-            value={15}
+            value={todayActivity}
             unit="/20 mins"
-            progress={75}
+            progress={(todayActivity / 20) * 100}
           />
           <StatCard
-            title="Repasar errores"
-            value={5}
-            unit="items"
+            title="Palabras aprendidas"
+            value={user.wordsLearned}
+            unit="palabras"
             showArrow={true}
           />
         </div>

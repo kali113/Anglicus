@@ -7,6 +7,7 @@
     updateWeeklyActivity,
     unlockAchievement,
   } from "$lib/storage/user-store";
+  import { streamCompletion } from "$lib/ai/client";
 
   interface Word {
     id: string;
@@ -15,6 +16,10 @@
   }
 
   let progress = $state(20);
+
+  // Explanation state
+  let explanation = $state("");
+  let isExplaining = $state(false);
 
   // Exercise data
   const targetSentence = ["Hello", "my", "name", "is", "Alex"];
@@ -35,7 +40,13 @@
   let isCorrect = $state<boolean | null>(null);
 
   function toggleWord(word: Word) {
-    if (isCorrect !== null) return; // Disable interaction after checking
+    if (isCorrect === true) return; // Only disable interaction if successfully completed
+
+    // If trying to change answer while showing error, reset state
+    if (isCorrect === false) {
+      isCorrect = null;
+      explanation = ""; // Reset explanation
+    }
 
     if (selectedWords.find((w) => w.id === word.id)) {
       // Remove from selection
@@ -50,7 +61,7 @@
     }
   }
 
-  function checkAnswer() {
+  async function checkAnswer() {
     const constructedSentence = selectedWords.map((w) => w.text).join(" ");
     const correctSentence = targetSentence.join(" ");
 
@@ -62,6 +73,35 @@
       incrementWordsLearned(5);
       updateWeeklyActivity(5);
       unlockAchievement("early_bird");
+    } else {
+      // Mistake made: Trigger AI explanation
+      explanation = "";
+      isExplaining = true;
+
+      const userAttempt = constructedSentence;
+      const target = correctSentence;
+
+      const messages = [
+        {
+          role: "system" as const,
+          content:
+            "You are a helpful English tutor. Explain briefly (1-2 sentences) why the user's translation is wrong compared to the target. Focus on grammar or word order.",
+        },
+        {
+          role: "user" as const,
+          content: `Original: "${originalSentence}"\nTarget: "${target}"\nUser Wrote: "${userAttempt}"\nExplain the mistake.`,
+        },
+      ];
+
+      try {
+        await streamCompletion(messages, (chunk) => {
+          explanation += chunk;
+        });
+      } catch (err) {
+        console.error("Explanation error:", err);
+      } finally {
+        isExplaining = false;
+      }
     }
   }
 
@@ -195,24 +235,34 @@
           >
         {:else}
           <div class="feedback-header">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              ><circle cx="12" cy="12" r="10" /><line
-                x1="15"
-                y1="9"
-                x2="9"
-                y2="15"
-              /><line x1="9" y1="9" x2="15" y2="15" /></svg
-            >
-            <span>Try again</span>
+            <div class="feedback-response">
+              <div class="feedback-title">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  ><circle cx="12" cy="12" r="10" /><line
+                    x1="15"
+                    y1="9"
+                    x2="9"
+                    y2="15"
+                  /><line x1="9" y1="9" x2="15" y2="15" /></svg
+                >
+                <span>Try again</span>
+              </div>
+              {#if explanation}
+                <p class="ai-explanation">
+                  <span class="ai-label">Anglicus:</span>
+                  {explanation}
+                </p>
+              {/if}
+            </div>
           </div>
           <button class="action-btn error" onclick={() => (isCorrect = null)}
             >Retry</button
@@ -474,7 +524,36 @@
     color: #15803d;
   }
 
-  .footer.incorrect .feedback-header {
+  .footer.incorrect .feedback-header .feedback-title {
     color: #b91c1c;
+  }
+
+  .feedback-response {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .feedback-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .ai-explanation {
+    font-size: 0.95rem;
+    color: #4b5563; /* Dark gray for readability */
+    margin: 0;
+    line-height: 1.4;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 0.75rem;
+    border-radius: 8px;
+    border-left: 3px solid #f87171;
+  }
+
+  .ai-label {
+    font-weight: 700;
+    color: #b91c1c;
+    margin-right: 0.25rem;
   }
 </style>

@@ -104,14 +104,32 @@ async function tryProvider(
     });
 
     const response = await fetch(proxyRequest);
-    const responseText = await response.text();
 
     if (!response.ok) {
+      const responseText = await response.text();
       console.error(
         `${provider} returned ${response.status}, trying next provider... Error: ${responseText}`
       );
       return null;
     }
+
+    // Handle Streaming
+    if (body.stream) {
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "X-Provider": provider,
+          "X-Model": modelForProvider,
+        },
+      });
+    }
+
+    // Handle Non-Streaming (Buffer)
+    const responseText = await response.text();
 
     // Success!
     return new Response(responseText, {

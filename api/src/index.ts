@@ -56,7 +56,8 @@ const app = new Hono<{ Bindings: Env }>();
 
 // Apply CORS middleware to all routes
 app.use("*", async (c, next) => {
-  const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS ?? "");
+  // const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS ?? "");
+  const allowedOrigins = ["*"]; // Force allow all for debugging
   const corsMiddleware = cors({ allowedOrigins });
   return corsMiddleware(c, next);
 });

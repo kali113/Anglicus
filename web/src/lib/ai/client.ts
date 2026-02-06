@@ -225,6 +225,80 @@ export async function getCompletion(
   );
 }
 
+/**
+ * Stream completion response
+ */
+export async function streamCompletion(
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+  onChunk: (text: string) => void,
+  config: AiClientConfig = {}
+): Promise<void> {
+  const settings = getSettings();
+  const request: ChatCompletionRequest = {
+    model: config.model || "llama-3.1-8b",
+    messages,
+    temperature: config.temperature ?? 0.7,
+    max_tokens: config.maxTokens || 500,
+    stream: true,
+  };
+
+  let endpoint = "";
+  let headers: Record<string, string> = { "Content-Type": "application/json" };
+
+  // Tier configuration
+  if (settings.apiConfig.tier === "byok") {
+    const apiKey = await getApiKey();
+    if (!apiKey) throw new Error("BYOK not configured");
+    const baseUrl = (settings.apiConfig.customBaseUrl || DEFAULT_BYOK_BASE_URL).replace(/\/$/, "");
+    endpoint = `${baseUrl}/v1/chat/completions`;
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  } else {
+    // Default to backend
+    endpoint = `${BACKEND_URL}/v1/chat/completions`;
+  }
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Stream request failed: ${response.statusText}`);
+    }
+
+    if (!response.body) throw new Error("No response body");
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split("\n").filter((line) => line.trim() !== "");
+
+      for (const line of lines) {
+        if (line === "data: [DONE]") continue;
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            const content = data.choices?.[0]?.delta?.content;
+            if (content) onChunk(content);
+          } catch (e) {
+            console.warn("Error parsing stream chunk", e);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Stream error:", err);
+    throw err;
+  }
+}
+
 export interface ConnectionTestResult {
   success: boolean;
   error?: string;
