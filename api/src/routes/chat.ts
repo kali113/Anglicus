@@ -18,19 +18,39 @@ import {
 } from "../lib/models.js";
 import { jsonError, jsonSuccess } from "../lib/response.js";
 
+type ProviderAttempt = {
+  response: Response | null;
+  status: "success" | "skipped" | "retry";
+  error?: string;
+};
+
+const PROVIDER_TIMEOUT_MS = 10000;
+
 /**
  * Transform request body for provider-specific formats
  */
 function transformRequestBody(provider: Provider, body: any): any {
   // Cohere uses slightly different format
   if (provider === "cohere") {
+    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const systemMessages = messages
+      .filter((message: any) => message.role === "system")
+      .map((message: any) =>
+        typeof message.content === "string" ? message.content : "",
+      )
+      .filter((content: string) => content.length > 0);
+    const nonSystemMessages = messages.filter(
+      (message: any) => message.role !== "system",
+    );
+    const lastMessage = nonSystemMessages[nonSystemMessages.length - 1];
     return {
-      message: body.messages?.[body.messages.length - 1]?.content || "",
-      chat_history:
-        body.messages?.slice(0, -1).map((m: any) => ({
-          role: m.role === "assistant" ? "CHATBOT" : "USER",
-          message: m.content,
-        })) || [],
+      model: body.model,
+      message: typeof lastMessage?.content === "string" ? lastMessage.content : "",
+      chat_history: nonSystemMessages.slice(0, -1).map((message: any) => ({
+        role: message.role === "assistant" ? "CHATBOT" : "USER",
+        message: typeof message.content === "string" ? message.content : "",
+      })),
+      preamble: systemMessages.length > 0 ? systemMessages.join("\n") : undefined,
       temperature: body.temperature,
       max_tokens: body.max_tokens,
     };
@@ -38,6 +58,60 @@ function transformRequestBody(provider: Provider, body: any): any {
 
   // Most providers are OpenAI-compatible
   return body;
+}
+
+function mapCohereFinishReason(reason?: string): "stop" | "length" {
+  if (!reason) return "stop";
+  const normalized = reason.toLowerCase();
+  if (normalized.includes("max_tokens") || normalized.includes("length")) {
+    return "length";
+  }
+  return "stop";
+}
+
+function getCohereUsage(meta: any): {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+} | undefined {
+  const usage = meta?.billed_units ?? meta?.tokens;
+  if (
+    !usage ||
+    typeof usage.input_tokens !== "number" ||
+    typeof usage.output_tokens !== "number"
+  ) {
+    return undefined;
+  }
+  return {
+    prompt_tokens: usage.input_tokens,
+    completion_tokens: usage.output_tokens,
+    total_tokens: usage.input_tokens + usage.output_tokens,
+  };
+}
+
+function normalizeCohereResponse(data: any, model: string): Record<string, unknown> {
+  const created = Math.floor(Date.now() / 1000);
+  const content = typeof data?.text === "string" ? data.text : "";
+  const usage = getCohereUsage(data?.meta);
+  const response: Record<string, unknown> = {
+    id: data?.generation_id ? `cohere-${data.generation_id}` : `cohere-${created}`,
+    object: "chat.completion",
+    created,
+    model,
+    choices: [
+      {
+        index: 0,
+        message: { role: "assistant", content },
+        finish_reason: mapCohereFinishReason(data?.finish_reason),
+      },
+    ],
+  };
+
+  if (usage) {
+    response.usage = usage;
+  }
+
+  return response;
 }
 
 /**
@@ -76,16 +150,20 @@ async function tryProvider(
   body: any,
   env: Env,
   isVirtualModel: boolean
-): Promise<Response | null> {
+): Promise<ProviderAttempt> {
   const apiKey = getApiKey(env, provider);
   if (!apiKey) {
     console.log(`Skipping ${provider}: no API key`);
-    return null;
+    return { response: null, status: "skipped", error: "no_api_key" };
+  }
+
+  if (provider === "cohere" && body.stream) {
+    console.log(`Skipping ${provider}: streaming not supported`);
+    return { response: null, status: "skipped", error: "stream_not_supported" };
   }
 
   try {
     const providerUrl = getProviderUrl(provider, env);
-    const requestedProvider = getProviderForModel(body.model);
     const modelForProvider = getModelForProvider(
       body.model,
       provider,
@@ -103,47 +181,108 @@ async function tryProvider(
       body: JSON.stringify(transformedBody),
     });
 
-    const response = await fetch(proxyRequest);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      PROVIDER_TIMEOUT_MS,
+    );
+    let response: Response;
+    try {
+      response = await fetch(proxyRequest, { signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
-      const responseText = await response.text();
-      console.error(
-        `${provider} returned ${response.status}, trying next provider... Error: ${responseText}`
-      );
-      return null;
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        const responseText = await response.text();
+        const contentType =
+          response.headers.get("Content-Type") || "application/json";
+        return {
+          response: new Response(responseText, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: {
+              "Content-Type": contentType,
+              "X-Provider": provider,
+              "X-Model": modelForProvider,
+            },
+          }),
+          status: "success",
+        };
+      }
+
+      console.error(`${provider} returned ${response.status}`);
+      return {
+        response: null,
+        status: "retry",
+        error: `${provider} returned ${response.status}`,
+      };
     }
 
     // Handle Streaming
     if (body.stream) {
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-          "X-Provider": provider,
-          "X-Model": modelForProvider,
-        },
-      });
+      return {
+        response: new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Provider": provider,
+            "X-Model": modelForProvider,
+          },
+        }),
+        status: "success",
+      };
     }
 
     // Handle Non-Streaming (Buffer)
+    if (provider === "cohere") {
+      const responseData = await response.json();
+      const normalizedResponse = normalizeCohereResponse(
+        responseData,
+        modelForProvider,
+      );
+      return {
+        response: new Response(JSON.stringify(normalizedResponse), {
+          status: response.status,
+          statusText: response.statusText,
+          headers: {
+            "Content-Type": "application/json",
+            "X-Provider": provider,
+            "X-Model": modelForProvider,
+          },
+        }),
+        status: "success",
+      };
+    }
+
     const responseText = await response.text();
 
     // Success!
-    return new Response(responseText, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Provider": provider,
-        "X-Model": modelForProvider,
-      },
-    });
+    return {
+      response: new Response(responseText, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Provider": provider,
+          "X-Model": modelForProvider,
+        },
+      }),
+      status: "success",
+    };
   } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error(`${provider} timed out`);
+      return { response: null, status: "retry", error: `${provider} timed out` };
+    }
     console.error(`Error with ${provider}:`, error);
-    return null;
+    return { response: null, status: "retry", error: errorMessage };
   }
 }
 
@@ -156,9 +295,9 @@ export async function handleChatCompletions(
   env: Env
 ): Promise<Response> {
   try {
-    const body = (await request.json()) as { model?: string };
+    const body = (await request.json()) as { model?: string; stream?: boolean };
 
-    if (!body.model) {
+    if (!body.model || typeof body.model !== "string") {
       return jsonError("model is required", "invalid_request_error", 400);
     }
 
@@ -176,6 +315,14 @@ export async function handleChatCompletions(
     const requestedProvider = getProviderForModel(body.model);
     const isVirtualModel = body.model === "anglicus-tutor";
 
+    if (body.stream && requestedProvider === "cohere") {
+      return jsonError(
+        "Streaming is not supported for Cohere",
+        "invalid_request_error",
+        400
+      );
+    }
+
     // Try the requested provider first, then fallback to others
     const providersToTry = [
       requestedProvider,
@@ -186,10 +333,12 @@ export async function handleChatCompletions(
 
     for (const provider of providersToTry) {
       const result = await tryProvider(provider, body, env, isVirtualModel);
-      if (result) {
-        return result;
+      if (result.response) {
+        return result.response;
       }
-      lastError = `${provider} failed`;
+      if (result.status === "retry") {
+        lastError = result.error ?? `${provider} failed`;
+      }
     }
 
     // All providers failed

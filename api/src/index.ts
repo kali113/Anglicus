@@ -36,12 +36,15 @@ export interface Env {
 
   // Configuration variables
   RATE_LIMIT_PER_MINUTE?: string;
+  FEEDBACK_RATE_LIMIT_PER_MINUTE?: string;
   ALLOWED_ORIGINS?: string;
+  ALLOW_LOCAL_PROVIDERS?: string;
 }
 
 // Module-level rate limiter (persists within isolate lifecycle)
 // Note: Still resets between isolate cold starts. For true persistence, use Durable Objects or KV.
 let rateLimiter: RateLimiter | null = null;
+let feedbackRateLimiter: RateLimiter | null = null;
 
 function getRateLimiter(env: Env): RateLimiter {
   if (!rateLimiter) {
@@ -51,13 +54,25 @@ function getRateLimiter(env: Env): RateLimiter {
   return rateLimiter;
 }
 
+function getFeedbackRateLimiter(env: Env): RateLimiter {
+  if (!feedbackRateLimiter) {
+    const rateLimitPerMinute = parseInt(
+      env.FEEDBACK_RATE_LIMIT_PER_MINUTE || "5",
+      10,
+    );
+    feedbackRateLimiter = new RateLimiter({
+      requestsPerMinute: rateLimitPerMinute,
+    });
+  }
+  return feedbackRateLimiter;
+}
+
 // Create Hono app
 const app = new Hono<{ Bindings: Env }>();
 
 // Apply CORS middleware to all routes
 app.use("*", async (c, next) => {
-  // const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS ?? "");
-  const allowedOrigins = ["*"]; // Force allow all for debugging
+  const allowedOrigins = parseAllowedOrigins(c.env.ALLOWED_ORIGINS ?? "");
   const corsMiddleware = cors({ allowedOrigins });
   return corsMiddleware(c, next);
 });
@@ -94,7 +109,10 @@ app.post("/v1/chat/completions", async (c) => {
   const rateLimitResult = limiter.check(clientIp);
 
   // Add rate limit headers
-  const rateLimitHeaders = createRateLimitHeaders(rateLimitResult);
+  const rateLimitHeaders = createRateLimitHeaders(
+    rateLimitResult,
+    limiter.getLimit(),
+  );
   for (const [key, value] of Object.entries(rateLimitHeaders)) {
     c.header(key, value);
   }
@@ -124,6 +142,29 @@ app.post("/v1/chat/completions", async (c) => {
 
 // Feedback endpoint
 app.post("/api/feedback", async (c) => {
+  const limiter = getFeedbackRateLimiter(c.env);
+  const clientIp = getClientIp(c.req.raw);
+  const rateLimitResult = limiter.check(clientIp);
+  const rateLimitHeaders = createRateLimitHeaders(
+    rateLimitResult,
+    limiter.getLimit(),
+  );
+  for (const [key, value] of Object.entries(rateLimitHeaders)) {
+    c.header(key, value);
+  }
+
+  if (!rateLimitResult.allowed) {
+    return c.json(
+      {
+        error: {
+          message: "Rate limit exceeded. Please try again later.",
+          type: "rate_limit_error",
+        },
+      },
+      429,
+    );
+  }
+
   const response = await handleFeedback(c.req.raw, c.env);
   const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(

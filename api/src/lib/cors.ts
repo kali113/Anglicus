@@ -21,8 +21,11 @@ const DEFAULT_CONFIG: CorsConfig = {
  * Parse allowed origins from environment variable
  */
 export function parseAllowedOrigins(originsEnv: string): string[] {
-  if (!originsEnv) return ["*"];
-  return originsEnv.split(",").map((origin) => origin.trim());
+  if (!originsEnv) return [];
+  return originsEnv
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -31,11 +34,18 @@ export function parseAllowedOrigins(originsEnv: string): string[] {
 function isOriginAllowed(origin: string | null, allowed: string[]): boolean {
   if (!origin) return false;
   if (allowed.includes("*")) return true;
+  let hostname: string;
+  try {
+    hostname = new URL(origin).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+
   return allowed.some((allowed) => {
     // Support wildcard subdomains
     if (allowed.startsWith("*.")) {
-      const domain = allowed.slice(2);
-      return origin.endsWith(domain);
+      const domain = allowed.slice(2).toLowerCase();
+      return hostname === domain || hostname.endsWith(`.${domain}`);
     }
     return origin === allowed;
   });
@@ -59,7 +69,7 @@ export function createCorsHeaders(
 
   if (origin && isOriginAllowed(origin, config.allowedOrigins)) {
     headers["Access-Control-Allow-Origin"] = origin;
-  } else if (config.allowedOrigins.includes("*")) {
+  } else if (!config.credentials && config.allowedOrigins.includes("*")) {
     headers["Access-Control-Allow-Origin"] = "*";
   }
 

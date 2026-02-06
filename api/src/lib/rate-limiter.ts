@@ -10,14 +10,21 @@ interface RateLimitEntry {
 
 interface RateLimitConfig {
   requestsPerMinute: number;
+  cleanupInterval?: number;
+  maxEntries?: number;
 }
 
 export class RateLimiter {
   private store = new Map<string, RateLimitEntry>();
-  private config: RateLimitConfig;
+  private config: Required<RateLimitConfig>;
+  private checksSinceCleanup = 0;
 
   constructor(config: RateLimitConfig) {
-    this.config = config;
+    this.config = {
+      requestsPerMinute: config.requestsPerMinute,
+      cleanupInterval: config.cleanupInterval ?? 100,
+      maxEntries: config.maxEntries ?? 10000,
+    };
   }
 
   /**
@@ -32,8 +39,12 @@ export class RateLimiter {
     const now = Date.now();
     const windowMs = 60 * 1000; // 1 minute window
 
-    // Clean up expired entries
-    this.cleanup(now);
+    this.checksSinceCleanup++;
+    if (this.checksSinceCleanup >= this.config.cleanupInterval) {
+      this.cleanup(now);
+      this.enforceMaxEntries();
+      this.checksSinceCleanup = 0;
+    }
 
     // Get or create entry for this identifier
     let entry = this.store.get(identifier);
@@ -45,6 +56,7 @@ export class RateLimiter {
         resetTime: now + windowMs,
       };
       this.store.set(identifier, entry);
+      this.enforceMaxEntries();
       return {
         allowed: true,
         remaining: this.config.requestsPerMinute - 1,
@@ -101,6 +113,18 @@ export class RateLimiter {
     }
     return entry.count;
   }
+
+  getLimit(): number {
+    return this.config.requestsPerMinute;
+  }
+
+  private enforceMaxEntries(): void {
+    while (this.store.size > this.config.maxEntries) {
+      const oldestKey = this.store.keys().next().value;
+      if (!oldestKey) break;
+      this.store.delete(oldestKey);
+    }
+  }
 }
 
 /**
@@ -122,7 +146,23 @@ export function getClientIp(request: Request): string {
   const realIp = request.headers.get("X-Real-IP");
   if (realIp) return realIp;
 
+  const cfRay = request.headers.get("CF-Ray") || request.headers.get("CF-RAY");
+  const userAgent = request.headers.get("User-Agent");
+  const fallbackSource = [cfRay, userAgent].filter(Boolean).join("|");
+  if (fallbackSource) {
+    return `unknown:${hashIdentifier(fallbackSource)}`;
+  }
+
   return "unknown";
+}
+
+function hashIdentifier(value: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 /**
@@ -132,11 +172,16 @@ export function createRateLimitHeaders(result: {
   allowed: boolean;
   remaining: number;
   resetTime: number;
-}): Record<string, string> {
-  return {
-    "X-RateLimit-Limit": "60",
+}, limit: number): Record<string, string> {
+  const headers: Record<string, string> = {
+    "X-RateLimit-Limit": limit.toString(),
     "X-RateLimit-Remaining": result.remaining.toString(),
     "X-RateLimit-Reset": new Date(result.resetTime).toISOString(),
-    "Retry-After": Math.ceil((result.resetTime - Date.now()) / 1000).toString(),
   };
+  if (!result.allowed) {
+    headers["Retry-After"] = Math.ceil(
+      (result.resetTime - Date.now()) / 1000,
+    ).toString();
+  }
+  return headers;
 }

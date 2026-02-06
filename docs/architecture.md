@@ -30,7 +30,7 @@ api/src/
     ├── models.ts      # Model-to-provider mappings
     ├── response.ts    # JSON response utilities
     ├── cors.ts        # CORS middleware
-    └── rate-limiter.ts # In-memory rate limiting
+    └── rate-limiter.ts # In-memory rate limiting (best-effort, per-isolate)
 ```
 
 ### Provider Priority (Failover Order)

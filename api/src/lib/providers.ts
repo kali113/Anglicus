@@ -99,6 +99,11 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
 
 export type Provider = keyof typeof PROVIDERS;
 
+function isLocalProvider(provider: Provider): boolean {
+  const url = PROVIDERS[provider].url;
+  return url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1");
+}
+
 /**
  * Priority order for provider failover
  * Ordered by: free tier availability, speed, and reliability
@@ -127,7 +132,12 @@ export function getApiKey(env: Env, provider: Provider): string {
  * Get providers that have API keys configured
  */
 export function getAvailableProviders(env: Env): Provider[] {
+  const allowLocalProviders =
+    (env.ALLOW_LOCAL_PROVIDERS ?? "").toLowerCase() === "true";
   return PROVIDER_PRIORITY.filter((provider) => {
+    if (!allowLocalProviders && isLocalProvider(provider)) {
+      return false;
+    }
     const keyName = PROVIDERS[provider].key;
     return !!(env[keyName] as string);
   });

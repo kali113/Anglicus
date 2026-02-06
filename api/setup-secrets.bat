@@ -50,38 +50,40 @@ echo.
 set "SECRET_NAME=%~1"
 set "PROMPT_TEXT=%~2"
 
-set /p "SECRET_VALUE=%PROMPT_TEXT%: "
-
-if not "%SECRET_VALUE%"=="" (
-    echo Setting %SECRET_NAME%...
-    echo %SECRET_VALUE% | wrangler secret put %SECRET_NAME%
-    echo [OK] %SECRET_NAME% configured
-) else (
+choice /m "%PROMPT_TEXT%"
+if errorlevel 2 (
     echo [SKIP] %SECRET_NAME% skipped
+    echo.
+    exit /b 0
+)
+
+echo Setting %SECRET_NAME%...
+echo Please enter the value in the prompt that appears.
+wrangler secret put %SECRET_NAME%
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERROR] %SECRET_NAME% failed
+) else (
+    echo [OK] %SECRET_NAME% configured
 )
 
 echo.
+exit /b 0
 
-call :set_secret "OPENAI_API_KEY" "Enter OpenAI API key (skip if not using)"
-call :set_secret "GROQ_API_KEY" "Enter Groq API key"
-call :set_secret "TOGETHER_API_KEY" "Enter Together AI API key"
-call :set_secret "GEMINI_API_KEY" "Enter Gemini API key"
-call :set_secret "MISTRAL_API_KEY" "Enter Mistral API key"
-call :set_secret "COHERE_API_KEY" "Enter Cohere API key"
-call :set_secret "NVIDIA_API_KEY" "Enter Nvidia API key"
-call :set_secret "HUGGINGFACE_API_KEY" "Enter Hugging Face API key"
-call :set_secret "CLOUDFLARE_API_KEY" "Enter Cloudflare API key (for Workers AI)"
-call :set_secret "CLOUDFLARE_ACCOUNT_ID" "Enter Cloudflare Account ID (for Workers AI)"
-call :set_secret "OLLAMA_API_KEY" "Enter Ollama API key (optional - for local instances)"
-call :set_secret "OPENCODE_API_KEY" "Enter OpenCode API key (optional)"
-call :set_secret "CEREBRAS_API_KEY" "Enter Cerebras API key"
-call :set_secret "RESEND_API_KEY" "Enter Resend API key (for feedback emails)"
-
-set /p "OWNER_EMAIL_VALUE=Enter your email address (for receiving feedback): "
-if not "%OWNER_EMAIL_VALUE%"=="" (
-    echo %OWNER_EMAIL_VALUE% | wrangler secret put OWNER_EMAIL
-    echo [OK] OWNER_EMAIL configured
-)
+call :set_secret "OPENAI_API_KEY" "Set OpenAI API key (skip if not using)"
+call :set_secret "GROQ_API_KEY" "Set Groq API key"
+call :set_secret "TOGETHER_API_KEY" "Set Together AI API key"
+call :set_secret "GEMINI_API_KEY" "Set Gemini API key"
+call :set_secret "MISTRAL_API_KEY" "Set Mistral API key"
+call :set_secret "COHERE_API_KEY" "Set Cohere API key"
+call :set_secret "NVIDIA_API_KEY" "Set Nvidia API key"
+call :set_secret "HUGGINGFACE_API_KEY" "Set Hugging Face API key"
+call :set_secret "CLOUDFLARE_API_KEY" "Set Cloudflare API key (for Workers AI)"
+call :set_secret "CLOUDFLARE_ACCOUNT_ID" "Set Cloudflare Account ID (for Workers AI)"
+call :set_secret "OLLAMA_API_KEY" "Set Ollama API key (optional - for local instances)"
+call :set_secret "OPENCODE_API_KEY" "Set OpenCode API key (optional)"
+call :set_secret "CEREBRAS_API_KEY" "Set Cerebras API key"
+call :set_secret "RESEND_API_KEY" "Set Resend API key (for feedback emails)"
+call :set_secret "OWNER_EMAIL" "Set owner email address (feedback recipient)"
 
 echo.
 echo === Setup Complete ===
