@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import { page } from "$app/stores";
   import {
     hasCompletedOnboarding,
@@ -16,6 +17,14 @@
   onMount(() => {
     onboardingComplete = hasCompletedOnboarding();
     user = getUserProfile();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register(`${base}/service-worker.js`)
+        .catch((error) => {
+          console.error("Service worker registration failed:", error);
+        });
+    }
   });
 
   let isImmersive = $state(false);
@@ -39,8 +48,13 @@
 </script>
 
 <svelte:head>
-  <link rel="manifest" href="/manifest.json" />
+  <link rel="manifest" href="{base}/manifest.json" />
   <meta name="theme-color" content="#1e293b" />
+  <meta name="application-name" content="Anglicus" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Anglicus" />
+  <link rel="apple-touch-icon" href="{base}/icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     rel="preconnect"

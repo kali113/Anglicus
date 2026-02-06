@@ -19,11 +19,26 @@ Una app gratuita para aprender inglés, creada especialmente para hispanohablant
 
 ## 📲 ¿Cómo la uso?
 
-### Web
-👉 **[Ir a la aplicación](https://TU-USUARIO.github.io/TU-REPO/)** *(próximamente)*
+### Web (GitHub Pages)
+👉 **[Ir a la aplicación](https://TU-USUARIO.github.io/Anglicus/)**
 
-### Android
-👉 **Descarga próximamente**
+**Enlace corto para compartir**
+1. `cd web`
+2. `npm run shorten -- https://TU-USUARIO.github.io/Anglicus/`
+3. Usa el link que imprime el comando.
+
+### Instalar como app (PWA)
+- **iPhone/iPad (Safari):** Compartir → **"Añadir a pantalla de inicio"**.
+- **Android (Chrome):** menú ⋮ → **"Instalar app"** o **"Añadir a pantalla de inicio"**.
+- **PC/Mac (Chrome/Edge):** icono de instalación en la barra de direcciones.
+
+### APK (Android)
+Para distribuir un APK basado en la web (Trusted Web Activity):
+1. Despliega la app en GitHub Pages.
+2. Genera el paquete Android con **PWABuilder**: https://www.pwabuilder.com/
+3. Alternativa con Bubblewrap:
+   - `npx @bubblewrap/cli init --manifest https://TU-USUARIO.github.io/Anglicus/manifest.json`
+   - `cd android && gradlew.bat assembleRelease`
 
 ---
 
