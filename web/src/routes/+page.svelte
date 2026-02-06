@@ -12,6 +12,7 @@
   import CircularProgress from "$lib/components/CircularProgress.svelte";
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
   import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
+  import QuickChat from "$lib/components/QuickChat.svelte";
 
   let user = $state<UserProfile | null>(null);
   let todayActivity = $state(0);
@@ -75,6 +76,9 @@
           <span>{user.streakDays} Días de racha</span>
         </div>
       </header>
+
+      <!-- Quick Chat Section -->
+      <QuickChat />
 
       <div class="hero-section">
         <!-- Next Lesson Card -->
