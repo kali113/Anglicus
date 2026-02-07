@@ -1,58 +1,81 @@
 # 🎓 Anglicus
 
-Tu tutor personal de inglés con inteligencia artificial, disponible cuando lo necesites.
+ES: Tu tutor personal de inglés con IA, pensado para hispanohablantes.
+EN: Your personal AI English tutor, built for Spanish speakers.
 
 ---
 
-## ✨ ¿Qué es esto?
+## Qué es / What it is
+ES: Anglicus es una PWA gratuita para practicar inglés con un tutor IA, ejercicios adaptativos y seguimiento de errores.
+EN: Anglicus is a free PWA to practice English with an AI tutor, adaptive exercises, and mistake tracking.
 
-Una app gratuita para aprender inglés, creada especialmente para hispanohablantes. Tienes un tutor de inteligencia artificial que te ayuda a practicar, corrige tus errores y se adapta a tu nivel.
+## Características / Features
+- 💬 Conversa con un tutor IA / Chat with an AI tutor
+- 📝 Ejercicios personalizados / Personalized exercises
+- 🎯 Aprende de tus errores / Learn from your mistakes
+- 📱 PWA instalable + APK vía TWA / Installable PWA + APK via TWA
 
-## 🚀 Características
-
-| | |
-|---|---|
-| 💬 **Practica conversando** | Habla con el tutor IA cuando quieras |
-| 📝 **Ejercicios personalizados** | Lecciones que se adaptan a ti |
-| 🎯 **Aprende de tus errores** | La app recuerda dónde fallas y te ayuda a mejorar |
-| 📱 **Usa donde quieras** | Disponible en web y Android |
-
-## 📲 ¿Cómo la uso?
-
+## Uso / Usage
 ### Web (GitHub Pages)
-👉 **[Ir a la aplicación](https://TU-USUARIO.github.io/Anglicus/)**
+👉 https://kali113.github.io/Anglicus/
 
-**Enlace corto para compartir**
+**Enlace corto / Short link**
 1. `cd web`
-2. `npm run shorten -- https://TU-USUARIO.github.io/Anglicus/`
-3. Usa el link que imprime el comando.
+2. `npm run shorten -- https://kali113.github.io/Anglicus/`
+3. Usa el link que imprime el comando / Use the printed link.
 
-### Instalar como app (PWA)
-- **iPhone/iPad (Safari):** Compartir → **"Añadir a pantalla de inicio"**.
-- **Android (Chrome):** menú ⋮ → **"Instalar app"** o **"Añadir a pantalla de inicio"**.
-- **PC/Mac (Chrome/Edge):** icono de instalación en la barra de direcciones.
+### Instalar PWA / Install PWA
+- iPhone/iPad (Safari): Compartir → "Añadir a pantalla de inicio"
+- Android (Chrome): menú ⋮ → "Instalar app"
+- PC/Mac (Chrome/Edge): icono de instalación en la barra de direcciones
 
 ### APK (Android)
-Para distribuir un APK basado en la web (Trusted Web Activity):
-1. Despliega la app en GitHub Pages.
-2. Genera el paquete Android con **PWABuilder**: https://www.pwabuilder.com/
-3. Alternativa con Bubblewrap:
-   - `npx @bubblewrap/cli init --manifest https://TU-USUARIO.github.io/Anglicus/manifest.json`
-   - `cd android && gradlew.bat assembleRelease`
+ES: La vía recomendada es TWA con Bubblewrap (requiere PWA desplegada, Java y Android SDK).
+EN: Recommended path is TWA via Bubblewrap (requires deployed PWA, Java, and Android SDK).
 
----
+```
+npx @bubblewrap/cli init --manifest https://kali113.github.io/Anglicus/manifest.json
+cd android && gradlew.bat assembleRelease
+```
 
-## 💡 ¿Tienes ideas o encontraste un error?
+Mac/Linux:
+```
+cd android && ./gradlew assembleRelease
+```
 
-¡Nos encanta escucharte! [Abre un issue](../../issues) y cuéntanos.
+Nota/Note: este repositorio no incluye `android/` por defecto; el proyecto se genera al inicializar Bubblewrap.
 
----
+## Desarrollo / Development
+### Web
+```
+cd web
+npm install
+npm run dev
+npm run build
+npm run check
+```
 
-## 🛠️ ¿Eres desarrollador?
+### API
+```
+cd api
+npm install
+npm run dev
+npm test
+npm run deploy
+```
 
-Si quieres contribuir al proyecto o entender cómo funciona, lee la [documentación técnica](docs/CONTRIBUTING.md).
+## Documentación / Documentation
+- docs/CONTRIBUTING.md
+- docs/architecture.md
+- docs/security.md
+- docs/onboarding.md
+- docs/exercises.md
+- docs/spanish-errors.md
+- docs/development-prompt.md
 
----
+## Ideas o errores / Ideas or bugs
+ES: ¡Nos encanta escucharte! Abre un issue.
+EN: We would love to hear from you! Please open an issue.
 
 <p align="center">
   <b>Anglicus</b> - Hecho con ❤️ para hispanohablantes

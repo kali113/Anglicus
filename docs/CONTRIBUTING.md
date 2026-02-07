@@ -1,61 +1,63 @@
-# Contribuir a Anglicus
+# Contribuir / Contributing
 
-¡Gracias por tu interés en contribuir! Este documento te explica cómo funciona todo.
+## Alcance / Scope
+ES: Este repositorio contiene la PWA (web/) y el backend serverless (api/).
+EN: This repository contains the PWA (web/) and the serverless backend (api/).
 
-## 📁 Estructura del Proyecto
-
+## Estructura / Structure
 ```
-/web          - Aplicación web
-/android      - Aplicación Android nativa
-/api          - Backend/router para la IA
-/shared       - Código compartido entre plataformas
-/docs         - Documentación técnica
-```
-
-## 🔧 Documentación Técnica (en inglés)
-
-- [AGENTS.md](../AGENTS.md) - Instrucciones para el agente IA de desarrollo
-- [development-prompt.md](development-prompt.md) - Prompt completo para empezar a construir
-- [security.md](security.md) - Manejo seguro de claves API
-- [architecture.md](architecture.md) - Diseño del sistema
-- [exercises.md](exercises.md) - Tipos de ejercicios
-- [spanish-errors.md](spanish-errors.md) - Errores comunes de hispanohablantes
-
-## 🚀 Stack Tecnológico
-
-| Componente | Tecnología                              |
-| ---------- | --------------------------------------- |
-| Web        | SvelteKit + Vite (PWA)                  |
-| Android    | Por definir (TWA o Capacitor)           |
-| Backend    | Cloudflare Workers + Hono               |
-| IA         | APIs compatibles con OpenAI (3 niveles) |
-
-## ⚠️ Seguridad
-
-**NUNCA** subas claves API al repositorio. Lee [security.md](security.md) para entender cómo manejamos esto.
-
-## 🤝 Cómo Contribuir
-
-1. Haz fork del repositorio
-2. Crea una rama para tu feature (`git checkout -b mi-feature`)
-3. Haz commit de tus cambios
-4. Abre un Pull Request
-
-## 🤖 Worktrees para agentes IA
-
-Para aislar agentes IA por tarea, usa el script de worktrees:
-
-```powershell
-.\scripts\create-agent-worktrees.ps1
+/web   - Aplicación web PWA (SvelteKit + Vite)
+/api   - API serverless (Cloudflare Workers + Hono)
+/docs  - Documentación técnica bilingüe (ES/EN)
 ```
 
-Por defecto crea worktrees para: `web`, `api`, `android`, `shared`, `docs`.
-Puedes pasar una lista personalizada:
+## Requisitos / Requirements
+- Node.js 20+ y npm
+- Git
+- (API) Wrangler CLI (vía devDependencies)
+- (APK) Java 17+ y Android SDK cuando se construya
 
-```powershell
-.\scripts\create-agent-worktrees.ps1 web api
+## Configuración rápida / Quick setup
+### Web
+```
+cd web
+npm install
+npm run dev
 ```
 
-## 📝 Licencia
+### API
+```
+cd api
+npm install
+npm run dev
+```
 
-Por definir (será open source)
+## Scripts principales / Main scripts
+**Web**
+- `npm run dev`
+- `npm run build`
+- `npm run check`
+
+**API**
+- `npm run dev`
+- `npm test`
+- `npm run deploy`
+
+## APK (TWA) / APK (TWA)
+ES: Para generar un APK desde la PWA usa Bubblewrap (TWA). Requiere la app desplegada.
+EN: To generate an APK from the PWA, use Bubblewrap (TWA). It requires the app to be deployed.
+
+```
+npx @bubblewrap/cli init --manifest https://kali113.github.io/Anglicus/manifest.json
+cd android && gradlew.bat assembleRelease
+```
+
+## Seguridad / Security
+- Nunca subas claves API al repositorio.
+- Usa `.env` local y revisa `docs/security.md`.
+
+## Pull Requests / Pull Requests
+1. Crea una rama (`git checkout -b mi-feature`).
+2. Mantén cambios pequeños y documentados.
+3. Actualiza documentación si aplica.
+4. Abre un Pull Request con un resumen claro.

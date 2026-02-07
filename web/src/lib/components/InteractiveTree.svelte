@@ -5,6 +5,8 @@
 
   let { userSkills = [] } = $props<{ userSkills?: SkillProgress[] }>();
 
+  const maxY = Math.max(...SKILL_TREE_DATA.map((node) => node.y));
+
   // Viewport state
   let scale = $state(1);
   let translateX = $state(0);
@@ -31,16 +33,21 @@
             "completed",
         );
 
-        if (node.requires.length === 0 || parentsCompleted) {
-          status = "current";
-        }
+      if (node.requires.length === 0 || parentsCompleted) {
+        status = "current";
       }
+    }
 
-      return {
-        ...node,
-        status,
-        stars: progress?.stars || 0,
-      };
+    const flippedX = -node.x;
+    const flippedY = maxY - node.y;
+
+    return {
+      ...node,
+      x: flippedX,
+      y: flippedY,
+      status,
+      stars: progress?.stars || 0,
+    };
     }),
   );
 

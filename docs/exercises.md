@@ -1,32 +1,22 @@
-# Exercise Types
+# Ejercicios / Exercises
 
-> AI-generated exercises adapting to user level and mistakes.
+## Tipos / Types
+| Tipo (ES) | Type (EN) | Descripción / Description |
+|---|---|---|
+| Opción múltiple | Multiple choice | Seleccionar respuesta correcta / Pick correct answer |
+| Completar | Fill in the blank | Completar la frase / Complete the sentence |
+| Traducción | Translation | ES ↔ EN |
+| Escucha | Listening | Escuchar y responder / Listen and respond |
+| Ordenar | Sentence order | Ordenar palabras / Arrange words |
+| Corrección | Error correction | Encontrar y corregir / Find and fix |
 
-## Planned Exercise Types
+## Personalización / Personalization
+ES: Se priorizan áreas débiles y errores recientes del usuario.
+EN: Weak areas and recent mistakes are prioritized.
 
-| Type | Description |
-|------|-------------|
-| **Multiple Choice** | Pick the correct word/phrase |
-| **Fill in the Blank** | Complete the sentence |
-| **Translation** | Spanish ↔ English |
-| **Listening** | Hear and transcribe/answer |
-| **Sentence Order** | Arrange words correctly |
-| **Error Correction** | Find and fix the mistake |
-
-## Personalization
-
-- AI tracks user mistakes in local database
-- Exercises prioritize weak areas
-- Difficulty adapts to performance
-- See [spanish-errors.md](spanish-errors.md) for common patterns
-
-## AI Prompt Strategy
-
-Exercises generated via prompts like:
+## Prompt base / Base prompt
 ```
-Generate a [exercise type] for a [level] Spanish speaker.
-Focus on: [weak areas from mistake history]
-Avoid: [already mastered concepts]
+Generate a {type} exercise for a {level} Spanish speaker.
+Focus on: {weak_areas}. Avoid: {mastered_topics}.
+Return structured JSON, not prose.
 ```
-
-Details TBD during implementation.

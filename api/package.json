@@ -1,7 +1,6 @@
 {
   "name": "anglicus-api",
-  "version": "0.6.1-alpha",
-
+  "version": "0.6.0-alpha",
   "description": "Anglicus Backend API Router - Cloudflare Worker",
   "type": "module",
   "scripts": {

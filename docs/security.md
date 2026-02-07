@@ -1,100 +1,23 @@
-# Security - API Key Management
+# Seguridad / Security
 
-## 3-Tier API Strategy
+## Principios / Principles
+ES: No subas secretos al repo. Todo lo sensible va en variables de entorno.
+EN: Never commit secrets. All sensitive data must live in environment variables.
 
-### Tier 1: Owner's Keys (Free Serverless Backend)
+## Estrategia 3 niveles / 3-tier strategy
+1. **Owner keys:** Backend router con claves propias.
+2. **BYOK:** La clave del usuario vive solo en su dispositivo.
+3. **Fallback:** Puter.js u otro proveedor gratuito (si aplica).
 
-Your personal keys for friends & family. Users get free access.
+## BYOK
+ES: La clave se almacena cifrada localmente, pero no protege contra XSS.
+EN: The key is encrypted locally, but it does not protect against XSS.
 
-```
-Client App → Serverless Function → AI Provider
-              (keys in env vars)
-```
-
-**Free Hosting Options (no credit card needed):**
-
-- Cloudflare Workers: 100k requests/DAY free
-- Vercel: 100k requests/month free
-- Netlify: 125k requests/month free
-
-**Security:**
-
-- Keys in platform environment variables (never in code)
-- Backend validates requests before forwarding
-- Rate limiting per user/IP
-- Monitor for abuse
-
-### Tier 2: BYOK (Bring Your Own Key)
-
-User provides their own OpenAI-compatible key.
-
-```
-Client App → Direct to AI Provider (user's key)
-```
-
-**Security:**
-
-- Key stored ENCRYPTED in local storage:
-  - Web: `crypto.subtle` + localStorage/IndexedDB
-  - Android: `EncryptedSharedPreferences`
-- Key NEVER sent to your backend
-- Key NEVER logged or transmitted elsewhere
-
-#### BYOK Threat Model
-
-> **Important**: The BYOK encryption provides **obfuscation**, not hard security.
-
-| Threat                            | Protected? | Details                                              |
-| --------------------------------- | ---------- | ---------------------------------------------------- |
-| Casual inspection of localStorage | ✅ Yes     | Key is AES-GCM encrypted                             |
-| Non-technical user snooping       | ✅ Yes     | Raw key not visible                                  |
-| XSS attack on same origin         | ❌ No      | Attacker can read both ciphertext AND encryption key |
-| Malicious browser extension       | ❌ No      | Extensions can access all page data                  |
-| Device theft (unlocked)           | ❌ No      | Browser storage is accessible                        |
-
-**Why this design?**
-
-1. **Better than plaintext**: Prevents accidental exposure in DevTools screenshots
-2. **Zero backend trust**: Key never leaves the browser
-3. **User controls the key**: Can revoke/rotate anytime
-
-**Recommended mitigations:**
-
-- Implement strong Content Security Policy (CSP)
-- Use Subresource Integrity (SRI) for scripts
-- Regular security audits for XSS vulnerabilities
-- Advise users to use keys with minimal permissions/quotas
-
-### Tier 3: Puter.js (Free Fallback)
-
-Free AI via Puter.js for users without keys.
-
-```
-Client App → Puter.js API (free, rate-limited)
-```
-
-**Security:**
-
-- No keys needed
-- Rate limited by Puter.js
-
-## Files to NEVER Commit
-
+## Archivos prohibidos / Never commit
 ```
 .env
 .env.local
 .env.production
 local.properties
 *.keystore
-```
-
-## Backend .env Template
-
-```bash
-# Owner's API key - NEVER COMMIT
-AI_API_KEY=sk-...
-
-# Optional: multiple providers
-OPENAI_API_KEY=sk-...
-GROQ_API_KEY=gsk_...
 ```

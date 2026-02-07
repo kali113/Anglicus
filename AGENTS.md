@@ -1,1 +1,1 @@
-GEMINI.md
+C:/Users/Nexia/OneDrive/Escritorio/Anglicus/copilot-instructions.md
