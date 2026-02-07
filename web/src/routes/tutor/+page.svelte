@@ -157,6 +157,7 @@
       type="submit"
       disabled={!inputMessage.trim() || isLoading}
       class="send-btn"
+      aria-label="Send message"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

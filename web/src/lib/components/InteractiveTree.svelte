@@ -127,12 +127,13 @@
   }
 
   onMount(() => {
-    translateX = 250;
-    translateY = 80;
     scale = 0.75;
+    translateX = 250;
+    translateY = 80 - maxY * scale;
   });
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="tree-container"
   onwheel={handleWheel}
@@ -142,7 +143,6 @@
   onmouseleave={handleMouseUp}
   role="application"
   aria-label="Interactive Skill Tree Map"
-  tabindex="0"
 >
   <!-- Decorative Background Elements -->
   <div class="bg-grid"></div>
@@ -291,9 +291,9 @@
     <button
       class="control-btn"
       onclick={() => {
-        translateX = 350;
-        translateY = 50;
         scale = 0.85;
+        translateX = 350;
+        translateY = 50 - maxY * scale;
       }}
       aria-label="Reset view"
     >

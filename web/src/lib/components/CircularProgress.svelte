@@ -2,9 +2,11 @@
   let { percentage = 0, size = 120 } = $props();
 
   const strokeWidth = 10;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
+  const radius = $derived((size - strokeWidth) / 2);
+  const circumference = $derived(radius * 2 * Math.PI);
+  const offset = $derived(
+    circumference - (percentage / 100) * circumference,
+  );
 </script>
 
 <div class="progress-circle" style="width: {size}px; height: {size}px;">

@@ -237,7 +237,7 @@ Student's question: "${tutorQuestion}"`,
 <div class="lesson-page">
   <!-- Header -->
   <header class="header">
-    <button class="back-btn" onclick={() => goto("/")}>
+    <button class="back-btn" onclick={() => goto("/")} aria-label="Back">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"

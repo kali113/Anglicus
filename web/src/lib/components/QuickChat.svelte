@@ -8,7 +8,7 @@
   let inputMessage = $state("");
   let isLoading = $state(false);
   let isExpanded = $state(false);
-  let chatContainer: HTMLElement | undefined = undefined;
+  let chatContainer = $state<HTMLElement | null>(null);
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
