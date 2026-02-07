@@ -9,6 +9,7 @@
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
 
   let user = $state<UserProfile | null>(null);
+  let isLoading = $state(true);
 
   onMount(() => {
     if (!hasCompletedOnboarding()) {
@@ -16,21 +17,29 @@
       return;
     }
     user = getUserProfile();
+    isLoading = false;
   });
 </script>
 
-<div class="lessons-page">
-  <header class="page-header">
-    <h1>Your Learning Path</h1>
-    <p>Complete lessons to unlock new skills and achievements</p>
-  </header>
+{#if isLoading}
+  <div class="loading-screen">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+{:else}
+  <div class="lessons-page">
+    <header class="page-header">
+      <h1>Your Learning Path</h1>
+      <p>Complete lessons to unlock new skills and achievements</p>
+    </header>
 
-  {#if user}
-    <div class="tree-container">
-      <InteractiveTree userSkills={user.skills} />
-    </div>
-  {/if}
-</div>
+    {#if user}
+      <div class="tree-container">
+        <InteractiveTree userSkills={user.skills} />
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .lessons-page {
@@ -64,5 +73,30 @@
     border-radius: 24px;
     padding: 1rem;
     backdrop-filter: blur(12px);
+  }
+
+  .loading-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

@@ -18,6 +18,7 @@
   let user = $state<UserProfile | null>(null);
   let todayActivity = $state(0);
   let currentLesson = $state({ title: "Start Learning", id: "greetings" });
+  let isLoading = $state(true);
 
   const skillTitles: Record<string, string> = {
     greetings: "Greetings",
@@ -39,6 +40,7 @@
       return;
     }
     user = getUserProfile();
+    isLoading = false;
 
     if (user) {
       // Calculate today's activity
@@ -66,7 +68,12 @@
   }
 </script>
 
-{#if user}
+{#if isLoading}
+  <div class="loading-screen">
+    <div class="spinner"></div>
+    <p>Cargando...</p>
+  </div>
+{:else if user}
   <div class="dashboard">
     <!-- Main Content Area -->
     <div class="main-content">
@@ -186,5 +193,30 @@
 
   :global(.skill-tree-card .label) {
     color: #334155 !important;
+  }
+
+  .loading-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>
