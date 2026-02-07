@@ -1,0 +1,49 @@
+# Environment variables (API KEYS - NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+.dev.vars
+*.vars
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.worktrees/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Android
+*.apk
+*.aab
+*.keystore
+local.properties
+.gradle/
+android/app/build/
+android/.gradle/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# Misc
+*.tmp
+*.temp
+nul
