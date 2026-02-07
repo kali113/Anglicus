@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { base } from "$app/paths";
   import type { UserProfile } from "$lib/types/user";
 
   export let user: UserProfile | null = null;
@@ -26,18 +27,18 @@
     </div>
 
     <div class="nav-links">
-      <a href="/" class:active={$page.url.pathname === "/"}>Inicio</a>
+      <a href="{base}/" class:active={$page.url.pathname === `${base}/`}>Inicio</a>
       <a
-        href="/lessons"
-        class:active={$page.url.pathname.startsWith("/lessons")}>Lecciones</a
+        href="{base}/lessons"
+        class:active={$page.url.pathname.startsWith(`${base}/lessons`)}>Lecciones</a
       >
       <a
-        href="/exercises"
-        class:active={$page.url.pathname.startsWith("/exercises")}>Práctica</a
+        href="{base}/exercises"
+        class:active={$page.url.pathname.startsWith(`${base}/exercises`)}>Práctica</a
       >
       <a
-        href="/profile"
-        class:active={$page.url.pathname.startsWith("/profile")}>Perfil</a
+        href="{base}/profile"
+        class:active={$page.url.pathname.startsWith(`${base}/profile`)}>Perfil</a
       >
     </div>
 
@@ -69,7 +70,7 @@
               /></svg
             >
           </button>
-          <a href="/settings" class="icon-btn" aria-label="Configuración">
+          <a href="{base}/settings" class="icon-btn" aria-label="Configuración">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"

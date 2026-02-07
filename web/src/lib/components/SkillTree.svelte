@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { base } from "$app/paths";
   import type { SkillProgress } from "$lib/types/user";
 
   let { skills = [] } = $props<{ skills?: SkillProgress[] }>();
@@ -78,7 +79,7 @@
           // User wants "functional". Let's emit an event.
           // Actually, Svelte 5 props... let's pass a callback prop or just use window.location for now simpler
           if (skill.status !== "locked") {
-            window.location.href = `/lessons/${skill.id}`;
+            window.location.href = `${base}/lessons/${skill.id}`;
           }
         }}
       >

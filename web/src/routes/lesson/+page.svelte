@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+import { base } from "$app/paths";
   import {
     addXp,
     incrementWordsLearned,
@@ -230,14 +231,14 @@ Student's question: "${tutorQuestion}"`,
   }
 
   function finishLesson() {
-    goto("/");
+    goto(`${base}/`);
   }
 </script>
 
 <div class="lesson-page">
   <!-- Header -->
   <header class="header">
-    <button class="back-btn" onclick={() => goto("/")} aria-label="Back">
+    <button class="back-btn" onclick={() => goto(`${base}/`)} aria-label="Back">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"

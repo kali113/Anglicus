@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+import { base } from "$app/paths";
   import { saveUserProfile } from "$lib/storage/user-store.js";
   import type {
     UserProfile,
@@ -215,7 +216,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       skills: [],
     };
     saveUserProfile(profile);
-    goto("/");
+    goto(`${base}/`);
   }
 
   function getLevelLabel(level: EnglishLevel): string {

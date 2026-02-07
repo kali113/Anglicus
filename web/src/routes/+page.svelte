@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import {
     hasCompletedOnboarding,
     getUserProfile,
@@ -34,7 +35,7 @@
 
   onMount(() => {
     if (!hasCompletedOnboarding()) {
-      window.location.href = "/onboarding";
+      window.location.href = `${base}/onboarding`;
       return;
     }
     user = getUserProfile();
@@ -61,7 +62,7 @@
   function navigateToLesson() {
     // If no specific lesson logic, default to the detected current one
     // In a real app, this might route more dynamically
-    window.location.href = `/lesson`;
+    window.location.href = `${base}/lesson`;
   }
 </script>
 

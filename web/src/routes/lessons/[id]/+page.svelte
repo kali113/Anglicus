@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { completeLesson } from "$lib/storage/user-store";
   import { goto } from "$app/navigation";
+import { base } from "$app/paths";
   import confetti from "canvas-confetti";
   import ChatInterface from "$lib/components/ChatInterface.svelte";
   import { fade } from "svelte/transition";
@@ -21,7 +22,7 @@
     completeLesson(lessonId);
 
     setTimeout(() => {
-      goto("/");
+      goto(`${base}/`);
     }, 2500);
   }
 </script>
@@ -29,7 +30,7 @@
 <div class="lesson-page" in:fade>
   <div class="lesson-container">
     <header class="lesson-header">
-      <button class="back-btn" onclick={() => goto("/")}>
+      <button class="back-btn" onclick={() => goto(`${base}/`)}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

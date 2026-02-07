@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 	import { getUserProfile } from '$lib/storage/user-store.js';
 	import { getCompletion, buildExerciseSystemPrompt } from '$lib/ai/index.js';
 	import type { Exercise } from '$lib/types/exercise.js';
@@ -16,7 +17,7 @@
 
 	onMount(() => {
 		if (!profile) {
-			window.location.href = '/onboarding';
+			window.location.href = `${base}/onboarding`;
 			return;
 		}
 	});
@@ -97,7 +98,7 @@
 			{#if errorMessage}
 				<div class="error-message">
 					<p>{errorMessage}</p>
-					<a href="/settings" class="btn secondary">Ir a Configuración</a>
+					<a href={`${base}/settings`} class="btn secondary">Ir a Configuración</a>
 				</div>
 			{/if}
 		</div>

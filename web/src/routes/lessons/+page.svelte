@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import {
     hasCompletedOnboarding,
     getUserProfile,
@@ -11,7 +12,7 @@
 
   onMount(() => {
     if (!hasCompletedOnboarding()) {
-      window.location.href = "/onboarding";
+      window.location.href = `${base}/onboarding`;
       return;
     }
     user = getUserProfile();

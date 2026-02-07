@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store";
   import type { UserProfile } from "$lib/types/user";
   import WeeklyChart from "$lib/components/WeeklyChart.svelte";
@@ -28,7 +29,7 @@
           <span class="level">Nivel {userProfile.level}</span>
         </div>
       </div>
-      <a href="/settings" class="settings-btn" aria-label="Configuración">
+      <a href={`${base}/settings`} class="settings-btn" aria-label="Configuración">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

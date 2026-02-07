@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
@@ -13,7 +14,7 @@
 
   onMount(() => {
     if (!profile) {
-      window.location.href = "/onboarding";
+      window.location.href = `${base}/onboarding`;
       return;
     }
     scrollToBottom();
@@ -143,7 +144,7 @@
     {#if errorMessage}
       <div class="error-banner">
         {errorMessage}
-        <a href="/settings">Configuración</a>
+        <a href={`${base}/settings`}>Configuración</a>
       </div>
     {/if}
     <input

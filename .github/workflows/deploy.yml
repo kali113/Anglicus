@@ -38,6 +38,9 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Create 404.html for SPA routing
+        run: cp web/build/index.html web/build/404.html
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

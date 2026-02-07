@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { base } from "$app/paths";
   import { SKILL_TREE_DATA, type SkillNode } from "$lib/data/skills";
   import type { SkillProgress } from "$lib/types/user";
 
@@ -102,7 +103,7 @@
 
   function handleNodeClick(node: any) {
     if (node.status === "locked") return;
-    window.location.href = `/lessons/${node.id}`;
+    window.location.href = `${base}/lessons/${node.id}`;
   }
 
   // Get category color
