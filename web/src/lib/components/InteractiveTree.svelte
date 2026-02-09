@@ -7,12 +7,15 @@
   let { userSkills = [] } = $props<{ userSkills?: SkillProgress[] }>();
 
   const maxY = Math.max(...SKILL_TREE_DATA.map((node) => node.y));
+  const minY = Math.min(...SKILL_TREE_DATA.map((node) => node.y));
+  const treeHeight = maxY - minY;
   const flippedXValues = SKILL_TREE_DATA.map((node) => -node.x);
   const minX = Math.min(...flippedXValues);
   const maxX = Math.max(...flippedXValues);
   const centerX = (minX + maxX) / 2;
 
   // Viewport state
+  let containerEl: HTMLDivElement | null = null;
   let scale = $state(1);
   let translateX = $state(0);
   let translateY = $state(0);
@@ -192,9 +195,11 @@
 
   function updateInitialView() {
     const isMobile = window.innerWidth <= 768;
+    const containerHeight = containerEl?.clientHeight ?? 650;
     scale = isMobile ? 0.6 : 0.75;
     translateX = -centerX * scale;
-    translateY = (isMobile ? 120 : 80) - maxY * scale;
+    const targetCenter = containerHeight * (isMobile ? 0.65 : 0.6);
+    translateY = targetCenter - (treeHeight / 2) * scale;
   }
 
   onMount(() => {
@@ -207,6 +212,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="tree-container"
+  bind:this={containerEl}
   onwheel={handleWheel}
   onmousedown={handleMouseDown}
   onmousemove={handleMouseMove}
@@ -363,15 +369,7 @@
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
     </button>
-    <button
-      class="control-btn"
-      onclick={() => {
-        scale = 0.85;
-        translateX = -centerX * scale;
-        translateY = 50 - maxY * scale;
-      }}
-      aria-label="Reset view"
-    >
+    <button class="control-btn" onclick={updateInitialView} aria-label="Reset view">
       <svg
         viewBox="0 0 24 24"
         fill="none"
