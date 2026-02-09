@@ -37,12 +37,14 @@ jobs:
         run: npm install -g @bubblewrap/cli
 
       - name: Generate Android project
-        run: bubblewrap update --manifest twa/twa-manifest.json --directory twa --skipVersionUpgrade
+        run: bubblewrap update --manifest twa/twa-manifest.json --directory twa --skipVersionUpgrade --jdkPath "$JAVA_HOME"
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
       - name: Build APK
         run: |
           cd twa
-          bubblewrap build --manifest twa-manifest.json --skipSigning --skipPwaValidation
+          bubblewrap build --manifest twa-manifest.json --skipSigning --skipPwaValidation --jdkPath "$JAVA_HOME"
         env:
           JAVA_HOME: ${{ steps.setup-java.outputs.path }}
 
