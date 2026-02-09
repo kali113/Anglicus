@@ -111,6 +111,7 @@
   }
 
   function handleTouchStart(e: TouchEvent) {
+    e.preventDefault();
     if (e.touches.length === 2) {
       isPinching = true;
       lastTouchDistance = getTouchDistance(e.touches);
@@ -137,17 +138,26 @@
     }
 
     if (!isDragging || e.touches.length !== 1) return;
+    e.preventDefault();
     const touch = e.touches[0];
     translateX = touch.clientX - startX;
     translateY = touch.clientY - startY;
   }
 
-  function handleTouchEnd() {
-    if (isPinching) {
+  function handleTouchEnd(e: TouchEvent) {
+    if (isPinching && e.touches.length === 1) {
+      const touch = e.touches[0];
       isPinching = false;
       lastTouchDistance = 0;
+      isDragging = true;
+      startX = touch.clientX - translateX;
+      startY = touch.clientY - translateY;
+      return;
     }
-    isDragging = false;
+
+    isPinching = false;
+    lastTouchDistance = 0;
+    isDragging = e.touches.length === 1;
   }
 
   function handleNodeClick(node: any) {
