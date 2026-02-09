@@ -51,6 +51,8 @@ EN: To generate an APK from the PWA, use Bubblewrap (TWA). It requires the app t
 npx @bubblewrap/cli init --manifest https://kali113.github.io/Anglicus/manifest.json
 cd android && gradlew.bat assembleRelease
 ```
+ES: El workflow "Build APK" en GitHub Actions genera un APK sin firmar en cada push a main/master y lo sube como artifact `anglicus-apk`. La configuracion base esta en `twa/twa-manifest.json`.
+EN: The "Build APK" GitHub Actions workflow builds an unsigned APK on each push to main/master and uploads it as the `anglicus-apk` artifact. The base config lives in `twa/twa-manifest.json`.
 
 ## Seguridad / Security
 - Nunca subas claves API al repositorio.

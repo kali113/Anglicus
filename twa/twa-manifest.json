@@ -1,0 +1,43 @@
+{
+  "packageId": "io.github.kali113.twa",
+  "host": "kali113.github.io",
+  "name": "Anglicus - Tu tutor de ingles",
+  "launcherName": "Anglicus",
+  "display": "standalone",
+  "displayOverride": [],
+  "themeColor": "#2dd4bf",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#00000000",
+  "navigationDividerColorDark": "#00000000",
+  "backgroundColor": "#0f172a",
+  "enableNotifications": true,
+  "startUrl": "/Anglicus/",
+  "iconUrl": "https://kali113.github.io/Anglicus/icons/icon-512x512.png",
+  "maskableIconUrl": "https://kali113.github.io/Anglicus/icons/maskable-icon-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "android"
+  },
+  "appVersion": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://kali113.github.io/Anglicus/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://kali113.github.io/Anglicus/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}
