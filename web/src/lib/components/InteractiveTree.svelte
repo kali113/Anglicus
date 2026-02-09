@@ -198,6 +198,18 @@
     const containerHeight = containerEl?.clientHeight ?? 650;
     scale = isMobile ? 0.6 : 0.75;
     translateX = -centerX * scale;
+    const currentNodes = nodes.filter((node) => node.status === "current");
+    const focusNode = currentNodes.length
+      ? currentNodes.reduce((best, node) => (node.y > best.y ? node : best))
+      : null;
+
+    if (focusNode) {
+      const targetRatio = isMobile ? 0.80 : 0.80;
+      const targetY = containerHeight * targetRatio;
+      translateY = targetY - focusNode.y * scale;
+      return;
+    }
+
     const targetCenter = containerHeight * (isMobile ? 0.65 : 0.6);
     translateY = targetCenter - (treeHeight / 2) * scale;
   }
