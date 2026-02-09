@@ -7,6 +7,10 @@
   let { userSkills = [] } = $props<{ userSkills?: SkillProgress[] }>();
 
   const maxY = Math.max(...SKILL_TREE_DATA.map((node) => node.y));
+  const flippedXValues = SKILL_TREE_DATA.map((node) => -node.x);
+  const minX = Math.min(...flippedXValues);
+  const maxX = Math.max(...flippedXValues);
+  const centerX = (minX + maxX) / 2;
 
   // Viewport state
   let scale = $state(1);
@@ -189,7 +193,7 @@
   function updateInitialView() {
     const isMobile = window.innerWidth <= 768;
     scale = isMobile ? 0.6 : 0.75;
-    translateX = isMobile ? 0 : 250;
+    translateX = -centerX * scale;
     translateY = (isMobile ? 120 : 80) - maxY * scale;
   }
 
@@ -363,7 +367,7 @@
       class="control-btn"
       onclick={() => {
         scale = 0.85;
-        translateX = 0;
+        translateX = -centerX * scale;
         translateY = 50 - maxY * scale;
       }}
       aria-label="Reset view"

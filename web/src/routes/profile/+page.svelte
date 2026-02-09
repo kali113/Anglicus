@@ -113,6 +113,8 @@
         <span class="unlocked-count">Desbloqueado</span>
       </div>
 
+      <div class="achievements-emoji" aria-hidden="true">🏆</div>
+
       <div class="achievements-scroll">
         {#each userProfile.achievements || [] as achievement}
           <div
@@ -298,6 +300,19 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    position: relative;
+  }
+
+  .achievements-emoji {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 6rem;
+    opacity: 0.08;
+    filter: blur(0.5px);
+    pointer-events: none;
+    z-index: 0;
   }
 
   .section-header {
@@ -321,6 +336,8 @@
     gap: 1rem;
     overflow-x: auto;
     padding-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
   }
 
   .achievement-card {
