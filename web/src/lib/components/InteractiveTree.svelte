@@ -15,6 +15,8 @@
   let isDragging = $state(false);
   let startX = 0;
   let startY = 0;
+  let isPinching = $state(false);
+  let lastTouchDistance = 0;
 
   // Processed nodes with status
   let nodes = $derived(
@@ -101,6 +103,53 @@
     isDragging = false;
   }
 
+  function getTouchDistance(touches: TouchList) {
+    const [touchOne, touchTwo] = [touches[0], touches[1]];
+    const deltaX = touchOne.clientX - touchTwo.clientX;
+    const deltaY = touchOne.clientY - touchTwo.clientY;
+    return Math.hypot(deltaX, deltaY);
+  }
+
+  function handleTouchStart(e: TouchEvent) {
+    if (e.touches.length === 2) {
+      isPinching = true;
+      lastTouchDistance = getTouchDistance(e.touches);
+      isDragging = false;
+      return;
+    }
+
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      isDragging = true;
+      startX = touch.clientX - translateX;
+      startY = touch.clientY - translateY;
+    }
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const distance = getTouchDistance(e.touches);
+      const delta = (distance - lastTouchDistance) * 0.004;
+      scale = Math.min(Math.max(0.4, scale + delta), 2.5);
+      lastTouchDistance = distance;
+      return;
+    }
+
+    if (!isDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    translateX = touch.clientX - startX;
+    translateY = touch.clientY - startY;
+  }
+
+  function handleTouchEnd() {
+    if (isPinching) {
+      isPinching = false;
+      lastTouchDistance = 0;
+    }
+    isDragging = false;
+  }
+
   function handleNodeClick(node: any) {
     if (node.status === "locked") return;
     window.location.href = `${base}/lessons/${node.id}`;
@@ -127,10 +176,17 @@
     return colors[category] || "rgba(99, 102, 241, 0.5)";
   }
 
+  function updateInitialView() {
+    const isMobile = window.innerWidth <= 768;
+    scale = isMobile ? 0.6 : 0.75;
+    translateX = isMobile ? 0 : 250;
+    translateY = (isMobile ? 120 : 80) - maxY * scale;
+  }
+
   onMount(() => {
-    scale = 0.75;
-    translateX = 250;
-    translateY = 80 - maxY * scale;
+    updateInitialView();
+    window.addEventListener("resize", updateInitialView);
+    return () => window.removeEventListener("resize", updateInitialView);
   });
 </script>
 
@@ -142,6 +198,10 @@
   onmousemove={handleMouseMove}
   onmouseup={handleMouseUp}
   onmouseleave={handleMouseUp}
+  ontouchstart={handleTouchStart}
+  ontouchmove={handleTouchMove}
+  ontouchend={handleTouchEnd}
+  ontouchcancel={handleTouchEnd}
   role="application"
   aria-label="Interactive Skill Tree Map"
 >
@@ -345,6 +405,7 @@
       0 0 60px rgba(139, 92, 246, 0.1),
       0 25px 50px -12px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    touch-action: none;
   }
 
   .tree-container:active {
@@ -748,5 +809,22 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
+  }
+
+  @media (max-width: 768px) {
+    .tree-container {
+      height: 70vh;
+    }
+
+    .controls {
+      display: none;
+    }
+
+    .legend {
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      justify-content: center;
+    }
   }
 </style>
