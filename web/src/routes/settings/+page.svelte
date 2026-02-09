@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import {
     getSettings,
     updateSettings,
@@ -61,14 +62,14 @@
     showDeleteConfirm = true;
   }
 
-  function performDelete() {
+  async function performDelete() {
     try {
       localStorage.clear();
-      // Fire and forget DB clear
-      clearAllMistakes().catch(console.error);
-      window.location.assign("/onboarding");
+      // Wait for DB clear to complete before navigating
+      await clearAllMistakes().catch(console.error);
+      await goto("/onboarding");
     } catch (e) {
-      window.location.assign("/onboarding");
+      await goto("/onboarding");
     }
   }
 </script>
