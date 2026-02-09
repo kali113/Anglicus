@@ -37,6 +37,7 @@ jobs:
         working-directory: web
         env:
           NODE_ENV: production
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
 
       - name: Create 404.html for SPA routing
         run: cp web/build/index.html web/build/404.html

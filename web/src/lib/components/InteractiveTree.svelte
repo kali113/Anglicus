@@ -129,7 +129,7 @@
 
   onMount(() => {
     scale = 0.75;
-    translateX = 250;
+    translateX = 0;
     translateY = 80 - maxY * scale;
   });
 </script>
@@ -293,7 +293,7 @@
       class="control-btn"
       onclick={() => {
         scale = 0.85;
-        translateX = 350;
+        translateX = 0;
         translateY = 50 - maxY * scale;
       }}
       aria-label="Reset view"

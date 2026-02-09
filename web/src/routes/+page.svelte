@@ -147,10 +147,11 @@
     font-size: 2.5rem;
     font-weight: 700;
     margin: 0 0 0.5rem 0;
-    background: linear-gradient(to right, #ffffff, #94a3b8);
+    background: linear-gradient(to right, #e2e8f0, #60a5fa);
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .streak-badge {
