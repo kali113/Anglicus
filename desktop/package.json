@@ -1,0 +1,45 @@
+{
+  "name": "anglicus-desktop",
+  "version": "0.6.0-alpha",
+  "description": "Anglicus Desktop Wrapper",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dev": "npm run build && cross-env ANGLICUS_URL=http://localhost:5173 electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.1",
+    "cross-env": "^7.0.3",
+    "electron": "^34.1.1",
+    "electron-builder": "^24.13.3",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "io.github.kali113.anglicus",
+    "productName": "Anglicus",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist/**",
+      "assets/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Anglicus"
+    }
+  }
+}

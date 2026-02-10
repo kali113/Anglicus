@@ -3,6 +3,13 @@
   import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import {
+    checkBillingAccess,
+    getFeatureLabel,
+    markPaywallShown,
+    recordBillingUsage,
+  } from "$lib/billing/index.js";
 
   let profile = getUserProfile();
   const targetLanguage = profile?.targetLanguage ?? "en";
@@ -13,9 +20,23 @@
   let isLoading = $state(false);
   let isExpanded = $state(false);
   let chatContainer = $state<HTMLElement | null>(null);
+  let showPaywall = $state(false);
+  let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeature = $state(getFeatureLabel("quickChat"));
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
+
+    const decision = checkBillingAccess("quickChat");
+    if (decision) {
+      if (decision.mode === "block") {
+        openPaywall("block", getFeatureLabel("quickChat"));
+        return;
+      }
+      if (decision.mode === "nag") {
+        openPaywall("nag", getFeatureLabel("quickChat"));
+      }
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -51,6 +72,7 @@
       };
 
       messages = [...messages, assistantMessage];
+      recordBillingUsage("quickChat");
     } catch (error) {
       messages = [
         ...messages,
@@ -85,6 +107,13 @@
   function clearChat() {
     messages = [];
     isExpanded = false;
+  }
+
+  function openPaywall(mode: "nag" | "block", feature: string) {
+    paywallMode = mode;
+    paywallFeature = feature;
+    showPaywall = true;
+    markPaywallShown();
   }
 </script>
 
@@ -154,6 +183,14 @@
     </button>
   </div>
 </div>
+
+<PaywallModal
+  open={showPaywall}
+  mode={paywallMode}
+  featureLabel={paywallFeature}
+  on:close={() => (showPaywall = false)}
+  on:paid={() => (showPaywall = false)}
+/>
 
 <style>
   .quick-chat {

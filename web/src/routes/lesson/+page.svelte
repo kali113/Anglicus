@@ -12,6 +12,13 @@
   import type { LanguageCode } from "$lib/types/user";
   import { getLanguageLabel } from "$lib/types/user";
   import { streamCompletion } from "$lib/ai/client";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import {
+    checkBillingAccess,
+    getFeatureLabel,
+    markPaywallShown,
+    recordBillingUsage,
+  } from "$lib/billing/index.js";
 
   interface Word {
     id: string;
@@ -141,6 +148,9 @@
   let tutorResponse = $state("");
   let isAskingTutor = $state(false);
   let showTutorBox = $state(false);
+  let showPaywall = $state(false);
+  let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeature = $state(getFeatureLabel("lessonExplanation"));
 
   // Word state - reset for each exercise
   let availableWords = $state<Word[]>([]);
@@ -201,6 +211,18 @@
       incrementWordsLearned(currentExercise.target.length);
       updateWeeklyActivity(1);
     } else {
+      const decision = checkBillingAccess("lessonExplanation");
+      if (decision) {
+        if (decision.mode === "block") {
+          openPaywall("block", getFeatureLabel("lessonExplanation"));
+          showTutorBox = false;
+          return;
+        }
+        if (decision.mode === "nag") {
+          openPaywall("nag", getFeatureLabel("lessonExplanation"));
+        }
+      }
+
       explanation = "";
       isExplaining = true;
       showTutorBox = true;
@@ -221,6 +243,7 @@
         await streamCompletion(messages, (chunk) => {
           explanation += chunk;
         });
+        recordBillingUsage("lessonExplanation");
       } catch (err) {
         explanation =
           "The correct answer is: " +
@@ -244,6 +267,17 @@
 
   async function askTutor() {
     if (!tutorQuestion.trim() || isAskingTutor) return;
+
+    const decision = checkBillingAccess("tutorQuestion");
+    if (decision) {
+      if (decision.mode === "block") {
+        openPaywall("block", getFeatureLabel("tutorQuestion"));
+        return;
+      }
+      if (decision.mode === "nag") {
+        openPaywall("nag", getFeatureLabel("tutorQuestion"));
+      }
+    }
 
     isAskingTutor = true;
     tutorResponse = "";
@@ -270,6 +304,7 @@ Student's question: "${tutorQuestion}"`,
       await streamCompletion(messages, (chunk) => {
         tutorResponse += chunk;
       });
+      recordBillingUsage("tutorQuestion");
     } catch (err) {
       tutorResponse =
         "Sorry, I couldn't process your question. Try rephrasing it!";
@@ -289,6 +324,13 @@ Student's question: "${tutorQuestion}"`,
 
   function finishLesson() {
     goto(`${base}/`);
+  }
+
+  function openPaywall(mode: "nag" | "block", feature: string) {
+    paywallMode = mode;
+    paywallFeature = feature;
+    showPaywall = true;
+    markPaywallShown();
   }
 </script>
 
@@ -556,6 +598,14 @@ Student's question: "${tutorQuestion}"`,
     {/if}
   {/if}
 </div>
+
+<PaywallModal
+  open={showPaywall}
+  mode={paywallMode}
+  featureLabel={paywallFeature}
+  on:close={() => (showPaywall = false)}
+  on:paid={() => (showPaywall = false)}
+/>
 
 <style>
   .lesson-page {

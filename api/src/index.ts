@@ -12,6 +12,10 @@ import {
 import { handleChatCompletions, handleListModels } from "./routes/chat.js";
 import { handleFeedback } from "./routes/feedback.js";
 import {
+  handleBillingConfig,
+  handleBillingVerify,
+} from "./routes/billing.js";
+import {
   handleReminderSubscribe,
   handleReminderUnsubscribe,
   handleReminderTest,
@@ -47,6 +51,13 @@ export interface Env {
   FEEDBACK_RATE_LIMIT_PER_MINUTE?: string;
   ALLOWED_ORIGINS?: string;
   ALLOW_LOCAL_PROVIDERS?: string;
+
+  // Billing configuration
+  BTC_RECEIVING_ADDRESS?: string;
+  BTC_MIN_SATS?: string;
+  BTC_SUBSCRIPTION_DAYS?: string;
+  BTC_NETWORK?: string;
+  BTC_PRICE_USD?: string;
 }
 
 // Module-level rate limiter (persists within isolate lifecycle)
@@ -163,6 +174,27 @@ app.post("/api/feedback", async (c) => {
   return c.newResponse(
     response.body,
     response.status as 200 | 400 | 500,
+    headers,
+  );
+});
+
+// Billing endpoints
+app.get("/api/billing/config", async (c) => {
+  const response = await handleBillingConfig(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 500,
+    headers,
+  );
+});
+
+app.post("/api/billing/verify", async (c) => {
+  const response = await handleBillingVerify(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 402 | 404 | 500,
     headers,
   );
 });

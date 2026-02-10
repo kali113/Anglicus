@@ -10,6 +10,13 @@
   import ChatMessage from "$lib/components/ChatMessage.svelte";
   import { getWelcomeMessage, getSystemPrompt } from "$lib/ai/chat-utils";
   import type { Message } from "$lib/types/api";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import {
+    checkBillingAccess,
+    getFeatureLabel,
+    markPaywallShown,
+    recordBillingUsage,
+  } from "$lib/billing/index.js";
 
   export let lessonId: string;
   export let onComplete: () => void;
@@ -18,6 +25,9 @@
   let inputValue = "";
   let isLoading = false;
   let chatContainer: HTMLElement;
+  let showPaywall = $state(false);
+  let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeature = $state(getFeatureLabel("lessonChat"));
   const profile = getUserProfile();
   const targetLanguage = profile?.targetLanguage ?? "en";
 
@@ -36,6 +46,17 @@
 
   async function sendMessage() {
     if (!inputValue.trim() || isLoading) return;
+
+    const decision = checkBillingAccess("lessonChat");
+    if (decision) {
+      if (decision.mode === "block") {
+        openPaywall("block", getFeatureLabel("lessonChat"));
+        return;
+      }
+      if (decision.mode === "nag") {
+        openPaywall("nag", getFeatureLabel("lessonChat"));
+      }
+    }
 
     const userMsg = inputValue.trim();
     inputValue = "";
@@ -71,6 +92,7 @@
       if (data.choices && data.choices[0]) {
         const aiMsg = data.choices[0].message.content;
         messages = [...messages, { role: "assistant", content: aiMsg }];
+        recordBillingUsage("lessonChat");
 
         // Gamification hooks
         if (messages.length % 4 === 0) {
@@ -109,6 +131,13 @@
       e.preventDefault();
       sendMessage();
     }
+  }
+
+  function openPaywall(mode: "nag" | "block", feature: string) {
+    paywallMode = mode;
+    paywallFeature = feature;
+    showPaywall = true;
+    markPaywallShown();
   }
 </script>
 
@@ -166,6 +195,14 @@
     </div>
   </div>
 </div>
+
+<PaywallModal
+  open={showPaywall}
+  mode={paywallMode}
+  featureLabel={paywallFeature}
+  on:close={() => (showPaywall = false)}
+  on:paid={() => (showPaywall = false)}
+/>
 
 <style>
   .chat-interface {

@@ -10,6 +10,7 @@
   import { startBrowserReminder } from "$lib/notifications/index.js";
   import type { UserProfile } from "$lib/types/user";
   import Navbar from "$lib/components/Navbar.svelte";
+  import { refreshPaymentStatus } from "$lib/billing/index.js";
 
   let { children } = $props();
   let showNav = $state(true);
@@ -20,6 +21,10 @@
   onMount(() => {
     onboardingComplete = hasCompletedOnboarding();
     user = getUserProfile();
+    refreshPaymentStatus();
+    const paymentInterval = window.setInterval(() => {
+      refreshPaymentStatus();
+    }, 1000 * 60 * 5);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -33,6 +38,10 @@
     if (settings.notificationsEnabled && settings.dailyReminderTime) {
       startBrowserReminder(settings.dailyReminderTime);
     }
+
+    return () => {
+      clearInterval(paymentInterval);
+    };
   });
 
   let isImmersive = $state(false);

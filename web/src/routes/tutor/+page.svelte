@@ -5,6 +5,13 @@
   import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import {
+    checkBillingAccess,
+    getFeatureLabel,
+    markPaywallShown,
+    recordBillingUsage,
+  } from "$lib/billing/index.js";
 
   let profile = getUserProfile();
   const targetLanguage = profile?.targetLanguage ?? "en";
@@ -15,6 +22,9 @@
   let isLoading = $state(false);
   let errorMessage = $state("");
   let chatContainer: HTMLElement;
+  let showPaywall = $state(false);
+  let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeature = $state(getFeatureLabel("tutor"));
 
   onMount(() => {
     if (!profile) {
@@ -26,6 +36,17 @@
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
+
+    const decision = checkBillingAccess("tutor");
+    if (decision) {
+      if (decision.mode === "block") {
+        openPaywall("block", getFeatureLabel("tutor"));
+        return;
+      }
+      if (decision.mode === "nag") {
+        openPaywall("nag", getFeatureLabel("tutor"));
+      }
+    }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -64,6 +85,7 @@
       };
 
       messages = [...messages, assistantMessage];
+      recordBillingUsage("tutor");
     } catch (error) {
       errorMessage =
         "Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.";
@@ -88,6 +110,13 @@
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
     }, 50);
+  }
+
+  function openPaywall(mode: "nag" | "block", feature: string) {
+    paywallMode = mode;
+    paywallFeature = feature;
+    showPaywall = true;
+    markPaywallShown();
   }
 </script>
 
@@ -193,6 +222,14 @@
     </button>
   </form>
 </div>
+
+<PaywallModal
+  open={showPaywall}
+  mode={paywallMode}
+  featureLabel={paywallFeature}
+  on:close={() => (showPaywall = false)}
+  on:paid={() => (showPaywall = false)}
+/>
 
 <style>
   .tutor-page {
