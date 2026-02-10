@@ -17,6 +17,8 @@ export function getUserProfile(): UserProfile | null {
 
     // Default configuration with all achievements
     const defaults = {
+      nativeLanguage: "es",
+      targetLanguage: "en",
       totalXP: 0,
       wordsLearned: 0,
       weeklyActivity: [0, 0, 0, 0, 0, 0, 0],

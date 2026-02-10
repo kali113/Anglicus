@@ -5,6 +5,7 @@
     addXp,
     incrementWordsLearned,
     updateWeeklyActivity,
+    getUserProfile,
   } from "$lib/storage/user-store";
   import ChatMessage from "$lib/components/ChatMessage.svelte";
   import { getWelcomeMessage, getSystemPrompt } from "$lib/ai/chat-utils";
@@ -17,10 +18,12 @@
   let inputValue = "";
   let isLoading = false;
   let chatContainer: HTMLElement;
+  const profile = getUserProfile();
+  const targetLanguage = profile?.targetLanguage ?? "en";
 
   // Initial welcome message based on lesson ID
   onMount(() => {
-    const welcomeMsg = getWelcomeMessage(lessonId);
+    const welcomeMsg = getWelcomeMessage(lessonId, targetLanguage);
     messages = [{ role: "assistant", content: welcomeMsg }];
   });
 
@@ -42,7 +45,7 @@
     isLoading = true;
 
     try {
-      const systemPrompt = getSystemPrompt(lessonId);
+      const systemPrompt = getSystemPrompt(lessonId, targetLanguage);
       const apiMessages = [
         { role: "system", content: systemPrompt },
         ...messages,

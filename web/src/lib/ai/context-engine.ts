@@ -1,4 +1,5 @@
-import type { UserProfile, SkillProgress } from "$lib/types/user";
+import type { UserProfile, SkillProgress, LanguageCode } from "$lib/types/user";
+import { getLanguageLabel } from "$lib/types/user";
 import { SKILL_TREE_DATA } from "$lib/data/skills";
 
 export class ContextEngine {
@@ -15,10 +16,16 @@ export class ContextEngine {
     const levelContext = this.getLevelContext();
     const vocabContext = this.getVocabularyContext();
     const pedagogicalStrategy = this.getPedagogicalStrategy();
+    const targetLanguage = this.getLanguageName(this.user.targetLanguage);
+    const nativeLanguage = this.getLanguageName(this.user.nativeLanguage);
+    const responseLanguage =
+      this.user.level === "A1"
+        ? nativeLanguage
+        : `${targetLanguage} (with simple ${nativeLanguage} explanations if needed)`;
 
     return `
-You are Anglicus, an expert English tutor for a Spanish-speaking user.
-Your goal is to help the user learn English through the activity: "${activityContext}".
+You are Anglicus, an expert ${targetLanguage} tutor for a ${nativeLanguage}-speaking user.
+Your goal is to help the user learn ${targetLanguage} through the activity: "${activityContext}".
 
 ${levelContext}
 
@@ -29,7 +36,7 @@ ${pedagogicalStrategy}
 IMPORTANT:
 - Always be encouraging and patient.
 - Correct mistakes gently.
-- If the user switches to Spanish, respond in ${this.user.level === 'A1' ? 'Spanish' : 'English (with simple Spanish explanations if needed)'}.
+- If the user switches to ${nativeLanguage}, respond in ${responseLanguage}.
 - Output should be structured and easy to read.
 `.trim();
   }
@@ -75,6 +82,10 @@ Avoid advanced concepts not listed here unless you explain them first.
     };
 
     return descriptions[level] || descriptions['A1'];
+  }
+
+  private getLanguageName(language: LanguageCode): string {
+    return getLanguageLabel(language, "en");
   }
 
   /**

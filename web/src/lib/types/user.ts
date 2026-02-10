@@ -3,6 +3,7 @@
  */
 
 export type EnglishLevel = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+export type LanguageCode = "en" | "es";
 export type LearningGoal = "travel" | "work" | "study" | "movies" | "general";
 export type WeakArea =
   | "articles"
@@ -16,7 +17,8 @@ export type WeakArea =
 export interface UserProfile {
   name: string;
   level: EnglishLevel;
-  nativeLanguage: string; // 'es' for Spanish
+  nativeLanguage: LanguageCode; // user's native language
+  targetLanguage: LanguageCode; // language being learned
   goals: LearningGoal[];
   weakAreas: WeakArea[];
   createdAt: string; // ISO timestamp
@@ -57,6 +59,18 @@ export const LEVELS: Record<EnglishLevel, string> = {
   C1: "Avanzado",
   C2: "Competente",
 };
+
+export const LANGUAGE_LABELS: Record<LanguageCode, Record<LanguageCode, string>> = {
+  en: { en: "English", es: "Inglés" },
+  es: { en: "Spanish", es: "Español" },
+};
+
+export function getLanguageLabel(
+  language: LanguageCode,
+  uiLanguage: LanguageCode,
+): string {
+  return LANGUAGE_LABELS[language][uiLanguage];
+}
 
 export const GOALS: Record<LearningGoal, string> = {
   travel: "Viajes",

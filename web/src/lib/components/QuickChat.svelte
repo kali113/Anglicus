@@ -1,9 +1,13 @@
 <script lang="ts">
   import { getUserProfile } from "$lib/storage/user-store.js";
+  import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
 
   let profile = getUserProfile();
+  const targetLanguage = profile?.targetLanguage ?? "en";
+  const uiLanguage = profile?.nativeLanguage ?? "es";
+  const targetLabel = $derived(getLanguageLabel(targetLanguage, uiLanguage));
   let messages = $state<ChatMessage[]>([]);
   let inputMessage = $state("");
   let isLoading = $state(false);
@@ -88,10 +92,14 @@
   <div class="chat-header">
     <div class="header-left">
       <span class="chat-icon">💬</span>
-      <span class="chat-title">Ask your AI Tutor</span>
+      <span class="chat-title">
+        {uiLanguage === "es" ? "Tutor IA" : "Ask your AI Tutor"}
+      </span>
     </div>
     {#if messages.length > 0}
-      <button class="clear-btn" onclick={clearChat}>Clear</button>
+      <button class="clear-btn" onclick={clearChat}>
+        {uiLanguage === "es" ? "Limpiar" : "Clear"}
+      </button>
     {/if}
   </div>
 
@@ -119,7 +127,9 @@
     <input
       type="text"
       bind:value={inputMessage}
-      placeholder="Ask anything about English..."
+      placeholder={uiLanguage === "es"
+        ? `Pregunta lo que sea sobre ${targetLabel.toLowerCase()}...`
+        : `Ask anything about ${targetLabel}...`}
       onkeydown={handleKeydown}
       disabled={isLoading}
     />

@@ -3,7 +3,13 @@
  * Builds compressed user context from profile and mistake history
  */
 
-import type { UserProfile, WeakArea, LearningGoal } from "$lib/types/user.js";
+import type {
+  UserProfile,
+  WeakArea,
+  LearningGoal,
+  LanguageCode,
+} from "$lib/types/user.js";
+import { getLanguageLabel } from "$lib/types/user.js";
 import type { ChatMessage } from "$lib/types/api.js";
 import type { Mistake, MistakeStats } from "$lib/types/user.js";
 import { getRecentMistakes, getMistakeStats } from "$lib/storage/index.js";
@@ -26,7 +32,7 @@ export async function buildUserContext(
     `[USER]\n` +
       `Name: ${profile.name}\n` +
       `Level: ${profile.level}\n` +
-      `Goal: ${formatGoals(profile.goals)}\n` +
+      `Goal: ${formatGoals(profile.goals, profile.targetLanguage)}\n` +
       `Streak: ${profile.streakDays} days\n`,
   );
 
@@ -109,17 +115,20 @@ export function buildConversationContext(
  * Build system prompt for AI tutor
  */
 export function buildTutorSystemPrompt(profile: UserProfile): string {
-  return `You are Anglicus, an English tutor for Spanish speakers named ${profile.name} (${profile.level} level).
+  const targetLanguage = getLanguageLabel(profile.targetLanguage, "en");
+  const nativeLanguage = getLanguageLabel(profile.nativeLanguage, "en");
+
+  return `You are Anglicus, a ${targetLanguage} tutor for ${nativeLanguage} speakers named ${profile.name} (${profile.level} level).
 
 Your teaching style:
 - Be concise. Max 2-3 sentences unless explaining a concept.
-- Correct mistakes gently with brief explanations in Spanish.
+- Correct mistakes gently with brief explanations in ${nativeLanguage}.
 - Focus on their weak areas: ${profile.weakAreas.map(formatWeakArea).join(", ")}.
 - Ask follow-up questions to keep them practicing.
 
 Error correction format:
 When you notice a mistake, respond with:
-[CORRECTION] "lo incorrecto" → "lo correcto" - Explicación breve en español
+[CORRECTION] "incorrect phrase" → "correct phrase" - Brief explanation in ${nativeLanguage}
 
 Then continue the conversation naturally.`;
 }
@@ -128,14 +137,18 @@ Then continue the conversation naturally.`;
  * Build system prompt for exercise generation
  */
 export function buildExerciseSystemPrompt(profile: UserProfile): string {
+  const targetLanguage = getLanguageLabel(profile.targetLanguage, "en");
+  const nativeLanguage = getLanguageLabel(profile.nativeLanguage, "en");
   const goalsText = profile.goals.length > 0
-    ? profile.goals.map((g: LearningGoal) => formatGoal(g)).join(", ")
-    : "General";
+    ? profile.goals
+        .map((g: LearningGoal) => formatGoal(g, profile.targetLanguage))
+        .join(", ")
+    : `General ${targetLanguage}`;
   const weakAreasText = profile.weakAreas.length > 0
     ? profile.weakAreas.join(", ")
-    : "General English";
+    : `General ${targetLanguage}`;
 
-  return `Generate English exercises for a ${profile.level} Spanish speaker.
+  return `Generate ${targetLanguage} exercises for a ${profile.level} ${nativeLanguage} speaker.
 
 Focus areas: ${weakAreasText}
 
@@ -169,10 +182,11 @@ function estimateTokens(text: string): number {
 /**
  * Format a single goal for display
  */
-function formatGoal(goal: LearningGoal): string {
+function formatGoal(goal: LearningGoal, targetLanguage: LanguageCode): string {
+  const targetLabel = getLanguageLabel(targetLanguage, "en");
   const goalMap: Record<LearningGoal, string> = {
     travel: "Travel",
-    work: "Business English",
+    work: `Business ${targetLabel}`,
     study: "Academic",
     movies: "Media & Culture",
     general: "General",
@@ -183,8 +197,8 @@ function formatGoal(goal: LearningGoal): string {
 /**
  * Format goals for display (legacy, kept for compatibility)
  */
-function formatGoals(goals: LearningGoal[]): string {
-  return goals.map((g) => formatGoal(g)).join(", ");
+function formatGoals(goals: LearningGoal[], targetLanguage: LanguageCode): string {
+  return goals.map((g) => formatGoal(g, targetLanguage)).join(", ");
 }
 
 /**

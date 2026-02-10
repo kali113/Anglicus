@@ -6,7 +6,9 @@ import { base } from "$app/paths";
     UserProfile,
     EnglishLevel,
     LearningGoal,
+    LanguageCode,
   } from "$lib/types/user.js";
+  import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion } from "$lib/ai/index.js";
 
   // Test configuration
@@ -16,6 +18,13 @@ import { base } from "$app/paths";
   let userGoals = $state<LearningGoal[]>([]);
   let isLoading = $state(false);
   let errorMessage = $state("");
+  let targetLanguage = $state<LanguageCode>("en");
+  let targetLabel = $derived(getLanguageLabel(targetLanguage, "es"));
+
+  const languageOptions = [
+    { value: "en" as LanguageCode, label: "Inglés (para hispanohablantes)" },
+    { value: "es" as LanguageCode, label: "Español (para angloparlantes)" },
+  ];
 
   // Test state
   type Question = {
@@ -38,16 +47,41 @@ import { base } from "$app/paths";
     { value: "general" as LearningGoal, emoji: "🌟", label: "General" },
   ];
 
-  let step = $state(1); // 1: welcome, 2: name, 3: goals, 4: test, 5: results
+  let step = $state(0); // 0: language, 1: welcome, 2: name, 3: goals, 4: test
 
-  async function startTest() {
-    step = 4;
-    isLoading = true;
-    errorMessage = "";
+  function getPlacementPrompt(): string {
+    if (targetLanguage === "es") {
+      return `Generate ${QUESTIONS_COUNT} Spanish placement test questions for English speakers.
+ALL QUESTIONS MUST BE IN SPANISH ONLY.
+Return ONLY a JSON object with this exact structure:
+{
+  "questions": [
+    {
+      "question": "Completa: Yo _____ a la escuela todos los dias.",
+      "options": ["voy", "vas", "vamos", "van"],
+      "correctAnswer": "voy",
+      "difficulty": "A1"
+    }
+  ]
+}
 
-    try {
-      // Generate placement questions using AI
-      const prompt = `Generate ${QUESTIONS_COUNT} English placement test questions for Spanish speakers.
+Include a mix of difficulties:
+- 1 A1 question (basic)
+- 1 A2 question (elementary)
+- 1 B1 question (intermediate)
+- 1 B2 question (upper intermediate)
+- 1 C1 question (advanced)
+
+Questions should test:
+- Grammar (verb tenses, prepositions, articles)
+- Vocabulary
+- Reading comprehension
+
+IMPORTANT: All questions and options must be in SPANISH only. No English.
+Make sure the correctAnswer matches exactly one of the options.`;
+    }
+
+    return `Generate ${QUESTIONS_COUNT} English placement test questions for Spanish speakers.
 ALL QUESTIONS MUST BE IN ENGLISH ONLY.
 Return ONLY a JSON object with this exact structure:
 {
@@ -75,13 +109,28 @@ Questions should test:
 
 IMPORTANT: All questions and options must be in ENGLISH only. No Spanish.
 Make sure the correctAnswer matches exactly one of the options.`;
+  }
+
+  function getPlacementSystemPrompt(): string {
+    return targetLanguage === "es"
+      ? "You are an expert Spanish teacher. Generate valid JSON only. Always respond in Spanish."
+      : "You are an expert English teacher. Generate valid JSON only. Always respond in English.";
+  }
+
+  async function startTest() {
+    step = 4;
+    isLoading = true;
+    errorMessage = "";
+
+    try {
+      // Generate placement questions using AI
+      const prompt = getPlacementPrompt();
 
       const response = await getCompletion(
         [
           {
             role: "system",
-            content:
-              "You are an expert English teacher. Generate valid JSON only. Always respond in English.",
+            content: getPlacementSystemPrompt(),
           },
           { role: "user", content: prompt },
         ],
@@ -110,6 +159,41 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   function getFallbackQuestions(): Question[] {
+    if (targetLanguage === "es") {
+      return [
+        {
+          question: "Completa: Yo _____ de Mexico.",
+          options: ["soy", "eres", "somos", "son"],
+          correctAnswer: "soy",
+          difficulty: "A1",
+        },
+        {
+          question: "Nosotros _____ estudiantes.",
+          options: ["somos", "soy", "eres", "es"],
+          correctAnswer: "somos",
+          difficulty: "A1",
+        },
+        {
+          question: "Ayer yo _____ al parque.",
+          options: ["fui", "voy", "iba", "ire"],
+          correctAnswer: "fui",
+          difficulty: "A2",
+        },
+        {
+          question: "Si _____ tiempo, viajaria mas.",
+          options: ["tuviera", "tengo", "tendre", "tener"],
+          correctAnswer: "tuviera",
+          difficulty: "B1",
+        },
+        {
+          question: "A pesar de _____ cansado, termine el trabajo.",
+          options: ["estar", "estoy", "estuve", "estaria"],
+          correctAnswer: "estar",
+          difficulty: "B2",
+        },
+      ];
+    }
+
     return [
       {
         question: "_____ is your name?",
@@ -200,10 +284,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   function completeOnboarding() {
+    const nativeLanguage: LanguageCode = targetLanguage === "en" ? "es" : "en";
     const profile: UserProfile = {
       name: userName || "Amigo",
       level: assessedLevel,
-      nativeLanguage: "es",
+      nativeLanguage,
+      targetLanguage,
       goals: userGoals.length > 0 ? userGoals : ["general"],
       weakAreas: [],
       createdAt: new Date().toISOString(),
@@ -245,7 +331,22 @@ Make sure the correctAnswer matches exactly one of the options.`;
 </script>
 
 <div class="placement-test">
-  {#if step === 1}
+  {#if step === 0}
+    <div class="step">
+      <h1>¿Qué idioma quieres aprender?</h1>
+      <p class="subtitle">Elige tu objetivo de aprendizaje</p>
+      <div class="language-options">
+        {#each languageOptions as option}
+          <button class="language-card" onclick={() => {
+            targetLanguage = option.value;
+            step = 1;
+          }}>
+            <span class="language-name">{option.label}</span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {:else if step === 1}
     <div class="step">
       <div class="illustration">
         <svg
@@ -266,7 +367,8 @@ Make sure the correctAnswer matches exactly one of the options.`;
       </div>
       <h1>¡Bienvenido a Anglicus!</h1>
       <p>
-        Vamos a evaluar tu nivel de inglés con un test rápido y personalizado.
+        Vamos a evaluar tu nivel de {targetLabel.toLowerCase()} con un test
+        rápido y personalizado.
       </p>
       <p class="subtitle">El test tiene 5 preguntas y dura unos 5 minutos.</p>
       <button class="btn primary" onclick={() => (step = 2)}>Comenzar</button>
@@ -335,7 +437,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
             {getLevelEmoji(assessedLevel)}
           </div>
           <h2>¡Test completado!</h2>
-          <p>Tu nivel de inglés es:</p>
+          <p>Tu nivel de {targetLabel.toLowerCase()} es:</p>
           <div class="level-result">
             <div class="level-code">{assessedLevel}</div>
             <div class="level-name">{getLevelLabel(assessedLevel)}</div>
@@ -449,6 +551,30 @@ Make sure the correctAnswer matches exactly one of the options.`;
   .input:focus {
     outline: none;
     border-color: var(--primary);
+  }
+
+  .language-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .language-card {
+    padding: 1rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .language-card:hover {
+    border-color: var(--primary);
+  }
+
+  .language-name {
+    font-weight: 600;
   }
 
   .goals {

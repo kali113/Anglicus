@@ -2,10 +2,14 @@
   import { onMount } from "svelte";
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
+  import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
 
   let profile = getUserProfile();
+  const targetLanguage = profile?.targetLanguage ?? "en";
+  const uiLanguage = profile?.nativeLanguage ?? "es";
+  const targetLabel = $derived(getLanguageLabel(targetLanguage, uiLanguage));
   let messages = $state<ChatMessage[]>([]);
   let inputMessage = $state("");
   let isLoading = $state(false);
@@ -90,7 +94,11 @@
 <div class="tutor-page">
   <header class="header">
     <h1>Tutor IA</h1>
-    <p class="subtitle">Practica inglés conmigo</p>
+    <p class="subtitle">
+      {uiLanguage === "es"
+        ? `Practica ${targetLabel.toLowerCase()} conmigo`
+        : `Practice ${targetLabel} with me`}
+    </p>
   </header>
 
   <div bind:this={chatContainer} class="chat-container">
@@ -110,8 +118,16 @@
             d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
           /></svg
         >
-        <p>¡Hola! Soy tu tutor de inglés.</p>
-        <p>Escribe algo para empezar a practicar.</p>
+        <p>
+          {uiLanguage === "es"
+            ? `¡Hola! Soy tu tutor de ${targetLabel.toLowerCase()}.`
+            : `Hi! I'm your ${targetLabel} tutor.`}
+        </p>
+        <p>
+          {uiLanguage === "es"
+            ? "Escribe algo para empezar a practicar."
+            : "Type something to start practicing."}
+        </p>
       </div>
     {/if}
 

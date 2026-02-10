@@ -1,13 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-import { base } from "$app/paths";
+  import { base } from "$app/paths";
   import {
     addXp,
     incrementWordsLearned,
     updateWeeklyActivity,
     unlockAchievement,
+    getUserProfile,
   } from "$lib/storage/user-store";
+  import type { LanguageCode } from "$lib/types/user";
+  import { getLanguageLabel } from "$lib/types/user";
   import { streamCompletion } from "$lib/ai/client";
 
   interface Word {
@@ -23,51 +26,105 @@ import { base } from "$app/paths";
     wordBank: string[];
   }
 
+  const profile = getUserProfile();
+  const targetLanguage: LanguageCode = profile?.targetLanguage ?? "en";
+  const nativeLanguage: LanguageCode = profile?.nativeLanguage ?? "es";
+  const targetLabelEn = getLanguageLabel(targetLanguage, "en");
+  const nativeLabelEn = getLanguageLabel(nativeLanguage, "en");
+
   // All exercises for this lesson
-  const exercises: Exercise[] = [
-    {
-      id: 1,
-      original: "Hola, me llamo...",
-      target: ["Hello", "my", "name", "is"],
-      wordBank: ["Hello", "name", "is", "my", "nice", "meet"],
-    },
-    {
-      id: 2,
-      original: "¿Cómo estás?",
-      target: ["How", "are", "you"],
-      wordBank: ["How", "you", "are", "what", "is", "doing"],
-    },
-    {
-      id: 3,
-      original: "Mucho gusto",
-      target: ["Nice", "to", "meet", "you"],
-      wordBank: ["Nice", "meet", "to", "you", "hello", "good"],
-    },
-    {
-      id: 4,
-      original: "Buenos días",
-      target: ["Good", "morning"],
-      wordBank: ["Good", "morning", "night", "hello", "day"],
-    },
-    {
-      id: 5,
-      original: "¿De dónde eres?",
-      target: ["Where", "are", "you", "from"],
-      wordBank: ["Where", "you", "are", "from", "what", "come"],
-    },
-    {
-      id: 6,
-      original: "Soy de España",
-      target: ["I", "am", "from", "Spain"],
-      wordBank: ["I", "am", "from", "Spain", "is", "come"],
-    },
-    {
-      id: 7,
-      original: "¿Cuál es tu nombre?",
-      target: ["What", "is", "your", "name"],
-      wordBank: ["What", "is", "your", "name", "who", "are"],
-    },
-  ];
+  const exercisesByLanguage: Record<LanguageCode, Exercise[]> = {
+    en: [
+      {
+        id: 1,
+        original: "Hola, me llamo...",
+        target: ["Hello", "my", "name", "is"],
+        wordBank: ["Hello", "name", "is", "my", "nice", "meet"],
+      },
+      {
+        id: 2,
+        original: "¿Cómo estás?",
+        target: ["How", "are", "you"],
+        wordBank: ["How", "you", "are", "what", "is", "doing"],
+      },
+      {
+        id: 3,
+        original: "Mucho gusto",
+        target: ["Nice", "to", "meet", "you"],
+        wordBank: ["Nice", "meet", "to", "you", "hello", "good"],
+      },
+      {
+        id: 4,
+        original: "Buenos días",
+        target: ["Good", "morning"],
+        wordBank: ["Good", "morning", "night", "hello", "day"],
+      },
+      {
+        id: 5,
+        original: "¿De dónde eres?",
+        target: ["Where", "are", "you", "from"],
+        wordBank: ["Where", "you", "are", "from", "what", "come"],
+      },
+      {
+        id: 6,
+        original: "Soy de España",
+        target: ["I", "am", "from", "Spain"],
+        wordBank: ["I", "am", "from", "Spain", "is", "come"],
+      },
+      {
+        id: 7,
+        original: "¿Cuál es tu nombre?",
+        target: ["What", "is", "your", "name"],
+        wordBank: ["What", "is", "your", "name", "who", "are"],
+      },
+    ],
+    es: [
+      {
+        id: 1,
+        original: "Hello, my name is...",
+        target: ["Hola", "mi", "nombre", "es"],
+        wordBank: ["Hola", "mi", "nombre", "es", "mucho", "gusto"],
+      },
+      {
+        id: 2,
+        original: "How are you?",
+        target: ["Como", "estas"],
+        wordBank: ["Como", "estas", "que", "tal", "eres", "bien"],
+      },
+      {
+        id: 3,
+        original: "Nice to meet you",
+        target: ["Mucho", "gusto"],
+        wordBank: ["Mucho", "gusto", "bien", "hola", "conocer"],
+      },
+      {
+        id: 4,
+        original: "Good morning",
+        target: ["Buenos", "dias"],
+        wordBank: ["Buenos", "dias", "buenas", "tardes", "noches"],
+      },
+      {
+        id: 5,
+        original: "Where are you from?",
+        target: ["De", "donde", "eres"],
+        wordBank: ["De", "donde", "eres", "que", "tu"],
+      },
+      {
+        id: 6,
+        original: "I am from Spain",
+        target: ["Soy", "de", "Espana"],
+        wordBank: ["Soy", "de", "Espana", "eres", "de", "Mexico"],
+      },
+      {
+        id: 7,
+        original: "What is your name?",
+        target: ["Cual", "es", "tu", "nombre"],
+        wordBank: ["Cual", "es", "tu", "nombre", "como", "llamas"],
+      },
+    ],
+  };
+
+  const exercises: Exercise[] = exercisesByLanguage[targetLanguage];
 
   let currentExerciseIndex = $state(0);
   let currentExercise = $derived(exercises[currentExerciseIndex]);
@@ -152,11 +209,11 @@ import { base } from "$app/paths";
         {
           role: "system" as const,
           content:
-            "You are a helpful English tutor. Explain briefly (2-3 sentences) why the user's translation is wrong. Focus on grammar or word order. Be encouraging.",
+            `You are a helpful ${targetLabelEn} tutor. Explain briefly (2-3 sentences) why the user's translation is wrong. Focus on grammar or word order. Be encouraging.`,
         },
         {
           role: "user" as const,
-          content: `Original: "${currentExercise.original}"\nTarget: "${correctSentence}"\nUser Wrote: "${constructedSentence}"\nExplain the mistake.`,
+          content: `Original (${nativeLabelEn}): "${currentExercise.original}"\nTarget (${targetLabelEn}): "${correctSentence}"\nUser Wrote: "${constructedSentence}"\nExplain the mistake.`,
         },
       ];
 
@@ -198,11 +255,11 @@ import { base } from "$app/paths";
       {
         role: "system" as const,
         content:
-          "You are a friendly English tutor named Anglicus. Answer the student's question about this translation exercise. Be helpful, encouraging, and explain concepts clearly. Keep responses concise (2-4 sentences).",
+          `You are a friendly ${targetLabelEn} tutor named Anglicus. Answer the student's question about this translation exercise. Be helpful, encouraging, and explain concepts clearly. Keep responses concise (2-4 sentences).`,
       },
       {
         role: "user" as const,
-        content: `Context: Translating "${currentExercise.original}" to English.
+        content: `Context: Translating "${currentExercise.original}" to ${targetLabelEn}.
 Correct answer: "${target}"
 Student's attempt: "${userAttempt}"
 Student's question: "${tutorQuestion}"`,
