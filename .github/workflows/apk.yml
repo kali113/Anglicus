@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,10 +28,6 @@ jobs:
           sparse-checkout: |
             twa
           sparse-checkout-cone-mode: true
-
-      - name: Setup Android SDK & install SDK 36
-        uses: android-actions/setup-android@v3
-      - run: sdkmanager "platforms;android-36" > /dev/null 2>&1
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -41,9 +38,11 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('twa/twa-manifest.json') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Install Bubblewrap & generate project
+      - name: Setup SDK & Bubblewrap
         working-directory: twa
         run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" > /dev/null 2>&1
           npm install -g @bubblewrap/cli@1.24.1 --no-audit --no-fund --prefer-offline
           mkdir -p ~/.bubblewrap
           echo '{"jdkPath":"'"$JAVA_HOME"'","androidSdkPath":"'"$ANDROID_SDK_ROOT"'"}' > ~/.bubblewrap/config.json
