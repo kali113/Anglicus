@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
     "shorten": "node scripts/shorten-link.mjs",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
   },
@@ -21,7 +22,8 @@
     "svelte": "^5.48.2",
     "svelte-check": "^4.3.5",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   },
 "dependencies": {
     "canvas-confetti": "^1.9.4"

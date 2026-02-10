@@ -185,3 +185,16 @@ export function createRateLimitHeaders(result: {
   }
   return headers;
 }
+
+/**
+ * Apply rate limit check and generate headers
+ */
+export function applyRateLimitCheck(
+  limiter: RateLimiter,
+  request: Request,
+): { allowed: boolean; headers: Record<string, string> } {
+  const clientIp = getClientIp(request);
+  const result = limiter.check(clientIp);
+  const headers = createRateLimitHeaders(result, limiter.getLimit());
+  return { allowed: result.allowed, headers };
+}

@@ -4,6 +4,7 @@
  */
 
 import type { ApiConfig, ApiTier } from "$lib/types/api.js";
+import { isBrowser } from "./base-store.js";
 
 const SETTINGS_KEY = "anglicus_settings";
 
@@ -30,7 +31,7 @@ const ENCRYPTION_KEY_NAME = "anglicus_encryption_key";
 const SALT_NAME = "anglicus_salt";
 
 async function getEncryptionKey(): Promise<CryptoKey | null> {
-  if (typeof window === "undefined" || !window.crypto) return null;
+  if (!isBrowser() || !window.crypto) return null;
 
   try {
     // Try to get existing key
@@ -137,7 +138,7 @@ export function clearApiKey(): void {
 }
 
 export function getSettings(): AppSettings {
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
+  if (!isBrowser()) return DEFAULT_SETTINGS;
 
   try {
     const data = localStorage.getItem(SETTINGS_KEY);
@@ -149,7 +150,7 @@ export function getSettings(): AppSettings {
 }
 
 export function saveSettings(settings: AppSettings): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
@@ -173,7 +174,7 @@ export function setCustomBaseUrl(url: string): void {
 }
 
 export function clearAllSettings(): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   localStorage.removeItem(SETTINGS_KEY);
   localStorage.removeItem(ENCRYPTION_KEY_NAME);

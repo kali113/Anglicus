@@ -3,11 +3,12 @@
  */
 
 import type { UserProfile } from "$lib/types/user.js";
+import { isBrowser } from "./base-store.js";
 
 const STORAGE_KEY = "anglicus_user";
 
 export function getUserProfile(): UserProfile | null {
-  if (typeof window === "undefined") return null;
+  if (!isBrowser()) return null;
 
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -63,14 +64,14 @@ export function getUserProfile(): UserProfile | null {
 }
 
 export function saveUserProfile(profile: UserProfile): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
   updateLastActive();
 }
 
 export function clearUserProfile(): void {
-  if (typeof window === "undefined") return;
+  if (!isBrowser()) return;
 
   localStorage.removeItem(STORAGE_KEY);
 }
@@ -245,4 +246,3 @@ export function completeLesson(skillId: string): void {
 
   saveUserProfile(profile);
 }
-

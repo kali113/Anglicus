@@ -5,6 +5,7 @@
 
 import type { Mistake, MistakeStats } from "$lib/types/user.js";
 import type { WeakArea } from "$lib/types/user.js";
+import { isBrowser } from "./base-store.js";
 
 const DB_NAME = "AnglicusMistakes";
 const DB_VERSION = 1;
@@ -13,6 +14,9 @@ const STORE_NAME = "mistakes";
 let db: IDBDatabase | null = null;
 
 async function getDb(): Promise<IDBDatabase> {
+  if (!isBrowser() || typeof indexedDB === "undefined") {
+    throw new Error("IndexedDB is not available in this environment.");
+  }
   if (db) return db;
 
   return new Promise((resolve, reject) => {

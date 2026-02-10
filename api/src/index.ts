@@ -7,8 +7,7 @@ import { Hono } from "hono";
 import { cors, parseAllowedOrigins } from "./lib/cors.js";
 import {
   RateLimiter,
-  getClientIp,
-  createRateLimitHeaders,
+  applyRateLimitCheck,
 } from "./lib/rate-limiter.js";
 import { handleChatCompletions, handleListModels } from "./routes/chat.js";
 import { handleFeedback } from "./routes/feedback.js";
@@ -101,24 +100,14 @@ app.get("/v1/models", async (c) => {
 app.post("/v1/chat/completions", async (c) => {
   // Get module-level rate limiter
   const limiter = getRateLimiter(c.env);
+  const { allowed, headers } = applyRateLimitCheck(limiter, c.req.raw);
 
-  // Get client IP
-  const clientIp = getClientIp(c.req.raw);
-
-  // Check rate limit
-  const rateLimitResult = limiter.check(clientIp);
-
-  // Add rate limit headers
-  const rateLimitHeaders = createRateLimitHeaders(
-    rateLimitResult,
-    limiter.getLimit(),
-  );
-  for (const [key, value] of Object.entries(rateLimitHeaders)) {
+  for (const [key, value] of Object.entries(headers)) {
     c.header(key, value);
   }
 
   // Return 429 if rate limit exceeded
-  if (!rateLimitResult.allowed) {
+  if (!allowed) {
     return c.json(
       {
         error: {
@@ -143,17 +132,12 @@ app.post("/v1/chat/completions", async (c) => {
 // Feedback endpoint
 app.post("/api/feedback", async (c) => {
   const limiter = getFeedbackRateLimiter(c.env);
-  const clientIp = getClientIp(c.req.raw);
-  const rateLimitResult = limiter.check(clientIp);
-  const rateLimitHeaders = createRateLimitHeaders(
-    rateLimitResult,
-    limiter.getLimit(),
-  );
-  for (const [key, value] of Object.entries(rateLimitHeaders)) {
+  const { allowed, headers } = applyRateLimitCheck(limiter, c.req.raw);
+  for (const [key, value] of Object.entries(headers)) {
     c.header(key, value);
   }
 
-  if (!rateLimitResult.allowed) {
+  if (!allowed) {
     return c.json(
       {
         error: {

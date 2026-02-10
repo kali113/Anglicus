@@ -4,6 +4,7 @@
  */
 
 import type { Env } from "../index.js";
+import { jsonError, jsonSuccess } from "../lib/response.js";
 
 interface FeedbackRequest {
   message: string;
@@ -28,9 +29,10 @@ export async function handleFeedback(
   try {
     const contentType = request.headers.get("Content-Type") || "";
     if (!contentType.includes("application/json")) {
-      return new Response(
-        JSON.stringify({ error: "Content-Type must be application/json" }),
-        { status: 415, headers: { "Content-Type": "application/json" } },
+      return jsonError(
+        "Content-Type must be application/json",
+        "invalid_request_error",
+        415,
       );
     }
 
@@ -38,85 +40,59 @@ export async function handleFeedback(
     const body = (await request.json()) as Partial<FeedbackRequest>;
 
     if (!body.message || typeof body.message !== "string") {
-      return new Response(JSON.stringify({ error: "Message is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError("Message is required", "invalid_request_error", 400);
     }
 
     const message = body.message.trim();
     if (message.length === 0 || message.length > MAX_MESSAGE_LENGTH) {
-      return new Response(JSON.stringify({ error: "Message is invalid" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError("Message is invalid", "invalid_request_error", 400);
     }
 
     let email: string | undefined;
     if (body.email !== undefined) {
       if (typeof body.email !== "string") {
-        return new Response(JSON.stringify({ error: "Email is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Email is invalid", "invalid_request_error", 400);
       }
       email = body.email.trim();
       if (email.length === 0) {
         email = undefined;
       }
       if (email && email.length > MAX_EMAIL_LENGTH) {
-        return new Response(JSON.stringify({ error: "Email is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Email is invalid", "invalid_request_error", 400);
       }
       if (email && !EMAIL_REGEX.test(email)) {
-        return new Response(JSON.stringify({ error: "Email is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Email is invalid", "invalid_request_error", 400);
       }
     }
 
     let page: string | undefined;
     if (body.page !== undefined) {
       if (typeof body.page !== "string") {
-        return new Response(JSON.stringify({ error: "Page is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Page is invalid", "invalid_request_error", 400);
       }
       page = body.page.trim();
       if (page.length > MAX_FIELD_LENGTH) {
-        return new Response(JSON.stringify({ error: "Page is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Page is invalid", "invalid_request_error", 400);
       }
     }
 
     let version: string | undefined;
     if (body.version !== undefined) {
       if (typeof body.version !== "string") {
-        return new Response(JSON.stringify({ error: "Version is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Version is invalid", "invalid_request_error", 400);
       }
       version = body.version.trim();
       if (version.length > MAX_FIELD_LENGTH) {
-        return new Response(JSON.stringify({ error: "Version is invalid" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonError("Version is invalid", "invalid_request_error", 400);
       }
     }
 
     // Validate environment variables
     if (!env.OWNER_EMAIL || !env.RESEND_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Feedback service not configured" }),
-        { status: 503, headers: { "Content-Type": "application/json" } },
+      return jsonError(
+        "Feedback service not configured",
+        "server_error",
+        503,
       );
     }
 
@@ -164,22 +140,13 @@ export async function handleFeedback(
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
       console.error("Resend API error:", errorText);
-      return new Response(
-        JSON.stringify({ error: "Failed to send feedback" }),
-        { status: 502, headers: { "Content-Type": "application/json" } },
-      );
+      return jsonError("Failed to send feedback", "server_error", 502);
     }
 
-    return new Response(
-      JSON.stringify({ success: true, message: "Feedback received" }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
+    return jsonSuccess({ success: true, message: "Feedback received" });
   } catch (error) {
     console.error("Feedback endpoint error:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError("Internal server error", "server_error", 500);
   }
 }
 
