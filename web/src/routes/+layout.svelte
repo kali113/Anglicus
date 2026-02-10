@@ -6,11 +6,14 @@
     hasCompletedOnboarding,
     getUserProfile,
   } from "$lib/storage/user-store";
+  import { getSettings } from "$lib/storage/settings-store";
+  import { startBrowserReminder } from "$lib/notifications/index.js";
   import type { UserProfile } from "$lib/types/user";
   import Navbar from "$lib/components/Navbar.svelte";
 
   let { children } = $props();
   let showNav = $state(true);
+  let showFooter = $state(true);
   let onboardingComplete = $state(false);
   let user = $state<UserProfile | null>(null);
 
@@ -24,6 +27,11 @@
         .catch((error) => {
           console.error("Service worker registration failed:", error);
         });
+    }
+
+    const settings = getSettings();
+    if (settings.notificationsEnabled && settings.dailyReminderTime) {
+      startBrowserReminder(settings.dailyReminderTime);
     }
   });
 
@@ -44,6 +52,7 @@
     // Update nav visibility
     showNav =
       onboardingComplete && !path.startsWith("/onboarding") && !isImmersive;
+    showFooter = !isImmersive;
   });
 </script>
 
@@ -75,6 +84,18 @@
   <main class="main {isImmersive ? 'immersive' : ''}">
     {@render children()}
   </main>
+
+  {#if showFooter}
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="{base}/legal#terms">Terminos</a>
+        <a href="{base}/legal#privacy">Privacidad</a>
+        <a href="{base}/legal#cookies">Cookies</a>
+        <a href="{base}/legal#data-protection">Proteccion de datos</a>
+      </div>
+      <p class="footer-note">Anglicus · Aprende con confianza</p>
+    </footer>
+  {/if}
 </div>
 
 <style>
@@ -131,5 +152,35 @@
   .main.immersive {
     max-width: none;
     padding: 0;
+  }
+
+  .footer {
+    padding: 1.5rem;
+    border-top: 1px solid var(--glass-border);
+    text-align: center;
+    color: var(--text-muted);
+  }
+
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .footer-links a:hover {
+    color: var(--text);
+  }
+
+  .footer-note {
+    margin: 0;
+    font-size: 0.8rem;
   }
 </style>

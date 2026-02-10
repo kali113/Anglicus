@@ -12,7 +12,9 @@ export interface AppSettings {
   apiConfig: ApiConfig;
   theme: "light" | "dark" | "auto";
   notificationsEnabled: boolean;
+  emailRemindersEnabled: boolean;
   dailyReminderTime?: string; // HH:MM format
+  reminderFrequency: "daily" | "weekly";
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -21,6 +23,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   theme: "light",
   notificationsEnabled: false,
+  emailRemindersEnabled: false,
+  dailyReminderTime: "20:00",
+  reminderFrequency: "daily",
 };
 
 /**

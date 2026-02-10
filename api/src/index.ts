@@ -11,6 +11,12 @@ import {
 } from "./lib/rate-limiter.js";
 import { handleChatCompletions, handleListModels } from "./routes/chat.js";
 import { handleFeedback } from "./routes/feedback.js";
+import {
+  handleReminderSubscribe,
+  handleReminderUnsubscribe,
+  handleReminderTest,
+  handleReminderCron,
+} from "./routes/reminders.js";
 
 // Type definition for Cloudflare Worker environment
 export interface Env {
@@ -32,6 +38,9 @@ export interface Env {
   // Feedback email service (set via wrangler secret)
   OWNER_EMAIL?: string;
   RESEND_API_KEY?: string;
+  REMINDER_ENCRYPTION_KEY?: string;
+  REMINDER_FROM_EMAIL?: string;
+  REMINDER_KV?: KVNamespace;
 
   // Configuration variables
   RATE_LIMIT_PER_MINUTE?: string;
@@ -158,6 +167,37 @@ app.post("/api/feedback", async (c) => {
   );
 });
 
+// Reminder endpoints
+app.post("/api/reminders/subscribe", async (c) => {
+  const response = await handleReminderSubscribe(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 503 | 500,
+    headers,
+  );
+});
+
+app.post("/api/reminders/unsubscribe", async (c) => {
+  const response = await handleReminderUnsubscribe(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 503 | 500,
+    headers,
+  );
+});
+
+app.post("/api/reminders/test", async (c) => {
+  const response = await handleReminderTest(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 502 | 503 | 500,
+    headers,
+  );
+});
+
 // 404 handler
 app.notFound((c) => {
   return c.json({ error: "Not found" }, 404);
@@ -170,4 +210,9 @@ app.onError((err, c) => {
 });
 
 // Export for Cloudflare Workers
-export default app;
+export default {
+  fetch: app.fetch,
+  scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(handleReminderCron(new Date(event.scheduledTime), env));
+  },
+};

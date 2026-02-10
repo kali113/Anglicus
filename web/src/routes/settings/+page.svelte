@@ -11,14 +11,24 @@
     clearUserProfile,
     clearAllMistakes,
   } from "$lib/storage/index.js";
-  import { getUserProfile } from "$lib/storage/user-store.js";
+  import { getUserProfile, updateUserProfile } from "$lib/storage/user-store.js";
+  import {
+    requestNotificationPermission,
+    startBrowserReminder,
+    stopBrowserReminder,
+    showBrowserReminderNow,
+    subscribeReminders,
+    unsubscribeReminders,
+    sendReminderTest,
+    type ReminderFrequency,
+  } from "$lib/notifications/index.js";
   import { testConnection, type ConnectionTestResult } from "$lib/ai/index.js";
   import type { ApiTier } from "$lib/types/api.js";
 
   type TestableTier = "backend" | "byok" | "puter";
 
   let settings = $state(getSettings());
-  let profile = getUserProfile();
+  let profile = $state(getUserProfile());
 
   let showApiDetails = $state(false);
   let testingConnection = $state(false);
@@ -32,6 +42,24 @@
   let showDeleteConfirm = $state(false);
   let customApiKey = $state("");
   let customBaseUrl = $state(getSettings().apiConfig.customBaseUrl || "");
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const DEFAULT_REMINDER_TIME = "20:00";
+
+  let reminderTime = $state(
+    getSettings().dailyReminderTime || DEFAULT_REMINDER_TIME,
+  );
+  let reminderFrequency = $state(
+    getSettings().reminderFrequency || ("daily" as ReminderFrequency),
+  );
+  let reminderEmail = $state("");
+  let remindersBusy = $state(false);
+
+  $effect(() => {
+    if (!reminderEmail && profile?.email) {
+      reminderEmail = profile.email;
+    }
+  });
 
   async function handleSaveApiKey() {
     if (!customApiKey.trim()) return;
@@ -58,12 +86,168 @@
     testingConnection = false;
   }
 
+  function normalizeEmail(value: string): string {
+    return value.trim().toLowerCase();
+  }
+
+  function isValidEmail(value: string): boolean {
+    return EMAIL_REGEX.test(value.trim());
+  }
+
+  async function toggleBrowserReminders() {
+    if (settings.notificationsEnabled) {
+      updateSettings({ notificationsEnabled: false });
+      settings = getSettings();
+      stopBrowserReminder();
+      return;
+    }
+
+    const permission = await requestNotificationPermission();
+    if (permission !== "granted") {
+      alert("Necesitas permitir notificaciones para activar recordatorios.");
+      return;
+    }
+
+    if (!reminderTime) reminderTime = DEFAULT_REMINDER_TIME;
+    updateSettings({ notificationsEnabled: true, dailyReminderTime: reminderTime });
+    settings = getSettings();
+    startBrowserReminder(reminderTime);
+  }
+
+  function handleReminderTimeChange() {
+    if (!reminderTime) return;
+    updateSettings({ dailyReminderTime: reminderTime });
+    settings = getSettings();
+    if (settings.notificationsEnabled) startBrowserReminder(reminderTime);
+    if (settings.emailRemindersEnabled) void syncEmailReminders();
+  }
+
+  function handleReminderFrequencyChange() {
+    updateSettings({ reminderFrequency });
+    settings = getSettings();
+    if (settings.emailRemindersEnabled) void syncEmailReminders();
+  }
+
+  async function syncEmailReminders() {
+    const email = normalizeEmail(reminderEmail || profile?.email || "");
+    if (!email) {
+      alert("Escribe un email para activar recordatorios.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      alert("El email no es valido.");
+      return;
+    }
+
+    remindersBusy = true;
+    const success = await subscribeReminders({
+      email,
+      reminderTime: reminderTime || DEFAULT_REMINDER_TIME,
+      timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      frequency: reminderFrequency,
+      language: profile?.nativeLanguage || "es",
+    });
+    remindersBusy = false;
+
+    if (!success) {
+      alert("No se pudo guardar el recordatorio por email.");
+      return;
+    }
+
+    updateUserProfile({ email });
+    profile = getUserProfile();
+    reminderEmail = email;
+
+    updateSettings({
+      emailRemindersEnabled: true,
+      dailyReminderTime: reminderTime || DEFAULT_REMINDER_TIME,
+      reminderFrequency,
+    });
+    settings = getSettings();
+  }
+
+  async function disableEmailReminders(clearEmail: boolean) {
+    const email = normalizeEmail(reminderEmail || profile?.email || "");
+    if (email) {
+      remindersBusy = true;
+      const success = await unsubscribeReminders(email);
+      remindersBusy = false;
+      if (!success) {
+        alert("No se pudo desactivar el recordatorio por email.");
+        return;
+      }
+    }
+
+    updateSettings({ emailRemindersEnabled: false });
+    settings = getSettings();
+
+    if (clearEmail) {
+      updateUserProfile({ email: undefined });
+      profile = getUserProfile();
+      reminderEmail = "";
+    }
+  }
+
+  async function toggleEmailReminders() {
+    if (settings.emailRemindersEnabled) {
+      await disableEmailReminders(false);
+      return;
+    }
+
+    await syncEmailReminders();
+  }
+
+  async function handleSendReminderTest() {
+    const email = normalizeEmail(reminderEmail || profile?.email || "");
+    if (!email || !isValidEmail(email)) {
+      alert("Necesitas un email valido para enviar la prueba.");
+      return;
+    }
+
+    remindersBusy = true;
+    const success = await sendReminderTest({
+      email,
+      language: profile?.nativeLanguage || "es",
+    });
+    remindersBusy = false;
+
+    if (!success) {
+      alert("No se pudo enviar el email de prueba.");
+      return;
+    }
+
+    alert("Email de prueba enviado.");
+  }
+
+  async function handleDeleteReminderData() {
+    await disableEmailReminders(true);
+  }
+
+  async function handleTestNotification() {
+    const permission = await requestNotificationPermission();
+    if (permission !== "granted") {
+      alert("Debes permitir notificaciones para ver la prueba.");
+      return;
+    }
+
+    await showBrowserReminderNow();
+  }
+
   function handleClearData() {
     showDeleteConfirm = true;
   }
 
   async function performDelete() {
+    const reminderEmail = profile?.email;
     try {
+      if (reminderEmail) {
+        const success = await unsubscribeReminders(reminderEmail);
+        if (!success) {
+          alert("No se pudieron borrar los recordatorios en el servidor.");
+        }
+      }
+      stopBrowserReminder();
       localStorage.clear();
       // Wait for DB clear to complete before navigating
       await clearAllMistakes().catch(console.error);
@@ -78,6 +262,117 @@
   <header class="header">
     <h1>Configuración</h1>
   </header>
+
+  <section class="section" id="notifications">
+    <h2>Notificaciones</h2>
+    <p class="help">Configura recordatorios de practica.</p>
+
+    <div class="notification-card">
+      <div class="toggle-row">
+        <label class="toggle">
+          <input
+            type="checkbox"
+            checked={settings.notificationsEnabled}
+            onchange={toggleBrowserReminders}
+          />
+          <span>Recordatorios en el navegador</span>
+        </label>
+        <button class="btn secondary" onclick={handleTestNotification}>
+          Probar
+        </button>
+      </div>
+      <p class="help small">
+        Se mostraran mientras la app este abierta y con permiso activado.
+      </p>
+    </div>
+
+    <div class="reminder-grid">
+      <div class="input-group">
+        <label>
+          Hora del recordatorio
+          <input
+            type="time"
+            class="input"
+            bind:value={reminderTime}
+            onchange={handleReminderTimeChange}
+          />
+        </label>
+      </div>
+      <div class="input-group">
+        <label>
+          Frecuencia
+          <select
+            class="input"
+            bind:value={reminderFrequency}
+            onchange={handleReminderFrequencyChange}
+          >
+            <option value="daily">Diario</option>
+            <option value="weekly">Semanal</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="notification-card">
+      <div class="toggle-row">
+        <label class="toggle">
+          <input
+            type="checkbox"
+            checked={settings.emailRemindersEnabled}
+            onchange={toggleEmailReminders}
+            disabled={remindersBusy}
+          />
+          <span>Recordatorios por email</span>
+        </label>
+        <button
+          class="btn secondary"
+          onclick={handleSendReminderTest}
+          disabled={remindersBusy || !settings.emailRemindersEnabled}
+        >
+          Enviar prueba
+        </button>
+      </div>
+
+      <div class="input-group">
+        <label>
+          Email
+          <input
+            type="email"
+            class="input"
+            placeholder="tu@email.com"
+            bind:value={reminderEmail}
+          />
+        </label>
+        {#if reminderEmail.trim() && !isValidEmail(reminderEmail)}
+          <p class="error-text">Email invalido.</p>
+        {/if}
+      </div>
+
+      <p class="help small">
+        Tu email se guarda cifrado solo para enviar recordatorios. Puedes
+        eliminarlo cuando quieras.
+      </p>
+
+      <div class="reminder-actions">
+        <button
+          class="btn secondary"
+          onclick={syncEmailReminders}
+          disabled={remindersBusy ||
+            (!reminderEmail.trim() && !profile?.email) ||
+            (!!reminderEmail.trim() && !isValidEmail(reminderEmail))}
+        >
+          Guardar
+        </button>
+        <button
+          class="btn danger"
+          onclick={handleDeleteReminderData}
+          disabled={remindersBusy}
+        >
+          Eliminar datos
+        </button>
+      </div>
+    </div>
+  </section>
 
   <section class="section">
     <h2>Modo de API</h2>
@@ -270,6 +565,58 @@
     margin: 0 0 1rem 0;
     color: var(--text-secondary);
     font-size: 0.875rem;
+  }
+
+  .help.small {
+    font-size: 0.8rem;
+  }
+
+  .notification-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+
+  .toggle input {
+    width: 18px;
+    height: 18px;
+  }
+
+  .reminder-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .reminder-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .error-text {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    color: #fca5a5;
   }
 
   .api-modes {

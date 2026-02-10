@@ -54,7 +54,11 @@
           <span class="username">{user.name}</span>
         </div>
         <div class="actions">
-          <button class="icon-btn" aria-label="Notificaciones">
+          <a
+            href="{base}/settings#notifications"
+            class="icon-btn"
+            aria-label="Notificaciones"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -67,9 +71,9 @@
               stroke-linejoin="round"
               ><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path
                 d="M10.3 21a1.94 1.94 0 0 0 3.4 0"
-              /></svg
+               /></svg
             >
-          </button>
+          </a>
           <a href="{base}/settings" class="icon-btn" aria-label="Configuración">
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -1,7 +1,15 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-import { base } from "$app/paths";
-  import { saveUserProfile } from "$lib/storage/user-store.js";
+  import { base } from "$app/paths";
+  import {
+    saveUserProfile,
+    getDefaultBilling,
+  } from "$lib/storage/user-store.js";
+  import { getSettings, updateSettings } from "$lib/storage/settings-store.js";
+  import {
+    subscribeReminders,
+    type ReminderFrequency,
+  } from "$lib/notifications/index.js";
   import type {
     UserProfile,
     EnglishLevel,
@@ -15,6 +23,8 @@ import { base } from "$app/paths";
   const QUESTIONS_COUNT = 5;
   let currentQuestion = $state(0);
   let userName = $state("");
+  let userEmail = $state("");
+  let wantsEmailReminders = $state(false);
   let userGoals = $state<LearningGoal[]>([]);
   let isLoading = $state(false);
   let errorMessage = $state("");
@@ -38,6 +48,21 @@ import { base } from "$app/paths";
   let answers = $state<string[]>([]);
   let showResults = $state(false);
   let assessedLevel = $state<EnglishLevel>("A1");
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const DEFAULT_REMINDER_TIME = getSettings().dailyReminderTime || "20:00";
+  const DEFAULT_REMINDER_FREQUENCY =
+    getSettings().reminderFrequency || ("daily" as ReminderFrequency);
+
+  function isEmailValid(value: string): boolean {
+    return EMAIL_REGEX.test(value.trim());
+  }
+
+  function handleEmailInput() {
+    if (!userEmail.trim() || !isEmailValid(userEmail)) {
+      wantsEmailReminders = false;
+    }
+  }
 
   const goals = [
     { value: "travel" as LearningGoal, emoji: "✈️", label: "Viajes" },
@@ -283,10 +308,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
     }
   }
 
-  function completeOnboarding() {
+  async function completeOnboarding() {
     const nativeLanguage: LanguageCode = targetLanguage === "en" ? "es" : "en";
+    const normalizedEmail = userEmail.trim().toLowerCase();
     const profile: UserProfile = {
       name: userName || "Amigo",
+      email: normalizedEmail || undefined,
       level: assessedLevel,
       nativeLanguage,
       targetLanguage,
@@ -300,8 +327,34 @@ Make sure the correctAnswer matches exactly one of the options.`;
       weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
       achievements: [],
       skills: [],
+      billing: getDefaultBilling(),
     };
     saveUserProfile(profile);
+
+    if (normalizedEmail) {
+      updateSettings({
+        emailRemindersEnabled: wantsEmailReminders,
+        dailyReminderTime: DEFAULT_REMINDER_TIME,
+        reminderFrequency: DEFAULT_REMINDER_FREQUENCY,
+      });
+    }
+
+    if (wantsEmailReminders && normalizedEmail) {
+      const subscribed = await subscribeReminders({
+        email: normalizedEmail,
+        reminderTime: DEFAULT_REMINDER_TIME,
+        timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+        frequency: DEFAULT_REMINDER_FREQUENCY,
+        language: nativeLanguage,
+      });
+
+      if (!subscribed) {
+        alert(
+          "No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuracion.",
+        );
+      }
+    }
+
     goto(`${base}/`);
   }
 
@@ -381,13 +434,39 @@ Make sure the correctAnswer matches exactly one of the options.`;
         bind:value={userName}
         placeholder="Tu nombre"
         class="input"
-        onkeydown={(e) => e.key === "Enter" && userName.trim() && (step = 3)}
+        onkeydown={(e) =>
+          e.key === "Enter" &&
+          userName.trim() &&
+          (!userEmail.trim() || isEmailValid(userEmail)) &&
+          (step = 3)}
       />
+      <input
+        type="email"
+        bind:value={userEmail}
+        placeholder="Tu email (opcional)"
+        class="input"
+        oninput={handleEmailInput}
+      />
+      {#if userEmail.trim() && !isEmailValid(userEmail)}
+        <p class="error-text">Email invalido.</p>
+      {/if}
+      <label class="checkbox-row">
+        <input
+          type="checkbox"
+          bind:checked={wantsEmailReminders}
+          disabled={!userEmail.trim() || !isEmailValid(userEmail)}
+        />
+        <span>Quiero recibir recordatorios por email.</span>
+      </label>
+      <p class="consent-note">
+        Opcional. Puedes darte de baja en Configuracion. Consulta la
+        <a href="{base}/legal#privacy">Politica de privacidad</a>.
+      </p>
       <div class="actions">
         <button
           class="btn primary"
           onclick={() => (step = 3)}
-          disabled={!userName.trim()}
+          disabled={!userName.trim() || (!!userEmail.trim() && !isEmailValid(userEmail))}
         >
           Continuar
         </button>
@@ -551,6 +630,37 @@ Make sure the correctAnswer matches exactly one of the options.`;
   .input:focus {
     outline: none;
     border-color: var(--primary);
+  }
+
+  .error-text {
+    margin: -1rem 0 1rem;
+    font-size: 0.8rem;
+    color: #fca5a5;
+  }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .checkbox-row input {
+    width: 16px;
+    height: 16px;
+  }
+
+  .consent-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .consent-note a {
+    color: var(--primary-light);
   }
 
   .language-options {

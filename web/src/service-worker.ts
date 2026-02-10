@@ -72,3 +72,18 @@ self.addEventListener('fetch', (event) => {
 
   fetchEvent.respondWith(respond());
 });
+
+self.addEventListener('notificationclick', (event) => {
+  const notificationEvent = event as NotificationEvent;
+  notificationEvent.notification.close();
+
+  notificationEvent.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((allClients) => {
+      const client = allClients.find((clientItem) => 'focus' in clientItem);
+      if (client) {
+        return (client as WindowClient).focus();
+      }
+      return clients.openWindow(APP_BASE || '/');
+    })
+  );
+});

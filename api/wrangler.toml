@@ -8,11 +8,16 @@ compatibility_date = "2024-04-01"
 # Run: wrangler secret put TOGETHER_API_KEY
 # Run: wrangler secret put RESEND_API_KEY
 # Run: wrangler secret put OWNER_EMAIL
+# Run: wrangler secret put REMINDER_ENCRYPTION_KEY
 
 # Rate limiting (requests per minute)
 [vars]
 RATE_LIMIT_PER_MINUTE = "20"
 ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.github.io"
+REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
+
+[triggers]
+crons = ["*/15 * * * *"]
 
 # For local development, add API keys here (DO NOT commit to production!)
 # These are overridden by secrets in production
@@ -31,4 +36,9 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.g
 # Run: wrangler kv:namespace create RATE_LIMIT
 # kv_namespaces = [
 #   { binding = "RATE_LIMIT", id = "..." }
+# ]
+
+# Run: wrangler kv:namespace create REMINDER_KV
+# kv_namespaces = [
+#   { binding = "REMINDER_KV", id = "..." }
 # ]

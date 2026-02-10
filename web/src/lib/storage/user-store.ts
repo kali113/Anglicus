@@ -2,10 +2,30 @@
  * User profile storage using localStorage
  */
 
-import type { UserProfile } from "$lib/types/user.js";
+import type { BillingInfo, UserProfile } from "$lib/types/user.js";
 import { isBrowser } from "./base-store.js";
 
 const STORAGE_KEY = "anglicus_user";
+
+function getTodayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function getDefaultBilling(): BillingInfo {
+  return {
+    plan: "free",
+    status: "none",
+    usage: {
+      date: getTodayKey(),
+      tutorMessages: 0,
+      quickChatMessages: 0,
+      lessonExplanations: 0,
+      tutorQuestions: 0,
+    },
+    paywallImpressions: 0,
+    redeemedCodeHashes: [],
+  };
+}
 
 export function getUserProfile(): UserProfile | null {
   if (!isBrowser()) return null;
@@ -16,6 +36,7 @@ export function getUserProfile(): UserProfile | null {
     const storedProfile = JSON.parse(data);
 
     // Default configuration with all achievements
+    const defaultBilling = getDefaultBilling();
     const defaults = {
       nativeLanguage: "es",
       targetLanguage: "en",
@@ -44,7 +65,8 @@ export function getUserProfile(): UserProfile | null {
         { id: 'emotions', status: 'locked', stars: 0 },
         { id: 'weather', status: 'locked', stars: 0 },
         { id: 'nature', status: 'locked', stars: 0 }
-      ]
+      ],
+      billing: defaultBilling,
     };
 
     // Merge logic: ensure all default achievements exist
@@ -54,11 +76,23 @@ export function getUserProfile(): UserProfile | null {
       return existing ? { ...def, unlocked: existing.unlocked } : def;
     });
 
+    const mergedBilling = {
+      ...defaultBilling,
+      ...(storedProfile.billing || {}),
+      usage: {
+        ...defaultBilling.usage,
+        ...(storedProfile.billing?.usage || {}),
+      },
+      redeemedCodeHashes:
+        storedProfile.billing?.redeemedCodeHashes || defaultBilling.redeemedCodeHashes,
+    };
+
     return {
       ...defaults,
       ...storedProfile,
       achievements: mergedAchievements,
-      skills: storedProfile.skills || defaults.skills
+      skills: storedProfile.skills || defaults.skills,
+      billing: mergedBilling,
     };
   } catch {
     return null;

@@ -14,8 +14,34 @@ export type WeakArea =
   | "conditionals"
   | "phrasal_verbs";
 
+export type BillingPlan = "free" | "pro";
+export type BillingStatus = "none" | "pending" | "active" | "expired";
+
+export interface BillingUsage {
+  date: string; // YYYY-MM-DD
+  tutorMessages: number;
+  quickChatMessages: number;
+  lessonExplanations: number;
+  tutorQuestions: number;
+}
+
+export interface BillingInfo {
+  plan: BillingPlan;
+  status: BillingStatus;
+  paidUntil?: string;
+  lastPaymentTxId?: string;
+  lastPaymentCheckedAt?: string;
+  usage: BillingUsage;
+  paywallImpressions: number;
+  lastPaywallShownAt?: string;
+  discountPercent?: number;
+  promoCodeHash?: string;
+  redeemedCodeHashes: string[];
+}
+
 export interface UserProfile {
   name: string;
+  email?: string;
   level: EnglishLevel;
   nativeLanguage: LanguageCode; // user's native language
   targetLanguage: LanguageCode; // language being learned
@@ -29,6 +55,7 @@ export interface UserProfile {
   weeklyActivity: number[]; // 7 values for Sun-Sat
   achievements: Achievement[];
   skills: SkillProgress[];
+  billing: BillingInfo;
 }
 
 export interface SkillProgress {
