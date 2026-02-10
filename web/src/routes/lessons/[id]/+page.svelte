@@ -80,13 +80,13 @@ import { base } from "$app/paths";
   }
 
   .lesson-container {
-    width: calc(100% - 2rem);
-    max-width: none;
-    margin: 0 auto;
+    width: auto;
+    margin: 0 1rem;
     height: 100%;
     display: flex;
     flex-direction: column;
     padding: 1rem;
+    box-sizing: border-box;
   }
 
   .lesson-header {
