@@ -18,8 +18,7 @@
     recordBillingUsage,
   } from "$lib/billing/index.js";
 
-  export let lessonId: string;
-  export let onComplete: () => void;
+  let { lessonId, onComplete }: { lessonId: string; onComplete: () => void } = $props();
 
   let messages: Message[] = [];
   let inputValue = "";
@@ -200,8 +199,8 @@
   open={showPaywall}
   mode={paywallMode}
   featureLabel={paywallFeature}
-  on:close={() => (showPaywall = false)}
-  on:paid={() => (showPaywall = false)}
+  onclose={() => (showPaywall = false)}
+  onpaid={() => (showPaywall = false)}
 />
 
 <style>

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import {
@@ -8,14 +7,19 @@
     type BillingPaymentConfig,
   } from "$lib/billing/index.js";
 
-  export let open = false;
-  export let mode: "nag" | "block" = "block";
-  export let featureLabel = "Tutor IA";
-
-  const dispatch = createEventDispatcher<{
-    close: void;
-    paid: { paidUntil?: string };
-  }>();
+  let {
+    open = false,
+    mode = "block" as "nag" | "block",
+    featureLabel = "Tutor IA",
+    onclose,
+    onpaid,
+  }: {
+    open?: boolean;
+    mode?: "nag" | "block";
+    featureLabel?: string;
+    onclose?: () => void;
+    onpaid?: (detail: { paidUntil?: string }) => void;
+  } = $props();
 
   let config = $state<BillingPaymentConfig | null>(null);
   let isLoading = $state(false);
@@ -56,7 +60,7 @@
       const result = await verifyPayment(txId.trim());
       if (result.status === "confirmed") {
         statusMessage = "Pago confirmado. Tu plan Pro está activo.";
-        dispatch("paid", { paidUntil: result.paidUntil });
+        onpaid?.({ paidUntil: result.paidUntil });
       } else {
         statusMessage =
           "Pago pendiente. Se activará automáticamente cuando confirme la red.";
@@ -72,7 +76,7 @@
   }
 
   function closeModal() {
-    dispatch("close");
+    onclose?.();
   }
 
   function getRequiredSats(): number | null {

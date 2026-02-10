@@ -4,7 +4,7 @@
   import AchievementBadge from "$lib/components/AchievementBadge.svelte";
   import type { UserProfile } from "$lib/types/user";
 
-  export let user: UserProfile;
+  let { user }: { user: UserProfile } = $props();
 </script>
 
 <aside class="sidebar">

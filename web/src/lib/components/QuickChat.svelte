@@ -188,8 +188,8 @@
   open={showPaywall}
   mode={paywallMode}
   featureLabel={paywallFeature}
-  on:close={() => (showPaywall = false)}
-  on:paid={() => (showPaywall = false)}
+  onclose={() => (showPaywall = false)}
+  onpaid={() => (showPaywall = false)}
 />
 
 <style>
