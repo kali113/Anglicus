@@ -29,8 +29,8 @@
 {:else}
   <div class="lessons-page">
     <header class="page-header">
-      <h1>Your Learning Path</h1>
-      <p>Complete lessons to unlock new skills and achievements</p>
+      <h1>Tu Camino de Aprendizaje</h1>
+      <p>Completa lecciones para desbloquear nuevas habilidades y logros</p>
     </header>
 
     {#if user}
