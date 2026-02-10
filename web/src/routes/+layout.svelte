@@ -39,7 +39,8 @@
     user = getUserProfile();
 
     // Check if current page should be immersive (no nav, no padding)
-    isImmersive = path === "/lesson" || path.startsWith("/lesson/");
+    isImmersive =
+      path.includes("/lesson") || path.includes("/lessons");
 
     // Update nav visibility
     showNav =
