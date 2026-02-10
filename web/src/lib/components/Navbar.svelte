@@ -8,7 +8,7 @@
 
 <nav class="navbar">
   <div class="nav-content">
-    <div class="logo">
+    <a href="{base}/" class="logo">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="28"
@@ -24,7 +24,7 @@
         /><polyline points="2 12 12 17 22 12" /></svg
       >
       <span>Anglicus</span>
-    </div>
+    </a>
 
     <div class="nav-links">
       <a href="{base}/" class:active={$page.url.pathname === `${base}/`}>Inicio</a>
@@ -121,6 +121,13 @@
     font-weight: 700;
     font-size: 1.5rem;
     color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+
+  .logo:hover {
+    opacity: 0.8;
   }
 
   .nav-links {
