@@ -21,7 +21,7 @@
   .message {
     display: flex;
     gap: 1rem;
-    max-width: 85%;
+    max-width: 98%;
     align-items: flex-end;
   }
 
