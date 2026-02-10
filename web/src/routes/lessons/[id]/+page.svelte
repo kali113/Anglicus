@@ -80,7 +80,8 @@ import { base } from "$app/paths";
   }
 
   .lesson-container {
-    max-width: 1400px;
+    width: calc(100% - 2rem);
+    max-width: none;
     margin: 0 auto;
     height: 100%;
     display: flex;
