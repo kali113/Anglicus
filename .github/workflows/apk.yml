@@ -38,6 +38,9 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('twa/twa-manifest.json') }}
           restore-keys: gradle-${{ runner.os }}-
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli --no-audit --no-fund
 
