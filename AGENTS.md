@@ -26,6 +26,10 @@ Key entry points:
   - `npm run dev`
   - `npm run test`
   - `npm run deploy`
+- Git workflow:
+  - Always create and work on a branch for changes
+  - After finishing, merge the branch back to main
+  - Commit and push: `git add . && git commit -m "message" && git push`
 
 ## Deeper context (read only if relevant)
 - `docs/CONTRIBUTING.md` (dev setup + commands)

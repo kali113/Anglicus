@@ -112,7 +112,7 @@ export const SKILL_TREE_DATA: SkillNode[] = [
     description: "City, Park, School",
     x: 0,
     y: 650,
-    icon: "buildings",
+    icon: "🏛️",
     requires: ["clothing", "colors"],
   },
   {
