@@ -29,20 +29,27 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Cache Gradle
+      - name: Cache Gradle & Android SDK
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            twa/.gradle
+            twa/app/build
           key: gradle-${{ runner.os }}-${{ hashFiles('twa/twa-manifest.json') }}
           restore-keys: gradle-${{ runner.os }}-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Pre-install Android SDK 36
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" > /dev/null 2>&1 || true
+
       - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli --no-audit --no-fund
+        run: npm install -g @bubblewrap/cli@1.24.1 --no-audit --no-fund
 
       - name: Configure Bubblewrap
         run: |
@@ -57,7 +64,11 @@ jobs:
         working-directory: twa
         run: bubblewrap build --manifest twa-manifest.json --skipSigning --skipPwaValidation --jdkPath "$JAVA_HOME"
         env:
-          GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
+          GRADLE_OPTS: >-
+            -Dorg.gradle.daemon=false
+            -Dorg.gradle.parallel=true
+            -Dorg.gradle.caching=true
+            -Dorg.gradle.jvmargs=-Xmx2g
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
