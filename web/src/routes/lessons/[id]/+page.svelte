@@ -72,7 +72,7 @@ import { base } from "$app/paths";
 <style>
   .lesson-page {
     height: 100vh;
-    width: 100vw;
+    width: 100%;
     background: radial-gradient(circle at top right, #0f172a 0%, #020617 100%);
     color: white;
     overflow: hidden;
