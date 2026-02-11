@@ -30,7 +30,7 @@
       >
     {/if}
   </div>
-  <span class="name">{label}</span>
+  <span class="name">{label()}</span>
   {#if achievement.unlocked}
     <div class="check">
       <svg
