@@ -9,7 +9,22 @@ import {
   RateLimiter,
   applyRateLimitCheck,
 } from "./lib/rate-limiter.js";
+import { extractBearerToken, getCurrentDayNumber, verifyJwt } from "./lib/auth.js";
+import {
+  getUserById,
+  getUsageCount,
+  incrementUsage,
+  type UserRecord,
+} from "./lib/db.js";
+import { FEATURE_HEADER, FREE_LIMITS, parseUsageFeature } from "./lib/usage.js";
 import { handleChatCompletions, handleListModels } from "./routes/chat.js";
+import {
+  handleAuthByok,
+  handleAuthLogin,
+  handleAuthRefresh,
+  handleAuthRegister,
+  handleAuthVerify,
+} from "./routes/auth.js";
 import { handleFeedback } from "./routes/feedback.js";
 import {
   handleBillingConfig,
@@ -25,6 +40,7 @@ import {
 
 // Type definition for Cloudflare Worker environment
 export interface Env {
+  DB?: D1Database;
   // AI Provider API Keys (set via wrangler secret)
   OPENROUTER_API_KEY?: string;
   GROQ_API_KEY?: string;
@@ -43,6 +59,9 @@ export interface Env {
   // Feedback email service (set via wrangler secret)
   OWNER_EMAIL?: string;
   RESEND_API_KEY?: string;
+  AUTH_FROM_EMAIL?: string;
+  JWT_SECRET?: string;
+  EMAIL_PEPPER?: string;
   REMINDER_ENCRYPTION_KEY?: string;
   REMINDER_FROM_EMAIL?: string;
   REMINDER_KV?: KVNamespace;
@@ -88,8 +107,13 @@ function getFeedbackRateLimiter(env: Env): RateLimiter {
   return feedbackRateLimiter;
 }
 
+function getAuthConfig(env: Env): { db: D1Database; jwtSecret: string } | null {
+  if (!env.DB || !env.JWT_SECRET) return null;
+  return { db: env.DB, jwtSecret: env.JWT_SECRET };
+}
+
 // Create Hono app
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: { user: UserRecord } }>();
 
 // Apply CORS middleware to all routes
 app.use("*", async (c, next) => {
@@ -106,6 +130,99 @@ app.get("/", (c) => {
     version: "1.0.0",
     timestamp: new Date().toISOString(),
   });
+});
+
+// Auth endpoints
+app.post("/auth/register", async (c) => {
+  return handleAuthRegister(c.req.raw, c.env);
+});
+
+app.post("/auth/verify", async (c) => {
+  return handleAuthVerify(c.req.raw, c.env);
+});
+
+app.post("/auth/login", async (c) => {
+  return handleAuthLogin(c.req.raw, c.env);
+});
+
+app.post("/auth/refresh", async (c) => {
+  return handleAuthRefresh(c.req.raw, c.env);
+});
+
+app.post("/auth/byok", async (c) => {
+  return handleAuthByok(c.req.raw, c.env);
+});
+
+// Auth middleware for AI routes
+app.use("/v1/*", async (c, next) => {
+  const config = getAuthConfig(c.env);
+  if (!config) {
+    return c.json({ error: "Auth not configured" }, 503);
+  }
+
+  const token = extractBearerToken(c.req.raw);
+  if (!token) {
+    return c.json({ error: "Auth required" }, 401);
+  }
+
+  const payload = await verifyJwt(token, config.jwtSecret);
+  if (!payload) {
+    return c.json({ error: "Invalid token" }, 401);
+  }
+
+  const user = await getUserById(config.db, payload.user_id);
+  if (!user) {
+    return c.json({ error: "Invalid token" }, 401);
+  }
+
+  c.set("user", user);
+  await next();
+});
+
+// Usage enforcement middleware for AI routes
+app.use("/v1/*", async (c, next) => {
+  const config = getAuthConfig(c.env);
+  if (!config) {
+    return c.json({ error: "Auth not configured" }, 503);
+  }
+
+  const user = c.get("user");
+  const path = new URL(c.req.url).pathname;
+  if (path !== "/v1/chat/completions") {
+    await next();
+    return;
+  }
+
+  if (user.auth_provider === "byok") {
+    await next();
+    return;
+  }
+
+  const currentDay = getCurrentDayNumber();
+  if (
+    user.plan_type === "pro" &&
+    user.plan_expires_day &&
+    user.plan_expires_day > currentDay
+  ) {
+    await next();
+    return;
+  }
+
+  const feature = parseUsageFeature(c.req.header(FEATURE_HEADER));
+  if (!feature) {
+    return c.json({ error: "feature_required" }, 400);
+  }
+
+  const usage = await getUsageCount(config.db, user.id, currentDay, feature);
+  if (usage >= FREE_LIMITS[feature]) {
+    return c.json({ error: "limit_reached", upgrade_url: "/billing" }, 429);
+  }
+
+  await next();
+
+  if (c.res && c.res.status < 400) {
+    await incrementUsage(config.db, user.id, currentDay, feature);
+  }
 });
 
 // OpenAI-compatible endpoints
@@ -143,11 +260,11 @@ app.post("/v1/chat/completions", async (c) => {
 
   // Handle chat completions request
   const response = await handleChatCompletions(c.req.raw, c.env);
-  const headers = Object.fromEntries(response.headers.entries());
+  const responseHeaders = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
     response.status as 200 | 400 | 429 | 500,
-    headers,
+    responseHeaders,
   );
 });
 
@@ -172,11 +289,11 @@ app.post("/api/feedback", async (c) => {
   }
 
   const response = await handleFeedback(c.req.raw, c.env);
-  const headers = Object.fromEntries(response.headers.entries());
+  const responseHeaders = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
     response.status as 200 | 400 | 500,
-    headers,
+    responseHeaders,
   );
 });
 
