@@ -9,7 +9,7 @@ import type { BillingInfo, BillingUsage } from "$lib/types/user.js";
 import {
   PROMO_CODE_DISCOUNT_PERCENT,
   PROMO_CODE_HASHES,
-  PROMO_CODE_PEPPER,
+  PROMO_CODE_PREFIX,
 } from "./promo-codes.js";
 
 const BACKEND_URL =
@@ -352,7 +352,7 @@ function normalizePromoCode(rawCode: string): string | null {
 }
 
 async function hashPromoCode(code: string): Promise<string> {
-  return await sha256Hex(`${PROMO_CODE_PEPPER}:${code}`);
+  return await sha256Hex(`${PROMO_CODE_PREFIX}:${code}`);
 }
 
 function getPromoSalt(): string {

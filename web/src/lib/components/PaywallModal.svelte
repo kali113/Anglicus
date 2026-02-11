@@ -9,7 +9,7 @@
 
   let {
     open = false,
-    mode = "block" as "nag" | "block",
+    mode = "block",
     featureLabel = "Tutor IA",
     onclose,
     onpaid,
