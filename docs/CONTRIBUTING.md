@@ -1,23 +1,27 @@
-# Contribuir / Contributing
+# Contributing
 
-## Alcance / Scope
-ES: Este repositorio contiene la PWA (web/) y el backend serverless (api/).
-EN: This repository contains the PWA (web/) and the serverless backend (api/).
+## Scope
+This repository contains the PWA (web/) and the serverless backend (api/).
 
-## Estructura / Structure
+## Structure
 ```
-/web   - Aplicación web PWA (SvelteKit + Vite)
-/api   - API serverless (Cloudflare Workers + Hono)
-/docs  - Documentación técnica bilingüe (ES/EN)
+/web   - PWA web app (SvelteKit + Vite)
+/api   - Serverless API (Cloudflare Workers + Hono)
+/docs  - Bilingual technical docs (ES/EN)
 ```
 
-## Requisitos / Requirements
-- Node.js 20+ y npm
+## Product context
+- Paywall for premium features and upgrades.
+- Crypto payment support for upgrades.
+- i18n UI with ES/EN locales.
+
+## Requirements
+- Node.js 20+ and npm
 - Git
-- (API) Wrangler CLI (vía devDependencies)
-- (APK) Java 17+ y Android SDK cuando se construya
+- (API) Wrangler CLI (via devDependencies)
+- (APK) Java 17+ and Android SDK when building
 
-## Configuración rápida / Quick setup
+## Quick setup
 ### Web
 ```
 cd web
@@ -32,7 +36,7 @@ npm install
 npm run dev
 ```
 
-## Scripts principales / Main scripts
+## Main scripts
 **Web**
 - `npm run dev`
 - `npm run build`
@@ -43,23 +47,29 @@ npm run dev
 - `npm test`
 - `npm run deploy`
 
-## APK (TWA) / APK (TWA)
-ES: Para generar un APK desde la PWA usa Bubblewrap (TWA). Requiere la app desplegada.
-EN: To generate an APK from the PWA, use Bubblewrap (TWA). It requires the app to be deployed.
+## APK (TWA)
+To generate an APK from the PWA, use Bubblewrap (TWA). It requires the app to be deployed.
 
 ```
 npx @bubblewrap/cli init --manifest https://kali113.github.io/Anglicus/manifest.json
 cd android && gradlew.bat assembleRelease
 ```
-ES: El workflow "Build APK" en GitHub Actions genera un APK sin firmar en cada push a main/master y lo sube como artifact `anglicus-apk`. La configuracion base esta en `twa/twa-manifest.json`.
-EN: The "Build APK" GitHub Actions workflow builds an unsigned APK on each push to main/master and uploads it as the `anglicus-apk` artifact. The base config lives in `twa/twa-manifest.json`.
 
-## Seguridad / Security
-- Nunca subas claves API al repositorio.
-- Usa `.env` local y revisa `docs/security.md`.
+The base config lives in `twa/twa-manifest.json`.
 
-## Pull Requests / Pull Requests
-1. Crea una rama (`git checkout -b mi-feature`).
-2. Mantén cambios pequeños y documentados.
-3. Actualiza documentación si aplica.
-4. Abre un Pull Request con un resumen claro.
+## Workflows (GitHub Actions)
+- **Build APK** builds a signed APK on each push to main/master or release and uploads it as the `anglicus-apk` artifact.
+- **Analyze (actions)** and **Analyze (javascript-typescript)** are required checks on `master`.
+
+## Security
+- Never commit API keys to the repo.
+- Use local `.env` files and review `docs/security.md`.
+
+## Pull Requests
+1. Create a branch (`git checkout -b my-feature`).
+2. Keep changes small and documented.
+3. Update documentation when applicable.
+4. Open a Pull Request with a clear summary.
+
+## Branch protection
+The `master` branch is protected: force-pushes/deletion are blocked, and status checks are required (Analyze (actions), Analyze (javascript-typescript)).
