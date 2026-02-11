@@ -10,7 +10,9 @@
   import { startBrowserReminder } from "$lib/notifications/index.js";
   import type { UserProfile } from "$lib/types/user";
   import Navbar from "$lib/components/Navbar.svelte";
+  import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import { refreshPaymentStatus } from "$lib/billing/index.js";
+  import { t } from "$lib/i18n";
 
   let { children } = $props();
   let showNav = $state(true);
@@ -19,11 +21,18 @@
   let user = $state<UserProfile | null>(null);
 
   onMount(() => {
-    onboardingComplete = hasCompletedOnboarding();
-    user = getUserProfile();
-    refreshPaymentStatus();
+    (async () => {
+      onboardingComplete = await hasCompletedOnboarding();
+      user = await getUserProfile();
+    })();
+
+    refreshPaymentStatus().catch((error) => {
+      console.error("Payment check failed:", error);
+    });
     const paymentInterval = window.setInterval(() => {
-      refreshPaymentStatus();
+      refreshPaymentStatus().catch((error) => {
+        console.error("Payment check failed:", error);
+      });
     }, 1000 * 60 * 5);
 
     if ("serviceWorker" in navigator) {
@@ -51,27 +60,29 @@
     // We access $page.url to trigger the effect on navigation
     const path = $page.url.pathname;
 
-    // Refresh user state from storage
-    onboardingComplete = hasCompletedOnboarding();
-    user = getUserProfile();
+    // Refresh user state from storage (async)
+    (async () => {
+      onboardingComplete = await hasCompletedOnboarding();
+      user = await getUserProfile();
 
-    // Check if current page should be immersive (no nav, no padding)
-    isImmersive = path.includes("/lesson/") && !path.endsWith("/lessons");
+      // Check if current page should be immersive (no nav, no padding)
+      isImmersive = path.includes("/lesson/") && !path.endsWith("/lessons");
 
-    // Update nav visibility
-    showNav =
-      onboardingComplete && !path.startsWith("/onboarding") && !isImmersive;
-    showFooter = !isImmersive;
+      // Update nav visibility
+      showNav =
+        onboardingComplete && !path.startsWith("/onboarding") && !isImmersive;
+      showFooter = !isImmersive;
+    })();
   });
 </script>
 
 <svelte:head>
   <link rel="manifest" href="{base}/manifest.json" />
   <meta name="theme-color" content="#1e293b" />
-  <meta name="application-name" content="Anglicus" />
+  <meta name="application-name" content={$t("app.name")} />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-title" content="Anglicus" />
+  <meta name="apple-mobile-web-app-title" content={$t("app.name")} />
   <link rel="apple-touch-icon" href="{base}/icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
@@ -97,12 +108,15 @@
   {#if showFooter}
     <footer class="footer">
       <div class="footer-links">
-        <a href="{base}/legal#terms">Terminos</a>
-        <a href="{base}/legal#privacy">Privacidad</a>
-        <a href="{base}/legal#cookies">Cookies</a>
-        <a href="{base}/legal#data-protection">Proteccion de datos</a>
+        <a href="{base}/legal#terms">{$t("footer.terms")}</a>
+        <a href="{base}/legal#privacy">{$t("footer.privacy")}</a>
+        <a href="{base}/legal#cookies">{$t("footer.cookies")}</a>
+        <a href="{base}/legal#data-protection">{$t("footer.dataProtection")}</a>
       </div>
-      <p class="footer-note">Anglicus · Aprende con confianza</p>
+      <div class="footer-crypto">
+        <SupportCryptoCard variant="compact" />
+      </div>
+      <p class="footer-note">{$t("footer.tagline")}</p>
     </footer>
   {/if}
 </div>
@@ -176,6 +190,11 @@
     justify-content: center;
     gap: 1rem;
     margin-bottom: 0.5rem;
+  }
+
+  .footer-crypto {
+    margin: 1rem auto;
+    max-width: 520px;
   }
 
   .footer-links a {
