@@ -2,7 +2,11 @@
   import { fly } from "svelte/transition";
   import type { Message } from "$lib/types/api";
 
-  let { message }: { message: Message } = $props();
+  interface $$Props {
+    message: Message;
+  }
+
+  let { message } = $props();
 </script>
 
 <div class="message {message.role}" in:fly={{ y: 20, duration: 300 }}>

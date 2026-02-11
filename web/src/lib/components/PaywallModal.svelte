@@ -6,20 +6,28 @@
     verifyPayment,
     type BillingPaymentConfig,
   } from "$lib/billing/index.js";
+  import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
+  import { t } from "$lib/i18n";
 
-  let {
-    open = false,
-    mode = "block",
-    featureLabel = "Tutor IA",
-    onclose,
-    onpaid,
-  }: {
+  interface $$Props {
     open?: boolean;
     mode?: "nag" | "block";
     featureLabel?: string;
     onclose?: () => void;
-    onpaid?: (detail: { paidUntil?: string }) => void;
+    onpaid?: (payload: { paidUntil?: string }) => void;
+  }
+
+  let {
+    open = false,
+    mode = "block",
+    featureLabel,
+    onclose,
+    onpaid,
   } = $props();
+
+  const resolvedFeatureLabel = $derived(
+    featureLabel ?? $t("paywall.featureDefault"),
+  );
 
   let config = $state<BillingPaymentConfig | null>(null);
   let isLoading = $state(false);
@@ -27,11 +35,11 @@
   let txId = $state("");
   let statusMessage = $state("");
   let isVerifying = $state(false);
-  let billing = $state(getUserProfile()?.billing);
+  let billing = $state<any>(undefined);
 
   $effect(() => {
     if (open) {
-      billing = getUserProfile()?.billing;
+      getUserProfile().then((p) => { billing = p?.billing; });
       loadConfig();
     }
   });
@@ -43,8 +51,7 @@
     try {
       config = await getPaymentConfig();
     } catch (err) {
-      errorMessage =
-        "No pudimos cargar la información de pago. Intenta de nuevo.";
+      errorMessage = $t("paywall.loadError");
     } finally {
       isLoading = false;
     }
@@ -59,17 +66,16 @@
     try {
       const result = await verifyPayment(txId.trim());
       if (result.status === "confirmed") {
-        statusMessage = "Pago confirmado. Tu plan Pro está activo.";
+        statusMessage = $t("paywall.confirmed");
         onpaid?.({ paidUntil: result.paidUntil });
       } else {
-        statusMessage =
-          "Pago pendiente. Se activará automáticamente cuando confirme la red.";
+        statusMessage = $t("paywall.pending");
       }
     } catch (err) {
       errorMessage =
         err instanceof Error
           ? err.message
-          : "No se pudo verificar el pago.";
+          : $t("paywall.verifyError");
     } finally {
       isVerifying = false;
     }
@@ -88,39 +94,50 @@
 </script>
 
 {#if open}
-  <div class="paywall-backdrop" onclick={closeModal}>
-    <div class="paywall-card" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="paywall-backdrop"
+    role="button"
+    tabindex="0"
+    aria-label={$t("common.close")}
+    onclick={(e) => e.currentTarget === e.target && closeModal()}
+    onkeydown={(e) =>
+      (e.key === "Escape" || e.key === "Enter" || e.key === " ") &&
+      closeModal()}
+  >
+    <div class="paywall-card" role="dialog" aria-modal="true">
       <header>
-        <h2>Desbloquea Pro</h2>
+        <h2>{$t("paywall.title")}</h2>
         <p class="subtitle">
           {mode === "nag"
-            ? `¿Quieres ir más rápido? ${featureLabel} es ilimitado en Pro.`
-            : `Has alcanzado el límite gratuito para ${featureLabel}.`}
+            ? $t("paywall.subtitleNag", { feature: resolvedFeatureLabel })
+            : $t("paywall.subtitleBlock", { feature: resolvedFeatureLabel })}
         </p>
       </header>
 
       <div class="benefits">
-        <div>✔ Tutor IA ilimitado</div>
-        <div>✔ Explicaciones y correcciones avanzadas</div>
-        <div>✔ Chat rápido sin límites</div>
+        <div>{$t("paywall.benefitTutor")}</div>
+        <div>{$t("paywall.benefitExplanations")}</div>
+        <div>{$t("paywall.benefitQuickChat")}</div>
       </div>
 
       <div class="pricing">
         {#if isLoading}
-          <span>Cargando precio...</span>
+          <span>{$t("paywall.loadingPrice")}</span>
         {:else if config}
           <div class="price-row">
             <span class="price">
               {getRequiredSats()?.toLocaleString()} sats
             </span>
-            <span class="period">/ {config.subscriptionDays} días</span>
+            <span class="period">
+              {$t("paywall.period", { days: config.subscriptionDays })}
+            </span>
           </div>
           {#if config.priceUsd}
             <div class="usd">≈ ${config.priceUsd} USD</div>
           {/if}
           {#if billing?.discountPercent}
             <div class="discount">
-              {billing.discountPercent}% OFF aplicado
+              {$t("paywall.discountApplied", { percent: billing.discountPercent })}
             </div>
           {/if}
         {/if}
@@ -137,9 +154,9 @@
         {#if config}
           <div class="address-block">
             <div class="label">
-              Enviar BTC ({config.network === "testnet"
-                ? "Testnet"
-                : "Mainnet"})
+              {$t("paywall.sendBtc", {
+                network: $t(`paywall.network.${config.network}`),
+              })}
             </div>
             <div class="address">{config.address}</div>
           </div>
@@ -147,34 +164,36 @@
           <div class="tx-input">
             <input
               type="text"
-              placeholder="Pega el TXID aquí"
+              placeholder={$t("paywall.txPlaceholder")}
               bind:value={txId}
             />
             <button onclick={handleVerify} disabled={isVerifying || !txId.trim()}>
-              {isVerifying ? "Verificando..." : "Verificar pago"}
+              {isVerifying ? $t("paywall.verifying") : $t("paywall.verify")}
             </button>
           </div>
         {/if}
 
-        <div class="address-block">
-          <div class="label">ETH / BNB (EVM)</div>
-          <div class="address">0x2e30F75873B1A3A07A55179E6e7CBb7Fa8a3B0a7</div>
-        </div>
+      </div>
 
-        <div class="address-block">
-          <div class="label">Solana (SOL)</div>
-          <div class="address">H9WXRbYgizvGA3B2gywupwdw reocGoexu7YeLMdYPAZ8</div>
-        </div>
+      <div class="crypto-support">
+        <p class="crypto-note">
+          {$t("paywall.cryptoNote")}
+        </p>
+        <SupportCryptoCard
+          variant="compact"
+          title={$t("support.compactTitle")}
+          subtitle={$t("support.compactSubtitle")}
+        />
       </div>
 
       <div class="byok-tip">
-        BYOK siempre es gratis.
-        <a href={`${base}/settings`}>Configura tu API key</a>
+        {$t("paywall.byok")}
+        <a href={`${base}/settings`}>{$t("paywall.byokLink")}</a>
       </div>
 
       <footer>
         <button class="secondary" onclick={closeModal}>
-          {mode === "nag" ? "Seguir gratis" : "Cerrar"}
+          {mode === "nag" ? $t("paywall.keepFree") : $t("common.close")}
         </button>
       </footer>
     </div>
@@ -336,6 +355,18 @@
   .byok-tip {
     font-size: 0.8rem;
     color: rgba(226, 232, 240, 0.7);
+  }
+
+  .crypto-support {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .crypto-note {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.75);
   }
 
   .byok-tip a {

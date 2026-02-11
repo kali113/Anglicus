@@ -1,77 +1,37 @@
+<script lang="ts">
+  import { t } from "$lib/i18n";
+</script>
+
 <svelte:head>
-  <title>Legal | Anglicus</title>
+  <title>{$t("legal.headTitle")}</title>
 </svelte:head>
 
 <div class="legal-page">
   <header class="legal-header">
-    <h1>Legal</h1>
-    <p>Ultima actualizacion: 2026-02-10</p>
-    <p>
-      Este resumen no es asesoramiento legal. Para dudas legales, consulta un
-      profesional.
-    </p>
+    <h1>{$t("legal.title")}</h1>
+    <p>{$t("legal.lastUpdated", { date: "2026-02-10" })}</p>
+    <p>{$t("legal.disclaimer")}</p>
   </header>
 
   <section id="terms" class="legal-section">
-    <h2>Terminos de Servicio / Terms of Service</h2>
-    <p>
-      <strong>ES:</strong> Anglicus es una herramienta educativa. El servicio se
-      ofrece "tal cual" y puede cambiar con el tiempo. Eres responsable del
-      contenido que compartes y de cumplir la ley aplicable. Si eres menor,
-      utiliza la app con permiso de tus tutores.
-    </p>
-    <p>
-      <strong>EN:</strong> Anglicus is an educational tool. The service is
-      provided "as is" and may change over time. You are responsible for the
-      content you share and for complying with applicable law. If you are a
-      minor, use the app with guardian permission.
-    </p>
-    <p>
-      Contacto / Contact: support@anglicus.app
-    </p>
+    <h2>{$t("legal.terms.title")}</h2>
+    <p>{$t("legal.terms.body")}</p>
+    <p>{$t("legal.contact")}</p>
   </section>
 
   <section id="privacy" class="legal-section">
-    <h2>Privacidad / Privacy</h2>
-    <p>
-      <strong>ES:</strong> Guardamos tu progreso y configuracion en tu propio
-      dispositivo (localStorage). Si activas recordatorios por email, guardamos
-      tu email cifrado solo para enviarte recordatorios y nunca lo vendemos.
-      Puedes desactivar o borrar estos datos desde Configuracion.
-    </p>
-    <p>
-      <strong>EN:</strong> Your progress and settings are stored on your device
-      (localStorage). If you enable email reminders, your email is stored
-      encrypted only for sending reminders and is never sold. You can disable or
-      delete this data from Settings.
-    </p>
+    <h2>{$t("legal.privacy.title")}</h2>
+    <p>{$t("legal.privacy.body")}</p>
   </section>
 
   <section id="cookies" class="legal-section">
-    <h2>Cookies / Cookies</h2>
-    <p>
-      <strong>ES:</strong> Usamos almacenamiento local y cookies tecnicas
-      necesarias para el funcionamiento y la seguridad. No usamos cookies de
-      publicidad.
-    </p>
-    <p>
-      <strong>EN:</strong> We use local storage and essential technical cookies
-      for functionality and security. We do not use advertising cookies.
-    </p>
+    <h2>{$t("legal.cookies.title")}</h2>
+    <p>{$t("legal.cookies.body")}</p>
   </section>
 
   <section id="data-protection" class="legal-section">
-    <h2>Proteccion de Datos / Data Protection</h2>
-    <p>
-      <strong>ES:</strong> Puedes solicitar acceso, correccion o eliminacion de
-      tus datos. La eliminacion se puede hacer desde Configuracion (Borrar todos
-      los datos) o escribiendo a support@anglicus.app.
-    </p>
-    <p>
-      <strong>EN:</strong> You can request access, correction, or deletion of
-      your data. Deletion can be done from Settings (Delete all data) or by
-      emailing support@anglicus.app.
-    </p>
+    <h2>{$t("legal.dataProtection.title")}</h2>
+    <p>{$t("legal.dataProtection.body")}</p>
   </section>
 </div>
 

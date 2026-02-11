@@ -7,16 +7,17 @@
   } from "$lib/storage/user-store";
   import type { UserProfile } from "$lib/types/user";
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
+  import { t } from "$lib/i18n";
 
   let user = $state<UserProfile | null>(null);
   let isLoading = $state(true);
 
-  onMount(() => {
-    if (!hasCompletedOnboarding()) {
+  onMount(async () => {
+    if (!(await hasCompletedOnboarding())) {
       window.location.href = `${base}/onboarding`;
       return;
     }
-    user = getUserProfile();
+    user = await getUserProfile();
     isLoading = false;
   });
 </script>
@@ -24,13 +25,13 @@
 {#if isLoading}
   <div class="loading-screen">
     <div class="spinner"></div>
-    <p>Cargando...</p>
+    <p>{$t("common.loading")}</p>
   </div>
 {:else}
   <div class="lessons-page">
     <header class="page-header">
-      <h1>Tu Camino de Aprendizaje</h1>
-      <p>Completa lecciones para desbloquear nuevas habilidades y logros</p>
+      <h1>{$t("lessons.title")}</h1>
+      <p>{$t("lessons.subtitle")}</p>
     </header>
 
     {#if user}

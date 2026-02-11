@@ -1,10 +1,3 @@
-/**
- * Promo code configuration.
- * PROMO_CODE_HASHES contains SHA-256 hashes of valid promo codes (prefixed).
- * Never store raw codes in source.
- */
-
-export const PROMO_CODE_PREFIX = "anglicus-promo-v1";
 export const PROMO_CODE_DISCOUNT_PERCENT = 50;
 export const PROMO_CODE_HASHES = [
   "de55b09032c7583c47b2c02c24e2099b357cc65f3e2e7152ed9591725ae5c4b0",

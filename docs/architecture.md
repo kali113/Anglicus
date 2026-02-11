@@ -23,6 +23,14 @@ EN: Anglicus combines a SvelteKit PWA with a serverless backend on Cloudflare Wo
 - `web/src/routes/` páginas principales (dashboard, tutor, settings)
 - `web/src/lib/` componentes y almacenamiento local
 
+## i18n / i18n
+ES: La UI se localiza con soporte ES/EN.
+EN: The UI is localized with ES/EN support.
+
+## Monetización / Monetization
+ES: Paywall para funciones premium con soporte de pagos en cripto.
+EN: Paywall for premium features with crypto payment support.
+
 ## Contexto comprimido / Context compression
 ES: Enviar solo perfil resumido, errores recientes y 3-5 últimos turnos.
 EN: Send only a summarized profile, recent errors, and the last 3-5 turns.

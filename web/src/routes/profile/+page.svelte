@@ -4,11 +4,16 @@
   import { getUserProfile } from "$lib/storage/user-store";
   import type { UserProfile } from "$lib/types/user";
   import WeeklyChart from "$lib/components/WeeklyChart.svelte";
+  import { t } from "$lib/i18n";
 
   let userProfile = $state<UserProfile | null>(null);
+  const getAchievementLabel = (achievement: UserProfile["achievements"][number]) => {
+    const value = $t(`achievements.${achievement.id}`);
+    return value.startsWith("achievements.") ? achievement.name : value;
+  };
 
-  onMount(() => {
-    userProfile = getUserProfile();
+  onMount(async () => {
+    userProfile = await getUserProfile();
   });
 </script>
 
@@ -20,16 +25,22 @@
         <div class="avatar-container">
           <img
             src="https://ui-avatars.com/api/?name={userProfile.name}&background=0d9488&color=fff"
-            alt="Avatar"
+            alt={$t("profile.avatarAlt")}
             class="avatar"
           />
         </div>
         <div class="texts">
           <h1>{userProfile.name}</h1>
-          <span class="level">Nivel {userProfile.level}</span>
+          <span class="level">
+            {$t("profile.level", { level: userProfile.level })}
+          </span>
         </div>
       </div>
-      <a href={`${base}/settings`} class="settings-btn" aria-label="Configuración">
+      <a
+        href={`${base}/settings`}
+        class="settings-btn"
+        aria-label={$t("nav.settings")}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"
@@ -63,7 +74,7 @@
         >
       </div>
       <div class="xp-content">
-        <span class="label">XP Total:</span>
+        <span class="label">{$t("profile.totalXp")}</span>
         <span class="value">{userProfile.totalXP || 0}</span>
       </div>
       <div class="xp-bg"></div>
@@ -72,7 +83,7 @@
     <!-- Stats Grid -->
     <section class="stats-grid">
       <div class="stat-box">
-        <div class="stat-title">Palabras aprendidas:</div>
+        <div class="stat-title">{$t("profile.wordsLearned")}</div>
         <div class="stat-row">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -92,25 +103,27 @@
         </div>
       </div>
       <div class="stat-box">
-        <div class="stat-title">Racha actual:</div>
+        <div class="stat-title">{$t("profile.currentStreak")}</div>
         <div class="stat-row">
           <span class="fire">🔥</span>
-          <span class="stat-number">{userProfile.streakDays} Días</span>
+          <span class="stat-number">
+            {$t("profile.streakDays", { days: userProfile.streakDays })}
+          </span>
         </div>
       </div>
     </section>
 
     <!-- Weekly Activity -->
     <section class="chart-section">
-      <h3>Actividad semanal</h3>
+      <h3>{$t("profile.weeklyActivity")}</h3>
       <WeeklyChart data={userProfile.weeklyActivity || [0, 0, 0, 0, 0, 0, 0]} />
     </section>
 
     <!-- Achievements -->
     <section class="achievements-section">
       <div class="section-header">
-        <h3>Logros</h3>
-        <span class="unlocked-count">Desbloqueado</span>
+        <h3>{$t("profile.achievements")}</h3>
+        <span class="unlocked-count">{$t("profile.unlocked")}</span>
       </div>
 
       <div class="achievements-emoji" aria-hidden="true">🏆</div>
@@ -148,7 +161,7 @@
                 </div>
               {/if}
             </div>
-            <span class="achievement-title">{achievement.name}</span>
+            <span class="achievement-title">{getAchievementLabel(achievement)}</span>
           </div>
         {/each}
       </div>

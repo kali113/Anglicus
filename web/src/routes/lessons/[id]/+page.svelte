@@ -2,15 +2,16 @@
   import { page } from "$app/stores";
   import { completeLesson } from "$lib/storage/user-store";
   import { goto } from "$app/navigation";
-import { base } from "$app/paths";
+  import { base } from "$app/paths";
   import confetti from "canvas-confetti";
   import ChatInterface from "$lib/components/ChatInterface.svelte";
   import { fade } from "svelte/transition";
+  import { t } from "$lib/i18n";
 
   const lessonId = $page.params.id ?? "general-practice";
   let isCompleted = false;
 
-  function handleComplete() {
+  async function handleComplete() {
     isCompleted = true;
     confetti({
       particleCount: 150,
@@ -19,7 +20,7 @@ import { base } from "$app/paths";
       colors: ["#2dd4bf", "#3b82f6", "#f59e0b"],
     });
 
-    completeLesson(lessonId);
+    await completeLesson(lessonId);
 
     setTimeout(() => {
       goto(`${base}/`);
@@ -42,11 +43,11 @@ import { base } from "$app/paths";
           stroke-linecap="round"
           stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg
         >
-        Back
+        {$t("lessonDetail.back")}
       </button>
       <h1>{lessonId.replace(/-/g, " ")}</h1>
       <div class="progress">
-        <div class="streak">🔥 Practice Mode</div>
+        <div class="streak">🔥 {$t("lessonDetail.practiceMode")}</div>
       </div>
     </header>
 
@@ -59,10 +60,12 @@ import { base } from "$app/paths";
     <div class="success-overlay" in:fade>
       <div class="success-card">
         <div class="icon">🎉</div>
-        <h2>Lesson Completed!</h2>
+        <h2>{$t("lessonDetail.completed")}</h2>
         <p>
-          You earned <strong>50 XP</strong> and learned
-          <strong>12 new words</strong>.
+          {@html $t("lessonDetail.earned", {
+            xp: "<strong>50 XP</strong>",
+            words: `<strong>${$t("lessonDetail.newWords", { words: 12 })}</strong>`,
+          })}
         </p>
       </div>
     </div>

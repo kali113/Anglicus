@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
+	import { t } from '$lib/i18n';
 
 	onMount(() => {
 		// Redirect to the new placement test
@@ -11,7 +12,7 @@
 
 <div class="onboarding">
 	<div class="spinner"></div>
-	<p>Redirigiendo al test de nivel...</p>
+	<p>{$t('onboarding.redirecting')}</p>
 </div>
 
 <style>

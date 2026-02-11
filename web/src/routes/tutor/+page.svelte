@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
-  import { getLanguageLabel } from "$lib/types/user.js";
+  import type { LanguageCode } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
@@ -12,11 +12,12 @@
     markPaywallShown,
     recordBillingUsage,
   } from "$lib/billing/index.js";
+  import { locale, t } from "$lib/i18n";
 
-  let profile = getUserProfile();
-  const targetLanguage = profile?.targetLanguage ?? "en";
-  const uiLanguage = profile?.nativeLanguage ?? "es";
-  const targetLabel = $derived(getLanguageLabel(targetLanguage, uiLanguage));
+  let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
+  let targetLanguage = $state<LanguageCode>("en");
+  let uiLanguage = $derived($locale);
+  const targetLabel = $derived($t(`languages.name.${targetLanguage}`));
   let messages = $state<ChatMessage[]>([]);
   let inputMessage = $state("");
   let isLoading = $state(false);
@@ -26,7 +27,9 @@
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
 
-  onMount(() => {
+  onMount(async () => {
+    profile = await getUserProfile();
+    targetLanguage = profile?.targetLanguage ?? "en";
     if (!profile) {
       window.location.href = `${base}/onboarding`;
       return;
@@ -37,7 +40,7 @@
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
 
-    const decision = checkBillingAccess("tutor");
+    const decision = await checkBillingAccess("tutor");
     if (decision) {
       if (decision.mode === "block") {
         openPaywall("block", getFeatureLabel("tutor"));
@@ -85,16 +88,15 @@
       };
 
       messages = [...messages, assistantMessage];
-      recordBillingUsage("tutor");
+      await recordBillingUsage("tutor");
     } catch (error) {
-      errorMessage =
-        "Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.";
+      errorMessage = $t("tutor.connectionError");
       messages = [
         ...messages,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Lo siento, hubo un error de conexión. ",
+          content: $t("tutor.assistantError"),
           timestamp: new Date().toISOString(),
         },
       ];
@@ -112,21 +114,21 @@
     }, 50);
   }
 
-  function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(mode: "nag" | "block", feature: string) {
     paywallMode = mode;
     paywallFeature = feature;
     showPaywall = true;
-    markPaywallShown();
+    await markPaywallShown();
   }
 </script>
 
-<div class="tutor-page">
+  <div class="tutor-page">
   <header class="header">
-    <h1>Tutor IA</h1>
+    <h1>{$t("tutor.title")}</h1>
     <p class="subtitle">
-      {uiLanguage === "es"
-        ? `Practica ${targetLabel.toLowerCase()} conmigo`
-        : `Practice ${targetLabel} with me`}
+      {$t("tutor.subtitle", {
+        language: uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+      })}
     </p>
   </header>
 
@@ -148,14 +150,12 @@
           /></svg
         >
         <p>
-          {uiLanguage === "es"
-            ? `¡Hola! Soy tu tutor de ${targetLabel.toLowerCase()}.`
-            : `Hi! I'm your ${targetLabel} tutor.`}
+          {$t("tutor.emptyGreeting", {
+            language: uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+          })}
         </p>
         <p>
-          {uiLanguage === "es"
-            ? "Escribe algo para empezar a practicar."
-            : "Type something to start practicing."}
+          {$t("tutor.emptyPrompt")}
         </p>
       </div>
     {/if}
@@ -189,13 +189,13 @@
     {#if errorMessage}
       <div class="error-banner">
         {errorMessage}
-        <a href={`${base}/settings`}>Configuración</a>
+        <a href={`${base}/settings`}>{$t("tutor.settingsLink")}</a>
       </div>
     {/if}
     <input
       type="text"
       bind:value={inputMessage}
-      placeholder="Escribe tu mensaje..."
+      placeholder={$t("tutor.placeholder")}
       disabled={isLoading}
       onkeydown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
     />
@@ -203,7 +203,7 @@
       type="submit"
       disabled={!inputMessage.trim() || isLoading}
       class="send-btn"
-      aria-label="Send message"
+      aria-label={$t("tutor.send")}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

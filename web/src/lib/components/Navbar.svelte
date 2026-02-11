@@ -2,8 +2,14 @@
   import { page } from "$app/stores";
   import { base } from "$app/paths";
   import type { UserProfile } from "$lib/types/user";
+  import { locale, t, toggleLocale } from "$lib/i18n";
 
-  let { user = null }: { user?: UserProfile | null } = $props();
+  interface $$Props {
+    user?: UserProfile | null;
+  }
+
+  let { user = null } = $props();
+  const nextLocale = $derived($locale === "es" ? "en" : "es");
 </script>
 
 <nav class="navbar">
@@ -23,26 +29,47 @@
           points="2 17 12 22 22 17"
         /><polyline points="2 12 12 17 22 12" /></svg
       >
-      <span>Anglicus</span>
+      <span>{$t("app.name")}</span>
     </a>
 
     <div class="nav-links">
-      <a href="{base}/" class:active={$page.url.pathname === `${base}/`}>Inicio</a>
+      <a href="{base}/" class:active={$page.url.pathname === `${base}/`}>
+        {$t("nav.home")}
+      </a>
       <a
         href="{base}/lessons"
-        class:active={$page.url.pathname.startsWith(`${base}/lessons`)}>Lecciones</a
+        class:active={$page.url.pathname.startsWith(`${base}/lessons`)}
+      >
+        {$t("nav.lessons")}
+      </a
       >
       <a
         href="{base}/exercises"
-        class:active={$page.url.pathname.startsWith(`${base}/exercises`)}>Práctica</a
+        class:active={$page.url.pathname.startsWith(`${base}/exercises`)}
+      >
+        {$t("nav.practice")}
+      </a
       >
       <a
         href="{base}/profile"
-        class:active={$page.url.pathname.startsWith(`${base}/profile`)}>Perfil</a
+        class:active={$page.url.pathname.startsWith(`${base}/profile`)}
+      >
+        {$t("nav.profile")}
+      </a
       >
     </div>
 
     <div class="user-menu">
+      <button
+        class="lang-toggle"
+        type="button"
+        onclick={toggleLocale}
+        aria-label={$t("nav.languageSwitch", {
+          language: $t(`languages.name.${nextLocale}`),
+        })}
+      >
+        {$t(`languages.short.${nextLocale}`)}
+      </button>
       {#if user}
         <div class="user-info">
           <div class="avatar">
@@ -57,7 +84,7 @@
           <a
             href="{base}/settings#notifications"
             class="icon-btn"
-            aria-label="Notificaciones"
+            aria-label={$t("nav.notifications")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -74,7 +101,11 @@
                /></svg
             >
           </a>
-          <a href="{base}/settings" class="icon-btn" aria-label="Configuración">
+          <a
+            href="{base}/settings"
+            class="icon-btn"
+            aria-label={$t("nav.settings")}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -202,6 +233,24 @@
   .actions {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .lang-toggle {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.45rem 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .lang-toggle:hover {
+    background: var(--border);
+    color: var(--text);
+    transform: translateY(-1px);
   }
 
   .icon-btn {

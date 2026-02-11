@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import {
     getSettings,
@@ -24,11 +25,16 @@
   } from "$lib/notifications/index.js";
   import { testConnection, type ConnectionTestResult } from "$lib/ai/index.js";
   import type { ApiTier } from "$lib/types/api.js";
+  import { t } from "$lib/i18n";
 
   type TestableTier = "backend" | "byok" | "puter";
 
   let settings = $state(getSettings());
-  let profile = $state(getUserProfile());
+  let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
+
+  onMount(async () => {
+    profile = await getUserProfile();
+  });
 
   let showApiDetails = $state(false);
   let testingConnection = $state(false);
@@ -67,9 +73,9 @@
     if (success) {
       customApiKey = "";
       settings = getSettings();
-      alert("API key guardada de forma segura");
+      alert($t("settings.alerts.apiKeySaved"));
     } else {
-      alert("Error al guardar la API key");
+      alert($t("settings.alerts.apiKeyError"));
     }
   }
 
@@ -104,7 +110,7 @@
 
     const permission = await requestNotificationPermission();
     if (permission !== "granted") {
-      alert("Necesitas permitir notificaciones para activar recordatorios.");
+      alert($t("settings.alerts.notificationsPermission"));
       return;
     }
 
@@ -131,12 +137,12 @@
   async function syncEmailReminders() {
     const email = normalizeEmail(reminderEmail || profile?.email || "");
     if (!email) {
-      alert("Escribe un email para activar recordatorios.");
+      alert($t("settings.alerts.emailRequired"));
       return;
     }
 
     if (!isValidEmail(email)) {
-      alert("El email no es valido.");
+      alert($t("settings.alerts.emailInvalid"));
       return;
     }
 
@@ -151,12 +157,12 @@
     remindersBusy = false;
 
     if (!success) {
-      alert("No se pudo guardar el recordatorio por email.");
+      alert($t("settings.alerts.emailSaveFailed"));
       return;
     }
 
-    updateUserProfile({ email });
-    profile = getUserProfile();
+    await updateUserProfile({ email });
+    profile = await getUserProfile();
     reminderEmail = email;
 
     updateSettings({
@@ -174,7 +180,7 @@
       const success = await unsubscribeReminders(email);
       remindersBusy = false;
       if (!success) {
-        alert("No se pudo desactivar el recordatorio por email.");
+        alert($t("settings.alerts.emailDisableFailed"));
         return;
       }
     }
@@ -183,8 +189,8 @@
     settings = getSettings();
 
     if (clearEmail) {
-      updateUserProfile({ email: undefined });
-      profile = getUserProfile();
+      await updateUserProfile({ email: undefined });
+      profile = await getUserProfile();
       reminderEmail = "";
     }
   }
@@ -201,7 +207,7 @@
   async function handleSendReminderTest() {
     const email = normalizeEmail(reminderEmail || profile?.email || "");
     if (!email || !isValidEmail(email)) {
-      alert("Necesitas un email valido para enviar la prueba.");
+      alert($t("settings.alerts.testEmailRequired"));
       return;
     }
 
@@ -213,11 +219,11 @@
     remindersBusy = false;
 
     if (!success) {
-      alert("No se pudo enviar el email de prueba.");
+      alert($t("settings.alerts.testEmailFailed"));
       return;
     }
 
-    alert("Email de prueba enviado.");
+    alert($t("settings.alerts.testEmailSent"));
   }
 
   async function handleDeleteReminderData() {
@@ -227,7 +233,7 @@
   async function handleTestNotification() {
     const permission = await requestNotificationPermission();
     if (permission !== "granted") {
-      alert("Debes permitir notificaciones para ver la prueba.");
+      alert($t("settings.alerts.notificationTestPermission"));
       return;
     }
 
@@ -244,7 +250,7 @@
       if (reminderEmail) {
         const success = await unsubscribeReminders(reminderEmail);
         if (!success) {
-          alert("No se pudieron borrar los recordatorios en el servidor.");
+          alert($t("settings.alerts.remindersDeleteFailed"));
         }
       }
       stopBrowserReminder();
@@ -260,12 +266,12 @@
 
 <div class="settings-page">
   <header class="header">
-    <h1>Configuración</h1>
+    <h1>{$t("settings.title")}</h1>
   </header>
 
   <section class="section" id="notifications">
-    <h2>Notificaciones</h2>
-    <p class="help">Configura recordatorios de practica.</p>
+    <h2>{$t("settings.notifications.title")}</h2>
+    <p class="help">{$t("settings.notifications.description")}</p>
 
     <div class="notification-card">
       <div class="toggle-row">
@@ -275,21 +281,21 @@
             checked={settings.notificationsEnabled}
             onchange={toggleBrowserReminders}
           />
-          <span>Recordatorios en el navegador</span>
+          <span>{$t("settings.notifications.browserReminders")}</span>
         </label>
         <button class="btn secondary" onclick={handleTestNotification}>
-          Probar
+          {$t("settings.notifications.test")}
         </button>
       </div>
       <p class="help small">
-        Se mostraran mientras la app este abierta y con permiso activado.
+        {$t("settings.notifications.browserHelp")}
       </p>
     </div>
 
     <div class="reminder-grid">
       <div class="input-group">
         <label>
-          Hora del recordatorio
+          {$t("settings.notifications.reminderTime")}
           <input
             type="time"
             class="input"
@@ -300,14 +306,14 @@
       </div>
       <div class="input-group">
         <label>
-          Frecuencia
+          {$t("settings.notifications.frequency")}
           <select
             class="input"
             bind:value={reminderFrequency}
             onchange={handleReminderFrequencyChange}
           >
-            <option value="daily">Diario</option>
-            <option value="weekly">Semanal</option>
+            <option value="daily">{$t("settings.notifications.frequencyDaily")}</option>
+            <option value="weekly">{$t("settings.notifications.frequencyWeekly")}</option>
           </select>
         </label>
       </div>
@@ -322,35 +328,34 @@
             onchange={toggleEmailReminders}
             disabled={remindersBusy}
           />
-          <span>Recordatorios por email</span>
+          <span>{$t("settings.notifications.emailReminders")}</span>
         </label>
         <button
           class="btn secondary"
           onclick={handleSendReminderTest}
           disabled={remindersBusy || !settings.emailRemindersEnabled}
         >
-          Enviar prueba
+          {$t("settings.notifications.sendTest")}
         </button>
       </div>
 
       <div class="input-group">
         <label>
-          Email
+          {$t("settings.notifications.emailLabel")}
           <input
             type="email"
             class="input"
-            placeholder="tu@email.com"
+            placeholder={$t("settings.notifications.emailPlaceholder")}
             bind:value={reminderEmail}
           />
         </label>
         {#if reminderEmail.trim() && !isValidEmail(reminderEmail)}
-          <p class="error-text">Email invalido.</p>
+          <p class="error-text">{$t("settings.validation.emailInvalid")}</p>
         {/if}
       </div>
 
       <p class="help small">
-        Tu email se guarda cifrado solo para enviar recordatorios. Puedes
-        eliminarlo cuando quieras.
+        {$t("settings.notifications.emailHelp")}
       </p>
 
       <div class="reminder-actions">
@@ -361,22 +366,22 @@
             (!reminderEmail.trim() && !profile?.email) ||
             (!!reminderEmail.trim() && !isValidEmail(reminderEmail))}
         >
-          Guardar
+          {$t("settings.save")}
         </button>
         <button
           class="btn danger"
           onclick={handleDeleteReminderData}
           disabled={remindersBusy}
         >
-          Eliminar datos
+          {$t("settings.deleteData")}
         </button>
       </div>
     </div>
   </section>
 
   <section class="section">
-    <h2>Modo de API</h2>
-    <p class="help">Elige cómo quieres conectarte a la IA</p>
+    <h2>{$t("settings.apiMode.title")}</h2>
+    <p class="help">{$t("settings.apiMode.description")}</p>
 
     <div class="api-modes">
       <button
@@ -386,8 +391,8 @@
       >
         <div class="mode-icon">🔄</div>
         <div class="mode-info">
-          <div class="mode-name">Automático</div>
-          <div class="mode-desc">Prueba todas las opciones</div>
+          <div class="mode-name">{$t("settings.apiMode.autoTitle")}</div>
+          <div class="mode-desc">{$t("settings.apiMode.autoDescription")}</div>
         </div>
       </button>
 
@@ -398,8 +403,8 @@
       >
         <div class="mode-icon">☁️</div>
         <div class="mode-info">
-          <div class="mode-name">Servidor</div>
-          <div class="mode-desc">Usa claves del dueño</div>
+          <div class="mode-name">{$t("settings.apiMode.serverTitle")}</div>
+          <div class="mode-desc">{$t("settings.apiMode.serverDescription")}</div>
         </div>
       </button>
 
@@ -410,38 +415,38 @@
       >
         <div class="mode-icon">🔑</div>
         <div class="mode-info">
-          <div class="mode-name">Mi Clave</div>
-          <div class="mode-desc">Usa tu API key</div>
+          <div class="mode-name">{$t("settings.apiMode.byokTitle")}</div>
+          <div class="mode-desc">{$t("settings.apiMode.byokDescription")}</div>
         </div>
       </button>
     </div>
   </section>
 
-  {#if settings.apiConfig.tier === "byok"}
-    <section class="section">
-      <h2>Configurar API Key</h2>
-      <p class="help">Tu clave se guarda encriptada en tu dispositivo</p>
+{#if settings.apiConfig.tier === "byok"}
+  <section class="section">
+    <h2>{$t("settings.apiKey.title")}</h2>
+    <p class="help">{$t("settings.apiKey.description")}</p>
 
       <div class="api-config">
-        <input
-          type="password"
-          bind:value={customApiKey}
-          placeholder="sk-..."
-          class="input"
-        />
-        <button class="btn secondary" onclick={handleSaveApiKey}>
-          Guardar Clave
-        </button>
-      </div>
+      <input
+        type="password"
+        bind:value={customApiKey}
+        placeholder={$t("settings.apiKey.placeholder")}
+        class="input"
+      />
+      <button class="btn secondary" onclick={handleSaveApiKey}>
+        {$t("settings.apiKey.save")}
+      </button>
+    </div>
 
       <div class="input-group">
         <div class="input-group">
           <label>
-            Base URL (opcional - por defecto: api.openai.com)
+            {$t("settings.apiKey.baseUrlLabel")}
             <input
               type="text"
               bind:value={customBaseUrl}
-              placeholder="https://api.openai.com"
+              placeholder={$t("settings.apiKey.baseUrlPlaceholder")}
               class="input"
               onchange={() => setCustomBaseUrl(customBaseUrl)}
             />
@@ -452,8 +457,8 @@
   {/if}
 
   <section class="section">
-    <h2>Probar Conexión</h2>
-    <p class="help">Verifica que la API funcione</p>
+    <h2>{$t("settings.connectionTest.title")}</h2>
+    <p class="help">{$t("settings.connectionTest.description")}</p>
 
     <div class="test-buttons">
       <div class="test-item">
@@ -463,13 +468,13 @@
           disabled={testingConnection}
         >
           {#if testingConnection}
-            Probando...
+            {$t("settings.connectionTest.testing")}
           {:else if connectionStatus.backend?.success === true}
-            ✅ Funciona
+            {$t("settings.connectionTest.success")}
           {:else if connectionStatus.backend?.success === false}
-            ❌ Falló
+            {$t("settings.connectionTest.failed")}
           {:else}
-            Probar Servidor
+            {$t("settings.connectionTest.testServer")}
           {/if}
         </button>
         {#if connectionStatus.backend?.success === false && connectionStatus.backend?.error}
@@ -486,13 +491,13 @@
           disabled={testingConnection}
         >
           {#if testingConnection}
-            Probando...
+            {$t("settings.connectionTest.testing")}
           {:else if connectionStatus.byok?.success === true}
-            ✅ Funciona
+            {$t("settings.connectionTest.success")}
           {:else if connectionStatus.byok?.success === false}
-            ❌ Falló
+            {$t("settings.connectionTest.failed")}
           {:else}
-            Probar Mi Clave
+            {$t("settings.connectionTest.testByok")}
           {/if}
         </button>
         {#if connectionStatus.byok?.success === false && connectionStatus.byok?.error}
@@ -505,20 +510,23 @@
   </section>
 
   <section class="section danger">
-    <h2>Zona de Peligro</h2>
+    <h2>{$t("settings.dangerZone.title")}</h2>
 
     <button class="btn danger" onclick={handleClearData}>
-      Borrar todos los datos
+      {$t("settings.dangerZone.clearData")}
     </button>
   </section>
 
   {#if profile}
     <section class="section">
-      <h2>Perfil</h2>
+      <h2>{$t("settings.profile.title")}</h2>
       <div class="profile-info">
-        <p><strong>Nombre:</strong> {profile.name}</p>
-        <p><strong>Nivel:</strong> {profile.level}</p>
-        <p><strong>Racha:</strong> {profile.streakDays} días</p>
+        <p><strong>{$t("settings.profile.name")}:</strong> {profile.name}</p>
+        <p><strong>{$t("settings.profile.level")}:</strong> {profile.level}</p>
+        <p>
+          <strong>{$t("settings.profile.streak")}:</strong>
+          {$t("settings.profile.streakDays", { days: profile.streakDays })}
+        </p>
       </div>
     </section>
   {/if}
@@ -526,17 +534,17 @@
   {#if showDeleteConfirm}
     <div class="modal-backdrop">
       <div class="modal">
-        <h3>¿Borrar todos los datos?</h3>
-        <p>Esta acción no se puede deshacer. Perderás todo tu progreso.</p>
+        <h3>{$t("settings.deleteModal.title")}</h3>
+        <p>{$t("settings.deleteModal.description")}</p>
         <div class="modal-actions">
           <button
             class="btn secondary"
             onclick={() => (showDeleteConfirm = false)}
           >
-            Cancelar
+            {$t("common.cancel")}
           </button>
           <button class="btn danger" onclick={performDelete}>
-            Sí, borrar todo
+            {$t("settings.deleteModal.confirm")}
           </button>
         </div>
       </div>

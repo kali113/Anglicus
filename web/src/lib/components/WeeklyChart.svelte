@@ -1,13 +1,22 @@
 <script lang="ts">
+  import { t } from "$lib/i18n";
+
   interface Props {
     data: number[]; // Array of 7 numbers representing activity for Mon-Sun
     labels?: string[];
   }
 
-  let {
-    data,
-    labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-  }: Props = $props();
+  let { data, labels }: Props = $props();
+  const defaultLabels = $derived([
+    $t("days.sunShort"),
+    $t("days.monShort"),
+    $t("days.tueShort"),
+    $t("days.wedShort"),
+    $t("days.thuShort"),
+    $t("days.friShort"),
+    $t("days.satShort"),
+  ]);
+  const resolvedLabels = $derived(labels ?? defaultLabels);
 
   // Normalize data for bar heights (max height 100%)
   const maxVal = $derived(Math.max(...data, 1)); // avoid division by zero
@@ -18,11 +27,15 @@
   {#each normalizedData as height, i}
     <div class="chart-col">
       <div class="bar-container">
-        <div class="bar" style="height: {height}%" title="{data[i]} mins">
+        <div
+          class="bar"
+          style="height: {height}%"
+          title={$t("weeklyChart.minutesTooltip", { minutes: data[i] })}
+        >
           <div class="bar-glow"></div>
         </div>
       </div>
-      <div class="label">{labels[i]}</div>
+      <div class="label">{resolvedLabels[i]}</div>
     </div>
   {/each}
 </div>

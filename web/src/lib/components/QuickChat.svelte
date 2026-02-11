@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { getUserProfile } from "$lib/storage/user-store.js";
-  import { getLanguageLabel } from "$lib/types/user.js";
+  import type { LanguageCode } from "$lib/types/user.js";
   import { getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
@@ -10,11 +11,15 @@
     markPaywallShown,
     recordBillingUsage,
   } from "$lib/billing/index.js";
+  import { locale, t } from "$lib/i18n";
 
-  let profile = getUserProfile();
-  const targetLanguage = profile?.targetLanguage ?? "en";
-  const uiLanguage = profile?.nativeLanguage ?? "es";
-  const targetLabel = $derived(getLanguageLabel(targetLanguage, uiLanguage));
+  let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
+  let targetLanguage = $state<LanguageCode>("en");
+  let uiLanguage = $derived($locale);
+  const targetLabel = $derived($t(`languages.name.${targetLanguage}`));
+  const placeholderLanguage = $derived(
+    uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+  );
   let messages = $state<ChatMessage[]>([]);
   let inputMessage = $state("");
   let isLoading = $state(false);
@@ -24,10 +29,15 @@
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("quickChat"));
 
+  onMount(async () => {
+    profile = await getUserProfile();
+    targetLanguage = profile?.targetLanguage ?? "en";
+  });
+
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
 
-    const decision = checkBillingAccess("quickChat");
+    const decision = await checkBillingAccess("quickChat");
     if (decision) {
       if (decision.mode === "block") {
         openPaywall("block", getFeatureLabel("quickChat"));
@@ -72,14 +82,14 @@
       };
 
       messages = [...messages, assistantMessage];
-      recordBillingUsage("quickChat");
+      await recordBillingUsage("quickChat");
     } catch (error) {
       messages = [
         ...messages,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Sorry, I couldn't connect. Try again later!",
+          content: $t("quickChat.error"),
           timestamp: new Date().toISOString(),
         },
       ];
@@ -109,11 +119,11 @@
     isExpanded = false;
   }
 
-  function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(mode: "nag" | "block", feature: string) {
     paywallMode = mode;
     paywallFeature = feature;
     showPaywall = true;
-    markPaywallShown();
+    await markPaywallShown();
   }
 </script>
 
@@ -121,13 +131,11 @@
   <div class="chat-header">
     <div class="header-left">
       <span class="chat-icon">💬</span>
-      <span class="chat-title">
-        {uiLanguage === "es" ? "Tutor IA" : "Ask your AI Tutor"}
-      </span>
+      <span class="chat-title">{$t("quickChat.title")}</span>
     </div>
     {#if messages.length > 0}
       <button class="clear-btn" onclick={clearChat}>
-        {uiLanguage === "es" ? "Limpiar" : "Clear"}
+        {$t("quickChat.clear")}
       </button>
     {/if}
   </div>
@@ -156,9 +164,7 @@
     <input
       type="text"
       bind:value={inputMessage}
-      placeholder={uiLanguage === "es"
-        ? `Pregunta lo que sea sobre ${targetLabel.toLowerCase()}...`
-        : `Ask anything about ${targetLabel}...`}
+      placeholder={$t("quickChat.placeholder", { language: placeholderLanguage })}
       onkeydown={handleKeydown}
       disabled={isLoading}
     />
@@ -166,7 +172,7 @@
       class="send-btn"
       onclick={sendMessage}
       disabled={!inputMessage.trim() || isLoading}
-      aria-label="Send message"
+      aria-label={$t("quickChat.send")}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

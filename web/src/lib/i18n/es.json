@@ -1,0 +1,519 @@
+{
+  "app": {
+    "name": "Anglicus"
+  },
+  "nav": {
+    "home": "Inicio",
+    "lessons": "Lecciones",
+    "practice": "Práctica",
+    "profile": "Perfil",
+    "notifications": "Notificaciones",
+    "settings": "Configuración",
+    "languageSwitch": "Cambiar idioma a {language}"
+  },
+  "languages": {
+    "name": {
+      "en": "Inglés",
+      "es": "Español"
+    },
+    "short": {
+      "en": "EN",
+      "es": "ES"
+    }
+  },
+  "footer": {
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "cookies": "Cookies",
+    "dataProtection": "Protección de datos",
+    "tagline": "Anglicus · Aprende con confianza"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "close": "Cerrar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "retry": "Reintentar"
+  },
+  "units": {
+    "words": "palabras"
+  },
+  "days": {
+    "sunShort": "Dom",
+    "monShort": "Lun",
+    "tueShort": "Mar",
+    "wedShort": "Mié",
+    "thuShort": "Jue",
+    "friShort": "Vie",
+    "satShort": "Sáb"
+  },
+  "weeklyChart": {
+    "minutesTooltip": "{minutes} min"
+  },
+  "dashboard": {
+    "welcomeBack": "Bienvenido de nuevo, {name}!",
+    "streak": "{days} días de racha",
+    "dailyGoal": "Meta diaria",
+    "dailyGoalUnit": "/{minutes} min",
+    "wordsLearned": "Palabras aprendidas"
+  },
+  "nextLesson": {
+    "label": "Siguiente lección:",
+    "continue": "Continuar"
+  },
+  "sidebar": {
+    "totalXp": "XP total:",
+    "wordsLearned": "Palabras aprendidas:",
+    "currentStreak": "Racha actual:",
+    "streakDays": "{days} días",
+    "weeklyActivity": "Actividad semanal",
+    "achievements": "Logros",
+    "unlocked": "Desbloqueado"
+  },
+  "quickChat": {
+    "error": "Lo siento, no pude conectar. ¡Intenta más tarde!",
+    "title": "Tutor IA",
+    "clear": "Limpiar",
+    "placeholder": "Pregunta lo que sea sobre {language}...",
+    "send": "Enviar mensaje"
+  },
+  "skillTree": {
+    "title": "Árbol de Habilidades",
+    "unlocked": "Desbloqueado",
+    "startLesson": "Iniciar lección de {lesson}"
+  },
+  "interactiveTree": {
+    "aria": "Mapa interactivo del árbol de habilidades",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "reset": "Reiniciar vista"
+  },
+  "categories": {
+    "grammar": "Gramática",
+    "vocabulary": "Vocabulario",
+    "situational": "Situacional",
+    "business": "Negocios"
+  },
+  "support": {
+    "title": "Apoya Anglicus",
+    "subtitle": "Donaciones en ETH, BTC, BNB y SOL disponibles.",
+    "cta": "☕ Invítame un café",
+    "hide": "Ocultar",
+    "show": "Mostrar",
+    "qrAlt": "QR {ticker}",
+    "copied": "Copiado",
+    "copy": "Copiar",
+    "verify": "Verificar",
+    "footnote": "Verifica la dirección en el explorador oficial antes de enviar.",
+    "compactTitle": "Apoya con crypto",
+    "compactSubtitle": "Donaciones en ETH, BTC, BNB y SOL."
+  },
+  "paywall": {
+    "featureDefault": "Tutor IA",
+    "loadError": "No pudimos cargar la información de pago. Intenta de nuevo.",
+    "confirmed": "Pago confirmado. Tu plan Pro está activo.",
+    "pending": "Pago pendiente. Se activará automáticamente cuando confirme la red.",
+    "verifyError": "No se pudo verificar el pago.",
+    "title": "Desbloquea Pro",
+    "subtitleNag": "¿Quieres ir más rápido? {feature} es ilimitado en Pro.",
+    "subtitleBlock": "Has alcanzado el límite gratuito para {feature}.",
+    "benefitTutor": "✔ Tutor IA ilimitado",
+    "benefitExplanations": "✔ Explicaciones y correcciones avanzadas",
+    "benefitQuickChat": "✔ Chat rápido sin límites",
+    "loadingPrice": "Cargando precio...",
+    "period": "/ {days} días",
+    "discountApplied": "{percent}% OFF aplicado",
+    "sendBtc": "Enviar BTC ({network})",
+    "network": {
+      "testnet": "Testnet",
+      "mainnet": "Mainnet"
+    },
+    "txPlaceholder": "Pega el TXID aquí",
+    "verifying": "Verificando...",
+    "verify": "Verificar pago",
+    "cryptoNote": "¿Quieres apoyar el proyecto con crypto? Estas direcciones incluyen enlaces de verificación.",
+    "byok": "BYOK siempre es gratis.",
+    "byokLink": "Configura tu API key",
+    "keepFree": "Seguir gratis"
+  },
+  "billing": {
+    "features": {
+      "tutor": "Tutor IA",
+      "lessonChat": "Tutor en Lecciones",
+      "quickChat": "Chat rápido",
+      "lessonExplanation": "Explicaciones",
+      "tutorQuestion": "Preguntar al tutor"
+    }
+  },
+  "lessonChat": {
+    "error": "Lo siento, estoy teniendo problemas para conectar ahora. Intentemos de nuevo.",
+    "connectionError": "Error de conexión. Comprueba si la API está en marcha.",
+    "placeholder": "Escribe tu respuesta...",
+    "send": "Enviar mensaje",
+    "finish": "Terminar lección"
+  },
+  "lessons": {
+    "title": "Tu Camino de Aprendizaje",
+    "subtitle": "Completa lecciones para desbloquear nuevas habilidades y logros"
+  },
+  "lessonDetail": {
+    "back": "Volver",
+    "practiceMode": "Modo práctica",
+    "completed": "¡Lección completada!",
+    "earned": "Ganaste {xp} y aprendiste {words}.",
+    "newWords": "{words} palabras nuevas"
+  },
+  "tutor": {
+    "connectionError": "Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.",
+    "assistantError": "Lo siento, hubo un error de conexión.",
+    "title": "Tutor IA",
+    "subtitle": "Practica {language} conmigo",
+    "emptyGreeting": "¡Hola! Soy tu tutor de {language}.",
+    "emptyPrompt": "Escribe algo para empezar a practicar.",
+    "settingsLink": "Configuración",
+    "placeholder": "Escribe tu mensaje...",
+    "send": "Enviar mensaje"
+  },
+  "exercises": {
+    "connectionError": "Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.",
+    "title": "Ejercicios",
+    "subtitle": "Practica con ejercicios adaptados a tu nivel",
+    "emptyTitle": "¿Listo para practicar?",
+    "emptyDescription": "Generaré ejercicios basados en tu nivel y áreas de mejora.",
+    "generating": "Generando...",
+    "generate": "Generar ejercicios",
+    "settingsLink": "Ir a Configuración",
+    "answerPlaceholder": "Tu respuesta...",
+    "correct": "¡Correcto!",
+    "incorrect": "Incorrecto. La respuesta correcta es: {answer}",
+    "explanationLabel": "Explicación:",
+    "next": "Siguiente",
+    "finish": "Terminar",
+    "answer": "Responder",
+    "completedTitle": "¡Completado!",
+    "completedDescription": "Has completado todos los ejercicios.",
+    "generateMore": "Generar más"
+  },
+  "lesson": {
+    "explanationFallback": "La respuesta correcta es: {answer}. ¡Intenta respetar el orden de las palabras!",
+    "tutorError": "Lo siento, no pude procesar tu pregunta. ¡Intenta reformularla!",
+    "back": "Volver",
+    "completedTitle": "¡Lección completa!",
+    "completedSubtitle": "Has dominado las presentaciones",
+    "stats": {
+      "xp": "XP ganado",
+      "questions": "Preguntas",
+      "accuracy": "Precisión"
+    },
+    "continueLearning": "Seguir aprendiendo",
+    "title": "Lección 1: Presentaciones",
+    "translate": "Traduce: \"{text}\"",
+    "selectWords": "Selecciona palabras abajo",
+    "notQuiteRight": "No del todo correcto",
+    "askTutor": "Pregunta a tu tutor personal",
+    "tutorPlaceholder": "¿Por qué este orden de palabras?",
+    "tryAgain": "Intentar de nuevo",
+    "correct": "¡Correcto! +{xp} XP",
+    "nextQuestion": "Siguiente pregunta",
+    "finishLesson": "Terminar lección",
+    "check": "Comprobar"
+  },
+  "profile": {
+    "avatarAlt": "Avatar",
+    "level": "Nivel {level}",
+    "totalXp": "XP total:",
+    "wordsLearned": "Palabras aprendidas:",
+    "currentStreak": "Racha actual:",
+    "streakDays": "{days} días",
+    "weeklyActivity": "Actividad semanal",
+    "achievements": "Logros",
+    "unlocked": "Desbloqueado"
+  },
+  "achievements": {
+    "early_bird": "Primeros Pasos",
+    "weekender": "Guerrero de Finde",
+    "polyglot": "Políglota",
+    "files_on_fire": "Racha de Fuego",
+    "unstoppable": "Imparable",
+    "scholar": "Estudioso",
+    "word_master": "Vocabulista",
+    "sharpshooter": "Francotirador"
+  },
+  "settings": {
+    "alerts": {
+      "apiKeySaved": "API key guardada de forma segura",
+      "apiKeyError": "Error al guardar la API key",
+      "notificationsPermission": "Necesitas permitir notificaciones para activar recordatorios.",
+      "emailRequired": "Escribe un email para activar recordatorios.",
+      "emailInvalid": "El email no es válido.",
+      "emailSaveFailed": "No se pudo guardar el recordatorio por email.",
+      "emailDisableFailed": "No se pudo desactivar el recordatorio por email.",
+      "testEmailRequired": "Necesitas un email válido para enviar la prueba.",
+      "testEmailFailed": "No se pudo enviar el email de prueba.",
+      "testEmailSent": "Email de prueba enviado.",
+      "notificationTestPermission": "Debes permitir notificaciones para ver la prueba.",
+      "remindersDeleteFailed": "No se pudieron borrar los recordatorios en el servidor."
+    },
+    "title": "Configuración",
+    "notifications": {
+      "title": "Notificaciones",
+      "description": "Configura recordatorios de práctica.",
+      "browserReminders": "Recordatorios en el navegador",
+      "test": "Probar",
+      "browserHelp": "Se mostrarán mientras la app esté abierta y con permiso activado.",
+      "reminderTime": "Hora del recordatorio",
+      "frequency": "Frecuencia",
+      "frequencyDaily": "Diario",
+      "frequencyWeekly": "Semanal",
+      "emailReminders": "Recordatorios por email",
+      "sendTest": "Enviar prueba",
+      "emailLabel": "Email",
+      "emailPlaceholder": "tu@email.com",
+      "emailHelp": "Tu email se guarda cifrado solo para enviar recordatorios. Puedes eliminarlo cuando quieras."
+    },
+    "validation": {
+      "emailInvalid": "Email inválido."
+    },
+    "save": "Guardar",
+    "deleteData": "Eliminar datos",
+    "apiMode": {
+      "title": "Modo de API",
+      "description": "Elige cómo quieres conectarte a la IA",
+      "autoTitle": "Automático",
+      "autoDescription": "Prueba todas las opciones",
+      "serverTitle": "Servidor",
+      "serverDescription": "Usa claves del dueño",
+      "byokTitle": "Mi clave",
+      "byokDescription": "Usa tu API key"
+    },
+    "apiKey": {
+      "title": "Configurar API Key",
+      "description": "Tu clave se guarda encriptada en tu dispositivo",
+      "placeholder": "sk-...",
+      "save": "Guardar clave",
+      "baseUrlLabel": "Base URL (opcional - por defecto: api.openai.com)",
+      "baseUrlPlaceholder": "https://api.openai.com"
+    },
+    "connectionTest": {
+      "title": "Probar Conexión",
+      "description": "Verifica que la API funcione",
+      "testing": "Probando...",
+      "success": "✅ Funciona",
+      "failed": "❌ Falló",
+      "testServer": "Probar Servidor",
+      "testByok": "Probar Mi Clave"
+    },
+    "dangerZone": {
+      "title": "Zona de Peligro",
+      "clearData": "Borrar todos los datos"
+    },
+    "profile": {
+      "title": "Perfil",
+      "name": "Nombre",
+      "level": "Nivel",
+      "streak": "Racha",
+      "streakDays": "{days} días"
+    },
+    "deleteModal": {
+      "title": "¿Borrar todos los datos?",
+      "description": "Esta acción no se puede deshacer. Perderás todo tu progreso.",
+      "confirm": "Sí, borrar todo"
+    }
+  },
+  "onboarding": {
+    "redirecting": "Redirigiendo al test de nivel..."
+  },
+  "legal": {
+    "headTitle": "Legal | Anglicus",
+    "title": "Legal",
+    "lastUpdated": "Última actualización: {date}",
+    "disclaimer": "Este resumen no es asesoramiento legal. Para dudas legales, consulta un profesional.",
+    "terms": {
+      "title": "Términos de Servicio",
+      "body": "Anglicus es una herramienta educativa. El servicio se ofrece \"tal cual\" y puede cambiar con el tiempo. Eres responsable del contenido que compartes y de cumplir la ley aplicable. Si eres menor, utiliza la app con permiso de tus tutores."
+    },
+    "contact": "Contacto: support@anglicus.app",
+    "privacy": {
+      "title": "Privacidad",
+      "body": "Guardamos tu progreso y configuración en tu propio dispositivo (localStorage). Si activas recordatorios por email, guardamos tu email cifrado solo para enviarte recordatorios y nunca lo vendemos. Puedes desactivar o borrar estos datos desde Configuración."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "Usamos almacenamiento local y cookies técnicas necesarias para el funcionamiento y la seguridad. No usamos cookies de publicidad."
+    },
+    "dataProtection": {
+      "title": "Protección de datos",
+      "body": "Puedes solicitar acceso, corrección o eliminación de tus datos. La eliminación se puede hacer desde Configuración (Borrar todos los datos) o escribiendo a support@anglicus.app."
+    }
+  },
+  "placement": {
+    "languageOptions": {
+      "en": "Inglés (para hispanohablantes)",
+      "es": "Español (para angloparlantes)"
+    },
+    "goals": {
+      "travel": "Viajes",
+      "work": "Trabajo",
+      "study": "Estudios",
+      "movies": "Cine y Música",
+      "general": "General"
+    },
+    "promo": {
+      "alreadyApplied": "Ya tienes un código aplicado.",
+      "applied": "Código aplicado: {percent}% OFF",
+      "used": "Este código ya fue utilizado.",
+      "invalid": "Código inválido. Revisa e intenta otra vez."
+    },
+    "defaultName": "Amigo",
+    "reminderError": "No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuración.",
+    "levels": {
+      "A1": "Principiante",
+      "A2": "Elemental",
+      "B1": "Intermedio",
+      "B2": "Intermedio Alto",
+      "C1": "Avanzado",
+      "C2": "Proficiente"
+    },
+    "step0": {
+      "title": "¿Qué idioma quieres aprender?",
+      "subtitle": "Elige tu objetivo de aprendizaje"
+    },
+    "step1": {
+      "title": "¡Bienvenido a Anglicus!",
+      "description": "Vamos a evaluar tu nivel de {language} con un test rápido y personalizado.",
+      "subtitle": "El test tiene 5 preguntas y dura unos 5 minutos.",
+      "start": "Comenzar"
+    },
+    "step2": {
+      "title": "¿Cuál es tu nombre?",
+      "namePlaceholder": "Tu nombre",
+      "emailPlaceholder": "Tu email (opcional)",
+      "emailOptIn": "Quiero recibir recordatorios por email.",
+      "consent": "Opcional. Puedes darte de baja en Configuración. Consulta la {link}.",
+      "consentLink": "Política de privacidad"
+    },
+    "validation": {
+      "emailInvalid": "Email inválido."
+    },
+    "step3": {
+      "title": "¿Tienes un código?",
+      "subtitle": "Opcional. Úsalo para activar un descuento Pro.",
+      "placeholder": "ABCDEFGH",
+      "validating": "Validando...",
+      "apply": "Aplicar"
+    },
+    "step4": {
+      "title": "¿Qué objetivos tienes?",
+      "subtitle": "Selecciona todos los que apliquen",
+      "startTest": "Iniciar Test"
+    },
+    "step5": {
+      "generating": "Generando test personalizado...",
+      "questionProgress": "Pregunta {current} de {total}"
+    },
+    "results": {
+      "title": "¡Test completado!",
+      "levelLabel": "Tu nivel de {language} es:",
+      "correctAnswers": "Respuestas correctas: {correct} / {total}",
+      "startLearning": "Comenzar a Aprender"
+    }
+  },
+  "skills": {
+    "greetings": {
+      "name": "Saludos",
+      "description": "Aprende a decir hola y adiós"
+    },
+    "pronouns": {
+      "name": "Pronombres",
+      "description": "Yo, tú, él, ella, ello, nosotros, ellos"
+    },
+    "to_be": {
+      "name": "Verbo To Be",
+      "description": "Am, Is, Are"
+    },
+    "basics_1": {
+      "name": "Básicos 1",
+      "description": "Palabras comunes del día a día"
+    },
+    "food": {
+      "name": "Comida",
+      "description": "Pedir y hablar de comida"
+    },
+    "family": {
+      "name": "Familia",
+      "description": "Miembros y relaciones familiares"
+    },
+    "present_simple": {
+      "name": "Presente simple",
+      "description": "Hábitos y hechos"
+    },
+    "clothing": {
+      "name": "Ropa",
+      "description": "Prendas y accesorios"
+    },
+    "colors": {
+      "name": "Colores",
+      "description": "Describir objetos"
+    },
+    "places": {
+      "name": "Lugares",
+      "description": "Ciudad, parque, escuela"
+    },
+    "travel": {
+      "name": "Viajes",
+      "description": "Aeropuertos y hoteles"
+    },
+    "directions": {
+      "name": "Direcciones",
+      "description": "Izquierda, derecha, recto"
+    },
+    "past_simple": {
+      "name": "Pasado simple",
+      "description": "Hablar de ayer"
+    },
+    "hobbies": {
+      "name": "Pasatiempos",
+      "description": "Deportes y actividades"
+    },
+    "weather": {
+      "name": "Clima",
+      "description": "Sol, lluvia, nieve"
+    },
+    "shopping": {
+      "name": "Compras",
+      "description": "Comprar cosas"
+    },
+    "future_tense": {
+      "name": "Futuro",
+      "description": "Will y going to"
+    },
+    "emotions": {
+      "name": "Emociones",
+      "description": "Expresar sentimientos"
+    },
+    "health": {
+      "name": "Salud",
+      "description": "Doctor y medicina"
+    },
+    "business_1": {
+      "name": "Negocios 1",
+      "description": "Fundamentos de oficina"
+    },
+    "abstract_nouns": {
+      "name": "Sustantivos abstractos",
+      "description": "Ideas y conceptos"
+    },
+    "conditionals": {
+      "name": "Condicionales",
+      "description": "Si... entonces..."
+    },
+    "nature": {
+      "name": "Naturaleza",
+      "description": "Medio ambiente"
+    },
+    "food2": {
+      "name": "Restaurante",
+      "description": "Comer fuera"
+    }
+  }
+}

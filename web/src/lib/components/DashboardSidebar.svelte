@@ -2,9 +2,15 @@
   import Card from "$lib/components/Card.svelte";
   import WeeklyChart from "$lib/components/WeeklyChart.svelte";
   import AchievementBadge from "$lib/components/AchievementBadge.svelte";
+  import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import type { UserProfile } from "$lib/types/user";
+  import { t } from "$lib/i18n";
 
-  let { user }: { user: UserProfile } = $props();
+  interface $$Props {
+    user: UserProfile;
+  }
+
+  let { user } = $props();
 </script>
 
 <aside class="sidebar">
@@ -12,7 +18,7 @@
   <Card variant="xp" class="xp-card">
     <div class="xp-icon">💎</div>
     <div class="xp-info">
-      <span class="label">XP Total:</span>
+      <span class="label">{$t("sidebar.totalXp")}</span>
       <span class="value">{user.totalXP?.toLocaleString() ?? "12,450"}</span>
     </div>
   </Card>
@@ -20,32 +26,34 @@
   <!-- Stats Grid -->
   <div class="stats-grid">
     <Card class="mini-card">
-      <span class="label">Palabras aprendidas:</span>
+      <span class="label">{$t("sidebar.wordsLearned")}</span>
       <div class="value-row">
         <span class="icon">📖</span>
         <span class="value">{user.wordsLearned ?? 540}</span>
       </div>
     </Card>
     <Card class="mini-card">
-      <span class="label">Racha actual:</span>
+      <span class="label">{$t("sidebar.currentStreak")}</span>
       <div class="value-row">
         <span class="icon">🔥</span>
-        <span class="value">{user.streakDays} Días</span>
+        <span class="value">
+          {$t("sidebar.streakDays", { days: user.streakDays })}
+        </span>
       </div>
     </Card>
   </div>
 
   <!-- Weekly Activity -->
   <Card class="weekly-card">
-    <h3>Actividad semanal</h3>
+    <h3>{$t("sidebar.weeklyActivity")}</h3>
     <WeeklyChart data={user.weeklyActivity ?? [15, 25, 18, 30, 25, 22, 12]} />
   </Card>
 
   <!-- Achievements -->
   <Card class="achievements-card">
     <div class="card-header">
-      <h3>Logros</h3>
-      <span class="link">Desbloqueado</span>
+      <h3>{$t("sidebar.achievements")}</h3>
+      <span class="link">{$t("sidebar.unlocked")}</span>
     </div>
     <div class="badges-grid">
       {#each user.achievements || [] as achievement}
@@ -53,6 +61,8 @@
       {/each}
     </div>
   </Card>
+
+  <SupportCryptoCard variant="compact" />
 </aside>
 
 <style>
