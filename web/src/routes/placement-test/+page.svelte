@@ -82,11 +82,11 @@
   }
 
   const goals = $derived([
-    { value: "travel" as LearningGoal, emoji: "✈️", label: $t("placement.goals.travel") },
-    { value: "work" as LearningGoal, emoji: "💼", label: $t("placement.goals.work") },
-    { value: "study" as LearningGoal, emoji: "📚", label: $t("placement.goals.study") },
-    { value: "movies" as LearningGoal, emoji: "🎬", label: $t("placement.goals.movies") },
-    { value: "general" as LearningGoal, emoji: "🌟", label: $t("placement.goals.general") },
+    { value: "travel" as LearningGoal, emoji: "✈️", label: "Travel / Viajes" },
+    { value: "work" as LearningGoal, emoji: "💼", label: "Work / Trabajo" },
+    { value: "study" as LearningGoal, emoji: "📚", label: "Study / Estudios" },
+    { value: "movies" as LearningGoal, emoji: "🎬", label: "Movies & Music / Cine y Música" },
+    { value: "general" as LearningGoal, emoji: "🌟", label: "General" },
   ]);
 
   let step = $state(0); // 0: language, 1: welcome, 2: name, 3: promo, 4: goals, 5: test
@@ -349,7 +349,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     if (!promoCode.trim() || promoSaving) return;
     if (promoHash) {
       promoStatus = "used";
-      promoMessage = $t("placement.promo.alreadyApplied");
+      promoMessage = "You already have a code applied. / Ya tienes un código aplicado.";
       return;
     }
     promoSaving = true;
@@ -360,15 +360,13 @@ Make sure the correctAnswer matches exactly one of the options.`;
     if (result.valid && result.codeHash) {
       promoHash = result.codeHash;
       promoStatus = "valid";
-      promoMessage = $t("placement.promo.applied", {
-        percent: result.discountPercent ?? 0,
-      });
+      promoMessage = `Code applied: ${result.discountPercent ?? 0}% OFF / Código aplicado: ${result.discountPercent ?? 0}% OFF`;
     } else if (result.reason === "used") {
       promoStatus = "used";
-      promoMessage = $t("placement.promo.used");
+      promoMessage = "This code has already been used. / Este código ya fue utilizado.";
     } else {
       promoStatus = "invalid";
-      promoMessage = $t("placement.promo.invalid");
+      promoMessage = "Invalid code. Check and try again. / Código inválido. Revisa e intenta otra vez.";
     }
 
     promoSaving = false;
@@ -382,7 +380,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       billing = await applyPromoToBilling(billing, promoHash);
     }
     const profile: UserProfile = {
-      name: userName || $t("placement.defaultName"),
+      name: userName || "Friend / Amigo",
       email: normalizedEmail || undefined,
       level: assessedLevel,
       nativeLanguage,
@@ -419,9 +417,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       });
 
       if (!subscribed) {
-        alert(
-          $t("placement.reminderError"),
-        );
+        alert("Email reminder couldn't be activated. You can try later in Settings. / No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuración.");
       }
     }
 
@@ -429,7 +425,15 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   function getLevelLabel(level: EnglishLevel): string {
-    return $t(`placement.levels.${level}`);
+    const labels: Record<EnglishLevel, string> = {
+      A1: "Beginner / Principiante",
+      A2: "Elementary / Elemental",
+      B1: "Intermediate / Intermedio",
+      B2: "Upper Intermediate / Intermedio Alto",
+      C1: "Advanced / Avanzado",
+      C2: "Proficient / Proficiente",
+    };
+    return labels[level];
   }
 
   function getLevelEmoji(level: EnglishLevel): string {
@@ -448,17 +452,31 @@ Make sure the correctAnswer matches exactly one of the options.`;
 <div class="placement-test">
   {#if step === 0}
     <div class="step">
-      <h1>{$t("placement.step0.title")}</h1>
-      <p class="subtitle">{$t("placement.step0.subtitle")}</p>
+      <h1>
+        <span class="lang-en">Which language do you want to learn?</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">¿Qué idioma quieres aprender?</span>
+      </h1>
+      <p class="subtitle">
+        <span class="lang-en">Choose your learning goal</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Elige tu objetivo de aprendizaje</span>
+      </p>
       <div class="language-options">
-        {#each languageOptions as option}
-          <button class="language-card" onclick={() => {
-            targetLanguage = option.value;
-            step = 1;
-          }}>
-            <span class="language-name">{option.label}</span>
-          </button>
-        {/each}
+        <button class="language-card" onclick={() => {
+          targetLanguage = "en";
+          step = 1;
+        }}>
+          <span class="language-name">English</span>
+          <span class="language-subtitle">for Spanish speakers / para hispanohablantes</span>
+        </button>
+        <button class="language-card" onclick={() => {
+          targetLanguage = "es";
+          step = 1;
+        }}>
+          <span class="language-name">Español</span>
+          <span class="language-subtitle">for English speakers / para angloparlantes</span>
+        </button>
       </div>
     </div>
   {:else if step === 1}
@@ -480,22 +498,38 @@ Make sure the correctAnswer matches exactly one of the options.`;
           <path d="M12 7v10" />
         </svg>
       </div>
-      <h1>{$t("placement.step1.title")}</h1>
+      <h1>
+        <span class="lang-en">Welcome to Anglicus!</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">¡Bienvenido a Anglicus!</span>
+      </h1>
       <p>
-        {$t("placement.step1.description", { language: targetLabelDisplay })}
+        <span class="lang-en">We'll assess your {targetLabelDisplay} level with a quick, personalized test.</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Vamos a evaluar tu nivel de {targetLabelDisplay} con un test rápido y personalizado.</span>
       </p>
-      <p class="subtitle">{$t("placement.step1.subtitle")}</p>
+      <p class="subtitle">
+        <span class="lang-en">The test has 5 questions and takes about 5 minutes.</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">El test tiene 5 preguntas y dura unos 5 minutos.</span>
+      </p>
       <button class="btn primary" onclick={() => (step = 2)}>
-        {$t("placement.step1.start")}
+        <span class="lang-en">Start</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Comenzar</span>
       </button>
     </div>
   {:else if step === 2}
     <div class="step">
-      <h2>{$t("placement.step2.title")}</h2>
+      <h2>
+        <span class="lang-en">What's your name?</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">¿Cuál es tu nombre?</span>
+      </h2>
       <input
         type="text"
         bind:value={userName}
-        placeholder={$t("placement.step2.namePlaceholder")}
+        placeholder="Your name / Tu nombre"
         class="input"
         onkeydown={(e) =>
           e.key === "Enter" &&
@@ -506,12 +540,16 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="email"
         bind:value={userEmail}
-        placeholder={$t("placement.step2.emailPlaceholder")}
+        placeholder="Your email (optional) / Tu email (opcional)"
         class="input"
         oninput={handleEmailInput}
       />
       {#if userEmail.trim() && !isEmailValid(userEmail)}
-        <p class="error-text">{$t("placement.validation.emailInvalid")}</p>
+        <p class="error-text">
+          <span class="lang-en">Invalid email.</span>
+          <span class="lang-divider"> / </span>
+          <span class="lang-es">Email inválido.</span>
+        </p>
       {/if}
       <label class="checkbox-row">
         <input
@@ -519,12 +557,16 @@ Make sure the correctAnswer matches exactly one of the options.`;
           bind:checked={wantsEmailReminders}
           disabled={!userEmail.trim() || !isEmailValid(userEmail)}
         />
-        <span>{$t("placement.step2.emailOptIn")}</span>
+        <span>
+          <span class="lang-en">I want to receive email reminders.</span>
+          <span class="lang-divider"> / </span>
+          <span class="lang-es">Quiero recibir recordatorios por email.</span>
+        </span>
       </label>
       <p class="consent-note">
-        {@html $t("placement.step2.consent", {
-          link: `<a href="${base}/legal#privacy">${$t("placement.step2.consentLink")}</a>`,
-        })}
+        <span class="lang-en">Optional. You can unsubscribe in Settings. See the <a href="{base}/legal#privacy">Privacy policy</a>.</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Opcional. Puedes darte de baja en Configuración. Consulta la <a href="{base}/legal#privacy">Política de privacidad</a>.</span>
       </p>
       <div class="actions">
         <button
@@ -532,18 +574,28 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={() => (step = 3)}
           disabled={!userName.trim() || (!!userEmail.trim() && !isEmailValid(userEmail))}
         >
-          {$t("common.continue")}
+          <span class="lang-en">Continue</span>
+          <span class="lang-divider"> / </span>
+          <span class="lang-es">Continuar</span>
         </button>
       </div>
     </div>
   {:else if step === 3}
     <div class="step">
-      <h2>{$t("placement.step3.title")}</h2>
-      <p class="subtitle">{$t("placement.step3.subtitle")}</p>
+      <h2>
+        <span class="lang-en">Do you have a code?</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">¿Tienes un código?</span>
+      </h2>
+      <p class="subtitle">
+        <span class="lang-en">Optional. Use it to unlock a Pro discount.</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Opcional. Úsalo para activar un descuento Pro.</span>
+      </p>
       <input
         type="text"
         bind:value={promoCode}
-        placeholder={$t("placement.step3.placeholder")}
+        placeholder="ABCDEFGH"
         class="input"
         onkeydown={(e) => e.key === "Enter" && handleApplyPromo()}
       />
@@ -556,17 +608,27 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={handleApplyPromo}
           disabled={!promoCode.trim() || promoSaving}
         >
-          {promoSaving ? $t("placement.step3.validating") : $t("placement.step3.apply")}
+          {promoSaving ? "Validating... / Validando..." : "Apply / Aplicar"}
         </button>
         <button class="btn primary" onclick={() => (step = 4)}>
-          {$t("common.continue")}
+          <span class="lang-en">Continue</span>
+          <span class="lang-divider"> / </span>
+          <span class="lang-es">Continuar</span>
         </button>
       </div>
     </div>
   {:else if step === 4}
     <div class="step">
-      <h2>{$t("placement.step4.title")}</h2>
-      <p class="subtitle">{$t("placement.step4.subtitle")}</p>
+      <h2>
+        <span class="lang-en">What are your goals?</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">¿Qué objetivos tienes?</span>
+      </h2>
+      <p class="subtitle">
+        <span class="lang-en">Select all that apply</span>
+        <span class="lang-divider"> / </span>
+        <span class="lang-es">Selecciona todos los que apliquen</span>
+      </p>
       <div class="goals">
         {#each goals as goal}
           <button
@@ -585,7 +647,9 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={startTest}
           disabled={userGoals.length === 0}
         >
-          {$t("placement.step4.startTest")}
+          <span class="lang-en">Start Test</span>
+          <span class="lang-divider"> / </span>
+          <span class="lang-es">Iniciar Test</span>
         </button>
       </div>
     </div>
@@ -594,13 +658,19 @@ Make sure the correctAnswer matches exactly one of the options.`;
       {#if isLoading}
         <div class="loading-state">
           <div class="spinner"></div>
-          <p>{$t("placement.step5.generating")}</p>
+          <p>
+            <span class="lang-en">Generating personalized test...</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">Generando test personalizado...</span>
+          </p>
         </div>
       {:else if errorMessage}
         <div class="error-state">
           <p>{errorMessage}</p>
           <button class="btn primary" onclick={startTest}>
-            {$t("common.retry")}
+            <span class="lang-en">Retry</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">Reintentar</span>
           </button>
         </div>
       {:else if showResults}
@@ -608,9 +678,15 @@ Make sure the correctAnswer matches exactly one of the options.`;
           <div class="illustration success">
             {getLevelEmoji(assessedLevel)}
           </div>
-          <h2>{$t("placement.results.title")}</h2>
+          <h2>
+            <span class="lang-en">Test completed!</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">¡Test completado!</span>
+          </h2>
           <p>
-            {$t("placement.results.levelLabel", { language: targetLabelDisplay })}
+            <span class="lang-en">Your {targetLabelDisplay} level is:</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">Tu nivel de {targetLabelDisplay} es:</span>
           </p>
           <div class="level-result">
             <div class="level-code">{assessedLevel}</div>
@@ -619,16 +695,16 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
           <div class="score-summary">
             <p>
-              {$t("placement.results.correctAnswers", {
-                correct: answers.filter((a, i) => a === questions[i]?.correctAnswer)
-                  .length,
-                total: questions.length,
-              })}
+              <span class="lang-en">Correct answers: {answers.filter((a, i) => a === questions[i]?.correctAnswer).length} / {questions.length}</span>
+              <span class="lang-divider"> / </span>
+              <span class="lang-es">Respuestas correctas: {answers.filter((a, i) => a === questions[i]?.correctAnswer).length} / {questions.length}</span>
             </p>
           </div>
 
           <button class="btn primary" onclick={completeOnboarding}>
-            {$t("placement.results.startLearning")}
+            <span class="lang-en">Start Learning</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">Comenzar a Aprender</span>
           </button>
         </div>
       {:else}
@@ -640,10 +716,9 @@ Make sure the correctAnswer matches exactly one of the options.`;
             ></div>
           </div>
           <p class="question-number">
-            {$t("placement.step5.questionProgress", {
-              current: currentQuestion + 1,
-              total: questions.length,
-            })}
+            <span class="lang-en">Question {currentQuestion + 1} of {questions.length}</span>
+            <span class="lang-divider"> / </span>
+            <span class="lang-es">Pregunta {currentQuestion + 1} de {questions.length}</span>
           </p>
         </div>
 
@@ -785,6 +860,9 @@ Make sure the correctAnswer matches exactly one of the options.`;
     background: var(--bg);
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
   .language-card:hover {
@@ -793,6 +871,25 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   .language-name {
     font-weight: 600;
+  }
+
+  .language-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+  }
+
+  .lang-en {
+    color: var(--text-primary);
+  }
+
+  .lang-es {
+    color: var(--text-secondary);
+  }
+
+  .lang-divider {
+    color: var(--text-muted);
+    margin: 0 0.5rem;
   }
 
   .goals {

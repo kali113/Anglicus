@@ -191,14 +191,7 @@ export async function handleAuthVerify(
       env.EMAIL_PEPPER,
       bucket,
     );
-    const expectedPrevious = await generateVerificationCode(
-      emailHash,
-      user.id,
-      env.EMAIL_PEPPER,
-      bucket - 1,
-    );
-
-    if (code !== expectedNow && code !== expectedPrevious) {
+    if (code !== expectedNow) {
       return jsonError("Verification code expired", "invalid_request_error", 400);
     }
 

@@ -35,6 +35,29 @@
     "continue": "Continuar",
     "retry": "Reintentar"
   },
+  "auth": {
+    "loginTitle": "Iniciar sesion",
+    "registerTitle": "Crear cuenta",
+    "verifyTitle": "Verificar correo",
+    "emailLabel": "Correo",
+    "passwordLabel": "Contrasena",
+    "codeLabel": "Codigo de verificacion",
+    "loginButton": "Iniciar sesion",
+    "registerButton": "Crear cuenta",
+    "verifyButton": "Verificar",
+    "registerHelper": "Te enviaremos un codigo de 6 digitos por correo.",
+    "verifyHelper": "Ingresa el codigo de 6 digitos que enviamos a tu correo.",
+    "loginLink": "Ya tienes cuenta? Inicia sesion",
+    "registerLink": "Necesitas cuenta? Registrate",
+    "verifyLink": "Ya verificaste? Inicia sesion",
+    "errors": {
+      "missingFields": "Completa todos los campos.",
+      "passwordInvalid": "La contrasena debe tener 8+ caracteres e incluir mayusculas, minusculas y un numero.",
+      "loginFailed": "No se pudo iniciar sesion.",
+      "registerFailed": "No se pudo registrar.",
+      "verifyFailed": "No se pudo verificar."
+    }
+  },
   "units": {
     "words": "palabras"
   },
