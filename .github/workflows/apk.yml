@@ -78,7 +78,7 @@ jobs:
       - name: Build APK
         working-directory: twa
         run: |
-          bubblewrap build --manifest . --skipPwaValidation
+          bubblewrap build --manifest twa-manifest.json --skipPwaValidation
           if [ -f app-release-signed.apk ]; then
             mv app-release-signed.apk anglicus.apk
           elif [ -f app-release.apk ]; then
