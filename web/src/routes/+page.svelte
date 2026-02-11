@@ -25,6 +25,14 @@
     $t(`skills.${currentLesson.id}.name`),
   );
 
+  // Calculate progress based on current skill's stars (0-3 stars = 0-100%)
+  const currentLessonProgress = $derived(() => {
+    if (!user) return 0;
+    const currentSkill = user.skills.find((s) => s.status === "current");
+    if (!currentSkill) return 0;
+    return Math.round((currentSkill.stars / 3) * 100);
+  });
+
   onMount(async () => {
     if (!(await hasCompletedOnboarding())) {
       window.location.href = `${base}/onboarding`;
@@ -82,7 +90,7 @@
         <!-- Next Lesson Card -->
         <NextLessonCard
           lessonTitle={currentLessonTitle}
-          progress={60}
+          progress={currentLessonProgress()}
           onContinue={navigateToLesson}
         />
 
