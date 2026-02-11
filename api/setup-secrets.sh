@@ -22,6 +22,8 @@ echo "  - OLLAMA_API_KEY      (Ollama - optional, for local)"
 echo "  - OPENCODE_API_KEY    (OpenCode - optional)"
 echo "  - CEREBRAS_API_KEY    (Cerebras)"
 echo "  - RESEND_API_KEY      (Resend - for feedback emails)"
+echo "  - JWT_SECRET          (JWT signing secret)"
+echo "  - EMAIL_PEPPER        (Email hashing pepper)"
 echo "  - OWNER_EMAIL         (Your email for feedback)"
 echo ""
 
@@ -79,6 +81,8 @@ set_secret "CEREBRAS_API_KEY" "Enter Cerebras API key"
 
 # Feedback Configuration
 set_secret "RESEND_API_KEY" "Enter Resend API key (for feedback emails)"
+set_secret "JWT_SECRET" "Enter JWT secret (64+ random chars)"
+set_secret "EMAIL_PEPPER" "Enter email pepper (32+ random chars)"
 echo -n "Enter your email address (for receiving feedback): "
 read owner_email
 if [ -n "$owner_email" ]; then

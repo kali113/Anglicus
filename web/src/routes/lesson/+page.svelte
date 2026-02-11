@@ -11,7 +11,7 @@
   } from "$lib/storage/user-store";
   import type { LanguageCode } from "$lib/types/user";
   import { getLanguageLabel } from "$lib/types/user";
-  import { streamCompletion } from "$lib/ai/client";
+  import { AiRequestError, streamCompletion } from "$lib/ai/client";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
     checkBillingAccess,
@@ -247,11 +247,20 @@
       ];
 
       try {
-        await streamCompletion(messages, (chunk) => {
-          explanation += chunk;
-        });
+        await streamCompletion(
+          messages,
+          (chunk) => {
+            explanation += chunk;
+          },
+          { feature: "lessonExplanation" },
+        );
         await recordBillingUsage("lessonExplanation");
       } catch (err) {
+        if (err instanceof AiRequestError && err.status === 429) {
+          await openPaywall("block", getFeatureLabel("lessonExplanation"));
+          showTutorBox = false;
+          return;
+        }
         explanation = $t("lesson.explanationFallback", {
           answer: correctSentence,
         });
@@ -307,11 +316,19 @@ Student's question: "${tutorQuestion}"`,
     ];
 
     try {
-      await streamCompletion(messages, (chunk) => {
-        tutorResponse += chunk;
-      });
+      await streamCompletion(
+        messages,
+        (chunk) => {
+          tutorResponse += chunk;
+        },
+        { feature: "tutorQuestion" },
+      );
       await recordBillingUsage("tutorQuestion");
     } catch (err) {
+      if (err instanceof AiRequestError && err.status === 429) {
+        await openPaywall("block", getFeatureLabel("tutorQuestion"));
+        return;
+      }
       tutorResponse = $t("lesson.tutorError");
       console.error("Tutor error:", err);
     } finally {

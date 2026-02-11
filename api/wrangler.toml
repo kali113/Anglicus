@@ -7,6 +7,8 @@ compatibility_date = "2024-04-01"
 # Run: wrangler secret put GROQ_API_KEY
 # Run: wrangler secret put TOGETHER_API_KEY
 # Run: wrangler secret put RESEND_API_KEY
+# Run: wrangler secret put JWT_SECRET
+# Run: wrangler secret put EMAIL_PEPPER
 # Run: wrangler secret put OWNER_EMAIL
 # Run: wrangler secret put REMINDER_ENCRYPTION_KEY
 
@@ -15,6 +17,12 @@ compatibility_date = "2024-04-01"
 RATE_LIMIT_PER_MINUTE = "20"
 ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.github.io"
 REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
+AUTH_FROM_EMAIL = "Anglicus <auth@anglicus.app>"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "anglicus-auth"
+# database_id = "replace-with-id"
 
 [triggers]
 crons = ["*/15 * * * *"]

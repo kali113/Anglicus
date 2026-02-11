@@ -16,7 +16,6 @@
   <section id="terms" class="legal-section">
     <h2>{$t("legal.terms.title")}</h2>
     <p>{$t("legal.terms.body")}</p>
-    <p>{$t("legal.contact")}</p>
   </section>
 
   <section id="privacy" class="legal-section">

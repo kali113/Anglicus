@@ -22,6 +22,8 @@ echo   - OLLAMA_API_KEY      (Ollama - optional, for local)
 echo   - OPENCODE_API_KEY    (OpenCode - optional)
 echo   - CEREBRAS_API_KEY    (Cerebras)
 echo   - RESEND_API_KEY      (Resend - for feedback emails)
+echo   - JWT_SECRET          (JWT signing secret)
+echo   - EMAIL_PEPPER        (Email hashing pepper)
 echo   - OWNER_EMAIL         (Your email for feedback)
 echo.
 
@@ -83,6 +85,8 @@ call :set_secret "OLLAMA_API_KEY" "Set Ollama API key (optional - for local inst
 call :set_secret "OPENCODE_API_KEY" "Set OpenCode API key (optional)"
 call :set_secret "CEREBRAS_API_KEY" "Set Cerebras API key"
 call :set_secret "RESEND_API_KEY" "Set Resend API key (for feedback emails)"
+call :set_secret "JWT_SECRET" "Set JWT secret (64+ random chars)"
+call :set_secret "EMAIL_PEPPER" "Set email pepper (32+ random chars)"
 call :set_secret "OWNER_EMAIL" "Set owner email address (feedback recipient)"
 
 echo.

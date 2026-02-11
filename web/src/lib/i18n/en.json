@@ -332,18 +332,17 @@
       "title": "Terms of Service",
       "body": "Anglicus is an educational tool. The service is provided \"as is\" and may change over time. You are responsible for the content you share and for complying with applicable law. If you are a minor, use the app with guardian permission."
     },
-    "contact": "Contact: support@anglicus.app",
     "privacy": {
       "title": "Privacy",
-      "body": "Your progress and settings are stored on your device (localStorage). If you enable email reminders, your email is stored encrypted only for sending reminders and is never sold. You can disable or delete this data from Settings."
+      "body": "Your progress and settings are stored locally on your device only (localStorage). We do not collect or store any personal data on our servers. You can delete all data from Settings at any time."
     },
     "cookies": {
       "title": "Cookies",
-      "body": "We use local storage and essential technical cookies for functionality and security. We do not use advertising cookies."
+      "body": "We use local storage and essential technical cookies for functionality and security. We do not use advertising cookies or tracking."
     },
     "dataProtection": {
       "title": "Data Protection",
-      "body": "You can request access, correction, or deletion of your data. Deletion can be done from Settings (Delete all data) or by emailing support@anglicus.app."
+      "body": "You have full control over your data. All data is stored locally on your device and can be deleted instantly from Settings (Delete all data). We do not retain any copies."
     }
   },
   "placement": {

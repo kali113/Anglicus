@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import type { LanguageCode } from "$lib/types/user.js";
-  import { getCompletion, ContextEngine } from "$lib/ai/index.js";
+  import { AiRequestError, getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
@@ -72,7 +72,10 @@
         })),
       ];
 
-      const response = await getCompletion(apiMessages, { maxTokens: 200 });
+      const response = await getCompletion(apiMessages, {
+        maxTokens: 200,
+        feature: "quickChat",
+      });
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -84,6 +87,10 @@
       messages = [...messages, assistantMessage];
       await recordBillingUsage("quickChat");
     } catch (error) {
+      if (error instanceof AiRequestError && error.status === 429) {
+        await openPaywall("block", getFeatureLabel("quickChat"));
+        return;
+      }
       messages = [
         ...messages,
         {

@@ -5,12 +5,15 @@
  * Tier 3: Puter.js (free fallback)
  */
 
+import { base } from "$app/paths";
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
   ApiError,
 } from "$lib/types/api.js";
+import { getToken } from "$lib/auth/index.js";
 import { getSettings, getApiKey } from "$lib/storage/index.js";
+import { isBrowser } from "$lib/storage/base-store.js";
 
 // Default model to use
 const DEFAULT_MODEL = "llama-3.1-8b"; // Cerebras (fast), will fallback to others if needed
@@ -18,10 +21,32 @@ const DEFAULT_MODEL = "llama-3.1-8b"; // Cerebras (fast), will fallback to other
 // Backend URL (owner's Cloudflare Worker)
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
+function redirectToLogin(): void {
+  if (!isBrowser()) return;
+  window.location.href = `${base}/login`;
+}
+
+function requireAuthToken(): string {
+  const token = getToken();
+  if (!token) {
+    redirectToLogin();
+    throw new AiRequestError("auth_required", 401, "auth_required");
+  }
+  return token;
+}
+
+function shouldAbortFallback(error: unknown): boolean {
+  return (
+    error instanceof AiRequestError &&
+    (error.status === 401 || error.status === 429)
+  );
+}
+
 export interface AiClientConfig {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  feature?: AiFeature;
 }
 
 export interface AiResponse {
@@ -34,19 +59,57 @@ export interface AiResponse {
   provider?: "backend" | "byok" | "puter";
 }
 
+export type AiFeature =
+  | "tutor"
+  | "quickChat"
+  | "lessonChat"
+  | "lessonExplanation"
+  | "tutorQuestion";
+
+export class AiRequestError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+const FEATURE_HEADER = "X-Anglicus-Feature";
+
 /**
  * Try Tier 1: Backend router with owner's keys
  */
-async function tryBackend(request: ChatCompletionRequest): Promise<AiResponse> {
+async function tryBackend(
+  request: ChatCompletionRequest,
+  feature: AiFeature,
+): Promise<AiResponse> {
+  const token = requireAuthToken();
   const response = await fetch(`${BACKEND_URL}/v1/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      [FEATURE_HEADER]: feature,
+    },
     body: JSON.stringify(request),
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as ApiError;
-    throw new Error(error.error?.message || "Backend request failed");
+    if (response.status === 401) {
+      redirectToLogin();
+      throw new AiRequestError("auth_required", 401, "auth_required");
+    }
+    if (response.status === 429) {
+      const data = await response.json().catch(() => null);
+      const code = data?.error || "limit_reached";
+      throw new AiRequestError("limit_reached", 429, code);
+    }
+
+    const error = (await response.json().catch(() => null)) as ApiError | null;
+    throw new Error(error?.error?.message || "Backend request failed");
   }
 
   const data = (await response.json()) as ChatCompletionResponse;
@@ -167,6 +230,9 @@ export async function getCompletion(
     temperature: config.temperature ?? 0.7,
     max_tokens: config.maxTokens || 500,
   };
+  const feature = config.feature ?? "tutor";
+
+  requireAuthToken();
 
   // Tier routing based on settings
   let lastError: Error | null = null;
@@ -175,8 +241,9 @@ export async function getCompletion(
   switch (settings.apiConfig.tier) {
     case "backend":
       try {
-        return await tryBackend(request);
+        return await tryBackend(request, feature);
       } catch (e) {
+        if (shouldAbortFallback(e)) throw e as Error;
         lastError = e as Error;
       }
       break;
@@ -201,8 +268,9 @@ export async function getCompletion(
     default:
       // Auto: Try backend -> BYOK -> Puter
       try {
-        return await tryBackend(request);
+        return await tryBackend(request, feature);
       } catch (e) {
+        if (shouldAbortFallback(e)) throw e as Error;
         lastError = e as Error;
       }
 
@@ -241,6 +309,8 @@ export async function streamCompletion(
     max_tokens: config.maxTokens || 500,
     stream: true,
   };
+  const feature = config.feature ?? "tutor";
+  const token = requireAuthToken();
 
   let endpoint = "";
   let headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -255,6 +325,8 @@ export async function streamCompletion(
   } else {
     // Default to backend
     endpoint = `${BACKEND_URL}/v1/chat/completions`;
+    headers["Authorization"] = `Bearer ${token}`;
+    headers[FEATURE_HEADER] = feature;
   }
 
   try {
@@ -265,6 +337,15 @@ export async function streamCompletion(
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        redirectToLogin();
+        throw new AiRequestError("auth_required", 401, "auth_required");
+      }
+      if (response.status === 429) {
+        const data = await response.json().catch(() => null);
+        const code = data?.error || "limit_reached";
+        throw new AiRequestError("limit_reached", 429, code);
+      }
       throw new Error(`Stream request failed: ${response.statusText}`);
     }
 
@@ -311,6 +392,7 @@ export async function testConnection(
   tier: "backend" | "byok" | "puter",
 ): Promise<ConnectionTestResult> {
   const settings = getSettings();
+  const feature: AiFeature = "tutor";
   
   // Pre-flight checks based on tier
   if (tier === "byok") {
@@ -322,6 +404,7 @@ export async function testConnection(
   }
 
   try {
+    requireAuthToken();
     // Create a minimal test request
     const request: ChatCompletionRequest = {
       model: DEFAULT_MODEL,
@@ -334,7 +417,7 @@ export async function testConnection(
     // Test specific tier
     switch (tier) {
       case "backend":
-        result = await tryBackend(request);
+        result = await tryBackend(request, feature);
         break;
       case "byok":
         result = await tryByok(request);
@@ -358,6 +441,16 @@ export async function testConnection(
  * Parse error message to provide user-friendly feedback
  */
 function parseErrorMessage(error: Error): string {
+  if (error instanceof AiRequestError) {
+    if (error.status === 401) {
+      return "Necesitas iniciar sesion";
+    }
+    if (error.status === 429) {
+      return "Limite de peticiones excedido";
+    }
+    return error.message;
+  }
+
   const message = error.message.toLowerCase();
   
   // Network errors

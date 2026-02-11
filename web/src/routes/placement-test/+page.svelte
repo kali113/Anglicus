@@ -16,11 +16,14 @@
     LearningGoal,
     LanguageCode,
   } from "$lib/types/user.js";
-  import { getCompletion } from "$lib/ai/index.js";
+  import { AiRequestError, getCompletion } from "$lib/ai/index.js";
   import {
     applyPromoToBilling,
+    getFeatureLabel,
+    markPaywallShown,
     validatePromoCode,
   } from "$lib/billing/index.js";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
   import { locale, t } from "$lib/i18n";
 
   // Test configuration
@@ -92,6 +95,9 @@
   let promoMessage = $state("");
   let promoHash = $state<string | null>(null);
   let promoSaving = $state(false);
+  let showPaywall = $state(false);
+  let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeature = $state(getFeatureLabel("tutor"));
 
   function getPlacementPrompt(): string {
     if (targetLanguage === "es") {
@@ -178,7 +184,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
           },
           { role: "user", content: prompt },
         ],
-        { maxTokens: 1000, temperature: 0.7 },
+        { maxTokens: 1000, temperature: 0.7, feature: "tutor" },
       );
 
       // Parse JSON response
@@ -194,12 +200,24 @@ Make sure the correctAnswer matches exactly one of the options.`;
         throw new Error("Invalid response format");
       }
     } catch (error) {
+      if (error instanceof AiRequestError && error.status === 429) {
+        await openPaywall("block", getFeatureLabel("tutor"));
+        step = 4;
+        return;
+      }
       console.error("Failed to generate questions, using fallback:", error);
       // Use fallback questions without error message
       questions = getFallbackQuestions();
     } finally {
       isLoading = false;
     }
+  }
+
+  async function openPaywall(mode: "nag" | "block", feature: string) {
+    paywallMode = mode;
+    paywallFeature = feature;
+    showPaywall = true;
+    await markPaywallShown();
   }
 
   function getFallbackQuestions(): Question[] {
@@ -653,6 +671,14 @@ Make sure the correctAnswer matches exactly one of the options.`;
     </div>
   {/if}
 </div>
+
+<PaywallModal
+  open={showPaywall}
+  mode={paywallMode}
+  featureLabel={paywallFeature}
+  onclose={() => (showPaywall = false)}
+  onpaid={() => (showPaywall = false)}
+/>
 
 <style>
   .placement-test {

@@ -1,5 +1,6 @@
 import { isBrowser } from "$lib/storage/base-store.js";
 import { getSettings } from "$lib/storage/settings-store.js";
+import { checkSuspiciousActivity } from "$lib/storage/secure-store.js";
 import { get } from "svelte/store";
 import { t } from "$lib/i18n";
 import {
@@ -30,14 +31,14 @@ export type BillingFeature =
 type UsageKey = Exclude<keyof BillingUsage, "date">;
 
 const FREE_LIMITS: Record<UsageKey, number> = {
-  tutorMessages: 18,
-  quickChatMessages: 10,
-  lessonExplanations: 6,
-  tutorQuestions: 4,
+  tutorMessages: 14,
+  quickChatMessages: 8,
+  lessonExplanations: 5,
+  tutorQuestions: 3,
 };
 
-const NAG_PROBABILITY = 0.18;
-const NAG_COOLDOWN_MS = 1000 * 60 * 8;
+const NAG_PROBABILITY = 0.30;
+const NAG_COOLDOWN_MS = 1000 * 60 * 5;
 
 const FEATURE_USAGE_MAP: Record<BillingFeature, UsageKey> = {
   tutor: "tutorMessages",
@@ -156,7 +157,14 @@ async function getBillingSnapshot(): Promise<{ billing: BillingInfo } | null> {
   return { billing };
 }
 
-function shouldNag(billing: BillingInfo): boolean {
+const EARLY_NAG_USAGE_THRESHOLD = 3;
+
+function shouldNag(billing: BillingInfo, used: number): boolean {
+  // Early nag on 3rd usage to encourage upgrade sooner
+  if (used === EARLY_NAG_USAGE_THRESHOLD && !billing.lastPaywallShownAt) {
+    return true;
+  }
+
   if (!billing.lastPaywallShownAt) {
     return Math.random() < NAG_PROBABILITY;
   }
@@ -170,6 +178,25 @@ function shouldNag(billing: BillingInfo): boolean {
 }
 
 export async function checkBillingAccess(feature: BillingFeature): Promise<BillingDecision | null> {
+  // Security check before allowing access
+  const securityCheck = await checkSuspiciousActivity();
+  if (securityCheck.action === "block") {
+    console.warn("Access blocked:", securityCheck.reason);
+    // Return a block decision with zeroed usage
+    return {
+      allow: false,
+      mode: "block",
+      reason: "limit",
+      used: FREE_LIMITS[FEATURE_USAGE_MAP[feature]],
+      limit: FREE_LIMITS[FEATURE_USAGE_MAP[feature]],
+      billing: {
+        ...getDefaultBilling(),
+        status: "none",
+        plan: "free",
+      },
+    };
+  }
+  
   const snapshot = await getBillingSnapshot();
   if (!snapshot) return null;
 
@@ -197,7 +224,7 @@ export async function checkBillingAccess(feature: BillingFeature): Promise<Billi
     return { allow: false, mode: "block", reason: "limit", used, limit, billing };
   }
 
-  if (shouldNag(billing)) {
+  if (shouldNag(billing, used)) {
     return { allow: true, mode: "nag", reason: "nag", used, limit, billing };
   }
 
@@ -206,6 +233,14 @@ export async function checkBillingAccess(feature: BillingFeature): Promise<Billi
 
 export async function recordBillingUsage(feature: BillingFeature): Promise<void> {
   if (isByokFree()) return;
+  
+  // Security check before recording usage
+  const securityCheck = await checkSuspiciousActivity();
+  if (securityCheck.action === "block") {
+    console.warn("Usage recording blocked:", securityCheck.reason);
+    return;
+  }
+  
   const snapshot = await getBillingSnapshot();
   if (!snapshot) return;
 
@@ -230,6 +265,28 @@ export async function markPaywallShown(): Promise<void> {
       lastPaywallShownAt: new Date().toISOString(),
     },
   });
+}
+
+export async function getUsageInfo(feature: BillingFeature): Promise<{ used: number; limit: number; remaining: number; percentUsed: number } | null> {
+  const snapshot = await getBillingSnapshot();
+  if (!snapshot) return null;
+
+  if (isByokFree()) {
+    return { used: 0, limit: FREE_LIMITS[FEATURE_USAGE_MAP[feature]], remaining: Infinity, percentUsed: 0 };
+  }
+
+  const billing = snapshot.billing;
+  if (billing.status === "active" && billing.plan === "pro") {
+    return { used: 0, limit: Infinity, remaining: Infinity, percentUsed: 0 };
+  }
+
+  const usageKey = FEATURE_USAGE_MAP[feature];
+  const used = billing.usage[usageKey];
+  const limit = FREE_LIMITS[usageKey];
+  const remaining = Math.max(0, limit - used);
+  const percentUsed = Math.min(100, Math.round((used / limit) * 100));
+
+  return { used, limit, remaining, percentUsed };
 }
 
 export async function validatePromoCode(

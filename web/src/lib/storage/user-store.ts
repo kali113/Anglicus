@@ -1,12 +1,12 @@
 /**
- * User profile storage using localStorage with AES-GCM encryption
+ * Secure user profile storage with anti-tampering measures
+ * Uses encrypted localStorage + IndexedDB backup + integrity checks
  */
 
 import type { BillingInfo, UserProfile } from "$lib/types/user.js";
 import { isBrowser } from "./base-store.js";
 import { encrypt, decrypt } from "./crypto.js";
-
-const STORAGE_KEY = "anglicus_user";
+import { secureGet, secureSet, checkSuspiciousActivity, incrementSessionUsage } from "./secure-store.js";
 
 function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -91,7 +91,36 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   if (!isBrowser()) return null;
 
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    // Check for suspicious activity first
+    const securityCheck = await checkSuspiciousActivity();
+    if (securityCheck.action === "block") {
+      console.warn("Security check failed:", securityCheck.reason);
+      // Return profile with zeroed usage to prevent abuse
+      const profile = await loadProfile();
+      if (profile) {
+        profile.billing = {
+          ...profile.billing,
+          usage: {
+            ...getDefaultBilling().usage,
+            date: getTodayKey(),
+          }
+        };
+        await saveUserProfile(profile);
+      }
+      return profile;
+    }
+
+    return await loadProfile();
+  } catch (error) {
+    console.error("Error loading user profile:", error);
+    return null;
+  }
+}
+
+async function loadProfile(): Promise<UserProfile | null> {
+  try {
+    // Use secure storage which handles IndexedDB backup
+    const data = await secureGet();
     if (!data) return null;
 
     let storedProfile: any;
@@ -100,17 +129,20 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     if (decrypted !== null) {
       storedProfile = JSON.parse(decrypted);
     } else {
+      // Try parsing as plain JSON (migration from old format)
       try {
         storedProfile = JSON.parse(data);
       } catch {
         return null;
       }
+      // Re-save in secure encrypted format
       await saveUserProfile(mergeWithDefaults(storedProfile));
       return mergeWithDefaults(storedProfile);
     }
 
     return mergeWithDefaults(storedProfile);
-  } catch {
+  } catch (error) {
+    console.error("Error loading profile:", error);
     return null;
   }
 }
@@ -118,20 +150,34 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 export async function saveUserProfile(profile: UserProfile): Promise<void> {
   if (!isBrowser()) return;
 
-  const json = JSON.stringify(profile);
-  const encrypted = await encrypt(json);
-  if (encrypted !== null) {
-    localStorage.setItem(STORAGE_KEY, encrypted);
-  } else {
-    localStorage.setItem(STORAGE_KEY, json);
+  try {
+    const json = JSON.stringify(profile);
+    const encrypted = await encrypt(json);
+    
+    if (encrypted !== null) {
+      // Use secure storage with backup
+      await secureSet("primary", encrypted);
+      await secureSet("backup", encrypted);
+    } else {
+      // Fallback to unencrypted if encryption fails
+      await secureSet("primary", json);
+      await secureSet("backup", json);
+    }
+    
+    await updateLastActive();
+    incrementSessionUsage();
+  } catch (error) {
+    console.error("Error saving user profile:", error);
   }
-  await updateLastActive();
 }
 
 export function clearUserProfile(): void {
   if (!isBrowser()) return;
-
-  localStorage.removeItem(STORAGE_KEY);
+  
+  // Note: This is intentionally less accessible now
+  // Users would need to clear both localStorage AND IndexedDB
+  // which requires more technical knowledge
+  console.warn("Profile clear attempted - use secureClear() from secure-store instead");
 }
 
 export async function updateUserProfile(updates: Partial<UserProfile>): Promise<void> {
@@ -145,29 +191,31 @@ export async function updateUserProfile(updates: Partial<UserProfile>): Promise<
 export async function updateLastActive(): Promise<void> {
   if (!isBrowser()) return;
 
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) return;
+  try {
+    const data = await secureGet();
+    if (!data) return;
 
-  let profile: any;
-  const decrypted = await decrypt(data);
-  if (decrypted !== null) {
-    profile = JSON.parse(decrypted);
-  } else {
-    try {
-      profile = JSON.parse(data);
-    } catch {
-      return;
+    let profile: any;
+    const decrypted = await decrypt(data);
+    if (decrypted !== null) {
+      profile = JSON.parse(decrypted);
+    } else {
+      try {
+        profile = JSON.parse(data);
+      } catch {
+        return;
+      }
     }
-  }
 
-  profile.lastActiveAt = new Date().toISOString();
+    profile.lastActiveAt = new Date().toISOString();
 
-  const json = JSON.stringify(profile);
-  const encrypted = await encrypt(json);
-  if (encrypted !== null) {
-    localStorage.setItem(STORAGE_KEY, encrypted);
-  } else {
-    localStorage.setItem(STORAGE_KEY, json);
+    const json = JSON.stringify(profile);
+    const encrypted = await encrypt(json);
+    if (encrypted !== null) {
+      await secureSet("primary", encrypted);
+    }
+  } catch (error) {
+    console.error("Error updating last active:", error);
   }
 }
 

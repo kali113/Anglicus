@@ -2,9 +2,15 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { getUserProfile } from '$lib/storage/user-store.js';
-	import { getCompletion, buildExerciseSystemPrompt } from '$lib/ai/index.js';
+	import {
+		AiRequestError,
+		getCompletion,
+		buildExerciseSystemPrompt
+	} from '$lib/ai/index.js';
 	import type { Exercise } from '$lib/types/exercise.js';
 	import type { UserProfile } from '$lib/types/user.js';
+	import PaywallModal from '$lib/components/PaywallModal.svelte';
+	import { getFeatureLabel, markPaywallShown } from '$lib/billing/index.js';
 	import { t } from '$lib/i18n';
 
 	let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
@@ -15,6 +21,9 @@
 	let showResult = $state(false);
 	let isCorrect = $state(false);
 	let errorMessage = $state('');
+	let showPaywall = $state(false);
+	let paywallMode = $state<'nag' | 'block'>('block');
+	let paywallFeature = $state(getFeatureLabel('tutor'));
 
 	onMount(async () => {
 		profile = await getUserProfile();
@@ -41,7 +50,7 @@
 						content: 'Generate 3 exercises for me. Return ONLY valid JSON.',
 					},
 				],
-				{ maxTokens: 800, temperature: 0.8 }
+				{ maxTokens: 800, temperature: 0.8, feature: 'tutor' }
 			);
 
 			// Parse JSON from response
@@ -51,11 +60,22 @@
 				exercises = data.exercises || [];
 			}
 		} catch (error) {
+			if (error instanceof AiRequestError && error.status === 429) {
+				await openPaywall('block', getFeatureLabel('tutor'));
+				return;
+			}
 			console.error('Failed to generate exercises:', error);
 			errorMessage = $t('exercises.connectionError');
 		} finally {
 			loading = false;
 		}
+	}
+
+	async function openPaywall(mode: 'nag' | 'block', feature: string) {
+		paywallMode = mode;
+		paywallFeature = feature;
+		showPaywall = true;
+		await markPaywallShown();
 	}
 
 	function checkAnswer() {

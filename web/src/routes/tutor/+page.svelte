@@ -3,7 +3,7 @@
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import type { LanguageCode } from "$lib/types/user.js";
-  import { getCompletion, ContextEngine } from "$lib/ai/index.js";
+  import { AiRequestError, getCompletion, ContextEngine } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
@@ -78,7 +78,10 @@
         })),
       ];
 
-      const response = await getCompletion(apiMessages, { maxTokens: 300 });
+      const response = await getCompletion(apiMessages, {
+        maxTokens: 300,
+        feature: "tutor",
+      });
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -90,6 +93,10 @@
       messages = [...messages, assistantMessage];
       await recordBillingUsage("tutor");
     } catch (error) {
+      if (error instanceof AiRequestError && error.status === 429) {
+        await openPaywall("block", getFeatureLabel("tutor"));
+        return;
+      }
       errorMessage = $t("tutor.connectionError");
       messages = [
         ...messages,

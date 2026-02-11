@@ -2,10 +2,8 @@ name: Build Desktop Installer
 
 on:
   push:
-    branches: [main, master]
-    paths:
-      - "desktop/**"
-      - ".github/workflows/desktop.yml"
+    branches:
+      - "**"
   release:
     types: [published]
   workflow_dispatch:
