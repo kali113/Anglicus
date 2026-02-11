@@ -155,6 +155,16 @@
             </button>
           </div>
         {/if}
+
+        <div class="address-block">
+          <div class="label">ETH / BNB (EVM)</div>
+          <div class="address">0x2e30F75873B1A3A07A55179E6e7CBb7Fa8a3B0a7</div>
+        </div>
+
+        <div class="address-block">
+          <div class="label">Solana (SOL)</div>
+          <div class="address">H9WXRbYgizvGA3B2gywupwdw reocGoexu7YeLMdYPAZ8</div>
+        </div>
       </div>
 
       <div class="byok-tip">
