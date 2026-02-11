@@ -16,8 +16,12 @@
     LearningGoal,
     LanguageCode,
   } from "$lib/types/user.js";
-  import { getLanguageLabel } from "$lib/types/user.js";
   import { getCompletion } from "$lib/ai/index.js";
+  import {
+    applyPromoToBilling,
+    validatePromoCode,
+  } from "$lib/billing/index.js";
+  import { locale, t } from "$lib/i18n";
 
   // Test configuration
   const QUESTIONS_COUNT = 5;
@@ -29,12 +33,22 @@
   let isLoading = $state(false);
   let errorMessage = $state("");
   let targetLanguage = $state<LanguageCode>("en");
-  let targetLabel = $derived(getLanguageLabel(targetLanguage, "es"));
+  let uiLanguage = $derived($locale);
+  let targetLabel = $derived($t(`languages.name.${targetLanguage}`));
+  const targetLabelDisplay = $derived(
+    uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+  );
 
-  const languageOptions = [
-    { value: "en" as LanguageCode, label: "Inglés (para hispanohablantes)" },
-    { value: "es" as LanguageCode, label: "Español (para angloparlantes)" },
-  ];
+  const languageOptions = $derived([
+    {
+      value: "en" as LanguageCode,
+      label: $t("placement.languageOptions.en"),
+    },
+    {
+      value: "es" as LanguageCode,
+      label: $t("placement.languageOptions.es"),
+    },
+  ]);
 
   // Test state
   type Question = {
@@ -64,15 +78,20 @@
     }
   }
 
-  const goals = [
-    { value: "travel" as LearningGoal, emoji: "✈️", label: "Viajes" },
-    { value: "work" as LearningGoal, emoji: "💼", label: "Trabajo" },
-    { value: "study" as LearningGoal, emoji: "📚", label: "Estudios" },
-    { value: "movies" as LearningGoal, emoji: "🎬", label: "Cine y Música" },
-    { value: "general" as LearningGoal, emoji: "🌟", label: "General" },
-  ];
+  const goals = $derived([
+    { value: "travel" as LearningGoal, emoji: "✈️", label: $t("placement.goals.travel") },
+    { value: "work" as LearningGoal, emoji: "💼", label: $t("placement.goals.work") },
+    { value: "study" as LearningGoal, emoji: "📚", label: $t("placement.goals.study") },
+    { value: "movies" as LearningGoal, emoji: "🎬", label: $t("placement.goals.movies") },
+    { value: "general" as LearningGoal, emoji: "🌟", label: $t("placement.goals.general") },
+  ]);
 
-  let step = $state(0); // 0: language, 1: welcome, 2: name, 3: goals, 4: test
+  let step = $state(0); // 0: language, 1: welcome, 2: name, 3: promo, 4: goals, 5: test
+  let promoCode = $state("");
+  let promoStatus = $state<"idle" | "valid" | "invalid" | "used">("idle");
+  let promoMessage = $state("");
+  let promoHash = $state<string | null>(null);
+  let promoSaving = $state(false);
 
   function getPlacementPrompt(): string {
     if (targetLanguage === "es") {
@@ -143,7 +162,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   async function startTest() {
-    step = 4;
+    step = 5;
     isLoading = true;
     errorMessage = "";
 
@@ -308,11 +327,44 @@ Make sure the correctAnswer matches exactly one of the options.`;
     }
   }
 
+  async function handleApplyPromo() {
+    if (!promoCode.trim() || promoSaving) return;
+    if (promoHash) {
+      promoStatus = "used";
+      promoMessage = $t("placement.promo.alreadyApplied");
+      return;
+    }
+    promoSaving = true;
+    promoMessage = "";
+    promoStatus = "idle";
+
+    const result = await validatePromoCode(promoCode.trim(), []);
+    if (result.valid && result.codeHash) {
+      promoHash = result.codeHash;
+      promoStatus = "valid";
+      promoMessage = $t("placement.promo.applied", {
+        percent: result.discountPercent ?? 0,
+      });
+    } else if (result.reason === "used") {
+      promoStatus = "used";
+      promoMessage = $t("placement.promo.used");
+    } else {
+      promoStatus = "invalid";
+      promoMessage = $t("placement.promo.invalid");
+    }
+
+    promoSaving = false;
+  }
+
   async function completeOnboarding() {
     const nativeLanguage: LanguageCode = targetLanguage === "en" ? "es" : "en";
     const normalizedEmail = userEmail.trim().toLowerCase();
+    let billing = getDefaultBilling();
+    if (promoHash) {
+      billing = await applyPromoToBilling(billing, promoHash);
+    }
     const profile: UserProfile = {
-      name: userName || "Amigo",
+      name: userName || $t("placement.defaultName"),
       email: normalizedEmail || undefined,
       level: assessedLevel,
       nativeLanguage,
@@ -327,9 +379,9 @@ Make sure the correctAnswer matches exactly one of the options.`;
       weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
       achievements: [],
       skills: [],
-      billing: getDefaultBilling(),
+      billing,
     };
-    saveUserProfile(profile);
+    await saveUserProfile(profile);
 
     if (normalizedEmail) {
       updateSettings({
@@ -350,7 +402,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
       if (!subscribed) {
         alert(
-          "No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuracion.",
+          $t("placement.reminderError"),
         );
       }
     }
@@ -359,15 +411,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   function getLevelLabel(level: EnglishLevel): string {
-    const labels = {
-      A1: "Principiante",
-      A2: "Elemental",
-      B1: "Intermedio",
-      B2: "Intermedio Alto",
-      C1: "Avanzado",
-      C2: "Proficiente",
-    };
-    return labels[level];
+    return $t(`placement.levels.${level}`);
   }
 
   function getLevelEmoji(level: EnglishLevel): string {
@@ -386,8 +430,8 @@ Make sure the correctAnswer matches exactly one of the options.`;
 <div class="placement-test">
   {#if step === 0}
     <div class="step">
-      <h1>¿Qué idioma quieres aprender?</h1>
-      <p class="subtitle">Elige tu objetivo de aprendizaje</p>
+      <h1>{$t("placement.step0.title")}</h1>
+      <p class="subtitle">{$t("placement.step0.subtitle")}</p>
       <div class="language-options">
         {#each languageOptions as option}
           <button class="language-card" onclick={() => {
@@ -418,21 +462,22 @@ Make sure the correctAnswer matches exactly one of the options.`;
           <path d="M12 7v10" />
         </svg>
       </div>
-      <h1>¡Bienvenido a Anglicus!</h1>
+      <h1>{$t("placement.step1.title")}</h1>
       <p>
-        Vamos a evaluar tu nivel de {targetLabel.toLowerCase()} con un test
-        rápido y personalizado.
+        {$t("placement.step1.description", { language: targetLabelDisplay })}
       </p>
-      <p class="subtitle">El test tiene 5 preguntas y dura unos 5 minutos.</p>
-      <button class="btn primary" onclick={() => (step = 2)}>Comenzar</button>
+      <p class="subtitle">{$t("placement.step1.subtitle")}</p>
+      <button class="btn primary" onclick={() => (step = 2)}>
+        {$t("placement.step1.start")}
+      </button>
     </div>
   {:else if step === 2}
     <div class="step">
-      <h2>¿Cuál es tu nombre?</h2>
+      <h2>{$t("placement.step2.title")}</h2>
       <input
         type="text"
         bind:value={userName}
-        placeholder="Tu nombre"
+        placeholder={$t("placement.step2.namePlaceholder")}
         class="input"
         onkeydown={(e) =>
           e.key === "Enter" &&
@@ -443,12 +488,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="email"
         bind:value={userEmail}
-        placeholder="Tu email (opcional)"
+        placeholder={$t("placement.step2.emailPlaceholder")}
         class="input"
         oninput={handleEmailInput}
       />
       {#if userEmail.trim() && !isEmailValid(userEmail)}
-        <p class="error-text">Email invalido.</p>
+        <p class="error-text">{$t("placement.validation.emailInvalid")}</p>
       {/if}
       <label class="checkbox-row">
         <input
@@ -456,11 +501,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
           bind:checked={wantsEmailReminders}
           disabled={!userEmail.trim() || !isEmailValid(userEmail)}
         />
-        <span>Quiero recibir recordatorios por email.</span>
+        <span>{$t("placement.step2.emailOptIn")}</span>
       </label>
       <p class="consent-note">
-        Opcional. Puedes darte de baja en Configuracion. Consulta la
-        <a href="{base}/legal#privacy">Politica de privacidad</a>.
+        {@html $t("placement.step2.consent", {
+          link: `<a href="${base}/legal#privacy">${$t("placement.step2.consentLink")}</a>`,
+        })}
       </p>
       <div class="actions">
         <button
@@ -468,14 +514,41 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={() => (step = 3)}
           disabled={!userName.trim() || (!!userEmail.trim() && !isEmailValid(userEmail))}
         >
-          Continuar
+          {$t("common.continue")}
         </button>
       </div>
     </div>
   {:else if step === 3}
     <div class="step">
-      <h2>¿Qué objetivos tienes?</h2>
-      <p class="subtitle">Selecciona todos los que apliquen</p>
+      <h2>{$t("placement.step3.title")}</h2>
+      <p class="subtitle">{$t("placement.step3.subtitle")}</p>
+      <input
+        type="text"
+        bind:value={promoCode}
+        placeholder={$t("placement.step3.placeholder")}
+        class="input"
+        onkeydown={(e) => e.key === "Enter" && handleApplyPromo()}
+      />
+      {#if promoMessage}
+        <p class={`promo-message ${promoStatus}`}>{promoMessage}</p>
+      {/if}
+      <div class="actions">
+        <button
+          class="btn secondary"
+          onclick={handleApplyPromo}
+          disabled={!promoCode.trim() || promoSaving}
+        >
+          {promoSaving ? $t("placement.step3.validating") : $t("placement.step3.apply")}
+        </button>
+        <button class="btn primary" onclick={() => (step = 4)}>
+          {$t("common.continue")}
+        </button>
+      </div>
+    </div>
+  {:else if step === 4}
+    <div class="step">
+      <h2>{$t("placement.step4.title")}</h2>
+      <p class="subtitle">{$t("placement.step4.subtitle")}</p>
       <div class="goals">
         {#each goals as goal}
           <button
@@ -494,29 +567,33 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={startTest}
           disabled={userGoals.length === 0}
         >
-          Iniciar Test
+          {$t("placement.step4.startTest")}
         </button>
       </div>
     </div>
-  {:else if step === 4}
+  {:else if step === 5}
     <div class="step test-step">
       {#if isLoading}
         <div class="loading-state">
           <div class="spinner"></div>
-          <p>Generando test personalizado...</p>
+          <p>{$t("placement.step5.generating")}</p>
         </div>
       {:else if errorMessage}
         <div class="error-state">
           <p>{errorMessage}</p>
-          <button class="btn primary" onclick={startTest}>Reintentar</button>
+          <button class="btn primary" onclick={startTest}>
+            {$t("common.retry")}
+          </button>
         </div>
       {:else if showResults}
         <div class="step results-step">
           <div class="illustration success">
             {getLevelEmoji(assessedLevel)}
           </div>
-          <h2>¡Test completado!</h2>
-          <p>Tu nivel de {targetLabel.toLowerCase()} es:</p>
+          <h2>{$t("placement.results.title")}</h2>
+          <p>
+            {$t("placement.results.levelLabel", { language: targetLabelDisplay })}
+          </p>
           <div class="level-result">
             <div class="level-code">{assessedLevel}</div>
             <div class="level-name">{getLevelLabel(assessedLevel)}</div>
@@ -524,14 +601,16 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
           <div class="score-summary">
             <p>
-              Respuestas correctas: {answers.filter(
-                (a, i) => a === questions[i]?.correctAnswer,
-              ).length} / {questions.length}
+              {$t("placement.results.correctAnswers", {
+                correct: answers.filter((a, i) => a === questions[i]?.correctAnswer)
+                  .length,
+                total: questions.length,
+              })}
             </p>
           </div>
 
           <button class="btn primary" onclick={completeOnboarding}>
-            Comenzar a Aprender
+            {$t("placement.results.startLearning")}
           </button>
         </div>
       {:else}
@@ -543,7 +622,10 @@ Make sure the correctAnswer matches exactly one of the options.`;
             ></div>
           </div>
           <p class="question-number">
-            Pregunta {currentQuestion + 1} de {questions.length}
+            {$t("placement.step5.questionProgress", {
+              current: currentQuestion + 1,
+              total: questions.length,
+            })}
           </p>
         </div>
 
@@ -659,7 +741,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     margin-bottom: 1.5rem;
   }
 
-  .consent-note a {
+  :global(.consent-note a) {
     color: var(--primary-light);
   }
 
@@ -753,11 +835,34 @@ Make sure the correctAnswer matches exactly one of the options.`;
     cursor: not-allowed;
   }
 
+  .btn.secondary {
+    background: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+  }
+
+  .btn.secondary:hover:not(:disabled) {
+    background: rgba(148, 163, 184, 0.35);
+  }
+
   .actions {
     display: flex;
     gap: 1rem;
     justify-content: center;
     margin-top: 1rem;
+  }
+
+  .promo-message {
+    margin: -1rem 0 1rem;
+    font-size: 0.85rem;
+  }
+
+  .promo-message.valid {
+    color: #86efac;
+  }
+
+  .promo-message.invalid,
+  .promo-message.used {
+    color: #fca5a5;
   }
 
   /* Test step styles */

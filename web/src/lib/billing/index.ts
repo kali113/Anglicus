@@ -1,5 +1,7 @@
 import { isBrowser } from "$lib/storage/base-store.js";
 import { getSettings } from "$lib/storage/settings-store.js";
+import { get } from "svelte/store";
+import { t } from "$lib/i18n";
 import {
   getDefaultBilling,
   getUserProfile,
@@ -9,8 +11,8 @@ import type { BillingInfo, BillingUsage } from "$lib/types/user.js";
 import {
   PROMO_CODE_DISCOUNT_PERCENT,
   PROMO_CODE_HASHES,
-  PROMO_CODE_PEPPER,
-} from "./promo-codes.js";
+  PROMO_CODE_PREFIX,
+} from "$lib/billing/promo-codes.js";
 
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
@@ -43,14 +45,6 @@ const FEATURE_USAGE_MAP: Record<BillingFeature, UsageKey> = {
   quickChat: "quickChatMessages",
   lessonExplanation: "lessonExplanations",
   tutorQuestion: "tutorQuestions",
-};
-
-const FEATURE_LABELS: Record<BillingFeature, string> = {
-  tutor: "Tutor IA",
-  lessonChat: "Tutor en Lecciones",
-  quickChat: "Chat Rápido",
-  lessonExplanation: "Explicaciones",
-  tutorQuestion: "Preguntar al tutor",
 };
 
 export type BillingDecision = {
@@ -86,7 +80,8 @@ export type BillingPaymentResult = {
 };
 
 export function getFeatureLabel(feature: BillingFeature): string {
-  return FEATURE_LABELS[feature];
+  const translate = get(t);
+  return translate(`billing.features.${feature}`);
 }
 
 export function isByokFree(): boolean {
@@ -137,8 +132,8 @@ function getTodayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function getBillingSnapshot(): { billing: BillingInfo } | null {
-  const profile = getUserProfile();
+async function getBillingSnapshot(): Promise<{ billing: BillingInfo } | null> {
+  const profile = await getUserProfile();
   if (!profile) return null;
 
   const defaults = getDefaultBilling();
@@ -155,7 +150,7 @@ function getBillingSnapshot(): { billing: BillingInfo } | null {
 
   const { billing, changed } = normalizeBilling(merged);
   if (changed) {
-    updateUserProfile({ billing });
+    await updateUserProfile({ billing });
   }
 
   return { billing };
@@ -174,8 +169,8 @@ function shouldNag(billing: BillingInfo): boolean {
   return Math.random() < NAG_PROBABILITY;
 }
 
-export function checkBillingAccess(feature: BillingFeature): BillingDecision | null {
-  const snapshot = getBillingSnapshot();
+export async function checkBillingAccess(feature: BillingFeature): Promise<BillingDecision | null> {
+  const snapshot = await getBillingSnapshot();
   if (!snapshot) return null;
 
   if (isByokFree()) {
@@ -209,9 +204,9 @@ export function checkBillingAccess(feature: BillingFeature): BillingDecision | n
   return { allow: true, mode: "allow", reason: "ok", used, limit, billing };
 }
 
-export function recordBillingUsage(feature: BillingFeature): void {
+export async function recordBillingUsage(feature: BillingFeature): Promise<void> {
   if (isByokFree()) return;
-  const snapshot = getBillingSnapshot();
+  const snapshot = await getBillingSnapshot();
   if (!snapshot) return;
 
   const billing = snapshot.billing;
@@ -220,15 +215,15 @@ export function recordBillingUsage(feature: BillingFeature): void {
     ...billing.usage,
     [usageKey]: billing.usage[usageKey] + 1,
   };
-  updateUserProfile({ billing: { ...billing, usage: updatedUsage } });
+  await updateUserProfile({ billing: { ...billing, usage: updatedUsage } });
 }
 
-export function markPaywallShown(): void {
-  const snapshot = getBillingSnapshot();
+export async function markPaywallShown(): Promise<void> {
+  const snapshot = await getBillingSnapshot();
   if (!snapshot) return;
 
   const billing = snapshot.billing;
-  updateUserProfile({
+  await updateUserProfile({
     billing: {
       ...billing,
       paywallImpressions: billing.paywallImpressions + 1,
@@ -299,7 +294,7 @@ export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
 }
 
 export async function verifyPayment(txId: string): Promise<BillingPaymentResult> {
-  const snapshot = getBillingSnapshot();
+  const snapshot = await getBillingSnapshot();
   const promoToken = snapshot?.billing.promoCodeHash;
   const response = await fetch(`${BACKEND_URL}/api/billing/verify`, {
     method: "POST",
@@ -331,12 +326,12 @@ export async function verifyPayment(txId: string): Promise<BillingPaymentResult>
     billing.status = "pending";
   }
 
-  updateUserProfile({ billing });
+  await updateUserProfile({ billing });
   return result;
 }
 
 export async function refreshPaymentStatus(): Promise<void> {
-  const snapshot = getBillingSnapshot();
+  const snapshot = await getBillingSnapshot();
   if (!snapshot) return;
 
   const billing = snapshot.billing;
@@ -352,7 +347,7 @@ function normalizePromoCode(rawCode: string): string | null {
 }
 
 async function hashPromoCode(code: string): Promise<string> {
-  return await sha256Hex(`${PROMO_CODE_PEPPER}:${code}`);
+  return await sha256Hex(`${PROMO_CODE_PREFIX}:${code}`);
 }
 
 function getPromoSalt(): string {

@@ -13,6 +13,7 @@ import { handleChatCompletions, handleListModels } from "./routes/chat.js";
 import { handleFeedback } from "./routes/feedback.js";
 import {
   handleBillingConfig,
+  handleBillingPromo,
   handleBillingVerify,
 } from "./routes/billing.js";
 import {
@@ -58,6 +59,7 @@ export interface Env {
   BTC_SUBSCRIPTION_DAYS?: string;
   BTC_NETWORK?: string;
   BTC_PRICE_USD?: string;
+  PROMO_CODE_PEPPER?: string;
 }
 
 // Module-level rate limiter (persists within isolate lifecycle)
@@ -181,6 +183,16 @@ app.post("/api/feedback", async (c) => {
 // Billing endpoints
 app.get("/api/billing/config", async (c) => {
   const response = await handleBillingConfig(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 500,
+    headers,
+  );
+});
+
+app.post("/api/billing/promo", async (c) => {
+  const response = await handleBillingPromo(c.req.raw, c.env);
   const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
