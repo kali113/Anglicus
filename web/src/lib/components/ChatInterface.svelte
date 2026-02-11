@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { base } from "$app/paths";
   import { fade } from "svelte/transition";
   import {
     addXp,
@@ -19,6 +20,7 @@
     recordBillingUsage,
   } from "$lib/billing/index.js";
   import { t } from "$lib/i18n";
+  import { getToken } from "$lib/auth/index.js";
 
   interface $$Props {
     lessonId: string;
@@ -35,6 +37,8 @@
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("lessonChat"));
   let targetLanguage = $state<LanguageCode>("en");
+  const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
   onMount(async () => {
     const profile = await getUserProfile();
@@ -78,20 +82,38 @@
         ...messages,
       ];
 
-      const response = await fetch(
-        "http://localhost:8787/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "anglicus-tutor", // Use smart router
-            messages: apiMessages,
-            temperature: 0.7,
-          }),
+      const token = getToken();
+      if (!token) {
+        window.location.href = `${base}/login`;
+        return;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/v1/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Anglicus-Feature": "lessonChat",
         },
-      );
+        body: JSON.stringify({
+          model: "anglicus-tutor", // Use smart router
+          messages: apiMessages,
+          temperature: 0.7,
+        }),
+      });
+
+      if (response.status === 401) {
+        window.location.href = `${base}/login`;
+        return;
+      }
+      if (response.status === 429) {
+        await openPaywall("block", getFeatureLabel("lessonChat"));
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Backend request failed");
+      }
 
       const data = await response.json();
 

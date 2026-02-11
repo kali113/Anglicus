@@ -31,10 +31,7 @@ export async function registerUser(email: string, password: string): Promise<voi
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(
-      response,
-      "No se pudo registrar el usuario",
-    );
+    const message = await parseErrorMessage(response, "Registration failed");
     throw new Error(message);
   }
 }
@@ -47,16 +44,13 @@ export async function verifyUser(email: string, code: string): Promise<string> {
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(
-      response,
-      "No se pudo verificar el usuario",
-    );
+    const message = await parseErrorMessage(response, "Verification failed");
     throw new Error(message);
   }
 
   const data = (await response.json()) as { token?: string };
   if (!data.token) {
-    throw new Error("Respuesta de verificacion invalida");
+    throw new Error("Invalid verification response");
   }
 
   return data.token;
@@ -70,16 +64,13 @@ export async function loginUser(email: string, password: string): Promise<string
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(
-      response,
-      "No se pudo iniciar sesion",
-    );
+    const message = await parseErrorMessage(response, "Login failed");
     throw new Error(message);
   }
 
   const data = (await response.json()) as { token?: string };
   if (!data.token) {
-    throw new Error("Respuesta de inicio invalida");
+    throw new Error("Invalid login response");
   }
 
   return data.token;
@@ -97,16 +88,13 @@ export async function refreshToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    const message = await parseErrorMessage(
-      response,
-      "No se pudo refrescar el token",
-    );
+    const message = await parseErrorMessage(response, "Token refresh failed");
     throw new Error(message);
   }
 
   const data = (await response.json()) as { token?: string };
   if (!data.token) {
-    throw new Error("Respuesta de refresco invalida");
+    throw new Error("Invalid refresh response");
   }
 
   return data.token;
@@ -136,7 +124,7 @@ export async function enableByok(
   if (!response.ok) {
     const message = await parseErrorMessage(
       response,
-      "No se pudo validar la API key",
+      "API key validation failed",
     );
     throw new Error(message);
   }

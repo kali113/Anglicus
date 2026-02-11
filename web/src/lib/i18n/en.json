@@ -35,6 +35,29 @@
     "continue": "Continue",
     "retry": "Retry"
   },
+  "auth": {
+    "loginTitle": "Sign in",
+    "registerTitle": "Create account",
+    "verifyTitle": "Verify email",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "codeLabel": "Verification code",
+    "loginButton": "Sign in",
+    "registerButton": "Create account",
+    "verifyButton": "Verify",
+    "registerHelper": "We'll send a 6-digit code to your email.",
+    "verifyHelper": "Enter the 6-digit code sent to your email.",
+    "loginLink": "Have an account? Sign in",
+    "registerLink": "Need an account? Register",
+    "verifyLink": "Already verified? Sign in",
+    "errors": {
+      "missingFields": "Please fill in all fields.",
+      "passwordInvalid": "Password must be at least 8 characters and include upper, lower, and a number.",
+      "loginFailed": "Could not sign in.",
+      "registerFailed": "Could not register.",
+      "verifyFailed": "Could not verify."
+    }
+  },
   "units": {
     "words": "words"
   },

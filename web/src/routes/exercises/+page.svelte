@@ -211,6 +211,14 @@
 	{/if}
 </div>
 
+<PaywallModal
+	open={showPaywall}
+	mode={paywallMode}
+	featureLabel={paywallFeature}
+	onclose={() => (showPaywall = false)}
+	onpaid={() => (showPaywall = false)}
+/>
+
 <style>
 	.exercises-page {
 		display: flex;

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { enableByok } from "$lib/auth/index.js";
   import {
     getSettings,
     updateSettings,
@@ -69,8 +70,16 @@
 
   async function handleSaveApiKey() {
     if (!customApiKey.trim()) return;
-    const success = await saveApiKey(customApiKey.trim());
+    const apiKey = customApiKey.trim();
+    const success = await saveApiKey(apiKey);
     if (success) {
+      try {
+        await enableByok(apiKey, customBaseUrl || undefined);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : $t("settings.alerts.apiKeyError");
+        alert(message);
+      }
       customApiKey = "";
       settings = getSettings();
       alert($t("settings.alerts.apiKeySaved"));
