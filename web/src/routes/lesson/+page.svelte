@@ -19,6 +19,7 @@
     markPaywallShown,
     recordBillingUsage,
   } from "$lib/billing/index.js";
+  import { t } from "$lib/i18n";
 
   interface Word {
     id: string;
@@ -33,11 +34,11 @@
     wordBank: string[];
   }
 
-  const profile = getUserProfile();
-  const targetLanguage: LanguageCode = profile?.targetLanguage ?? "en";
-  const nativeLanguage: LanguageCode = profile?.nativeLanguage ?? "es";
-  const targetLabelEn = getLanguageLabel(targetLanguage, "en");
-  const nativeLabelEn = getLanguageLabel(nativeLanguage, "en");
+  let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
+  let targetLanguage = $state<LanguageCode>("en");
+  let nativeLanguage = $state<LanguageCode>("es");
+  let targetLabelEn = $derived(getLanguageLabel(targetLanguage, "en"));
+  let nativeLabelEn = $derived(getLanguageLabel(nativeLanguage, "en"));
 
   // All exercises for this lesson
   const exercisesByLanguage: Record<LanguageCode, Exercise[]> = {
@@ -131,7 +132,7 @@
     ],
   };
 
-  const exercises: Exercise[] = exercisesByLanguage[targetLanguage];
+  let exercises = $derived(exercisesByLanguage[targetLanguage]);
 
   let currentExerciseIndex = $state(0);
   let currentExercise = $derived(exercises[currentExerciseIndex]);
@@ -156,6 +157,12 @@
   let availableWords = $state<Word[]>([]);
   let selectedWords = $state<Word[]>([]);
   let isCorrect = $state<boolean | null>(null);
+
+  onMount(async () => {
+    profile = await getUserProfile();
+    targetLanguage = profile?.targetLanguage ?? "en";
+    nativeLanguage = profile?.nativeLanguage ?? "es";
+  });
 
   function initExercise() {
     availableWords = currentExercise.wordBank.map((text, i) => ({
@@ -207,11 +214,11 @@
     if (isCorrect) {
       const xpGain = 15;
       totalXpEarned += xpGain;
-      addXp(xpGain);
-      incrementWordsLearned(currentExercise.target.length);
-      updateWeeklyActivity(1);
+      await addXp(xpGain);
+      await incrementWordsLearned(currentExercise.target.length);
+      await updateWeeklyActivity(1);
     } else {
-      const decision = checkBillingAccess("lessonExplanation");
+      const decision = await checkBillingAccess("lessonExplanation");
       if (decision) {
         if (decision.mode === "block") {
           openPaywall("block", getFeatureLabel("lessonExplanation"));
@@ -243,12 +250,11 @@
         await streamCompletion(messages, (chunk) => {
           explanation += chunk;
         });
-        recordBillingUsage("lessonExplanation");
+        await recordBillingUsage("lessonExplanation");
       } catch (err) {
-        explanation =
-          "The correct answer is: " +
-          correctSentence +
-          ". Try to match the word order exactly!";
+        explanation = $t("lesson.explanationFallback", {
+          answer: correctSentence,
+        });
         console.error("Explanation error:", err);
       } finally {
         isExplaining = false;
@@ -256,19 +262,19 @@
     }
   }
 
-  function nextExercise() {
+  async function nextExercise() {
     if (currentExerciseIndex < exercises.length - 1) {
       currentExerciseIndex++;
     } else {
       lessonComplete = true;
-      unlockAchievement("early_bird");
+      await unlockAchievement("early_bird");
     }
   }
 
   async function askTutor() {
     if (!tutorQuestion.trim() || isAskingTutor) return;
 
-    const decision = checkBillingAccess("tutorQuestion");
+    const decision = await checkBillingAccess("tutorQuestion");
     if (decision) {
       if (decision.mode === "block") {
         openPaywall("block", getFeatureLabel("tutorQuestion"));
@@ -304,10 +310,9 @@ Student's question: "${tutorQuestion}"`,
       await streamCompletion(messages, (chunk) => {
         tutorResponse += chunk;
       });
-      recordBillingUsage("tutorQuestion");
+      await recordBillingUsage("tutorQuestion");
     } catch (err) {
-      tutorResponse =
-        "Sorry, I couldn't process your question. Try rephrasing it!";
+      tutorResponse = $t("lesson.tutorError");
       console.error("Tutor error:", err);
     } finally {
       isAskingTutor = false;
@@ -326,18 +331,22 @@ Student's question: "${tutorQuestion}"`,
     goto(`${base}/`);
   }
 
-  function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(mode: "nag" | "block", feature: string) {
     paywallMode = mode;
     paywallFeature = feature;
     showPaywall = true;
-    markPaywallShown();
+    await markPaywallShown();
   }
 </script>
 
 <div class="lesson-page">
   <!-- Header -->
   <header class="header">
-    <button class="back-btn" onclick={() => goto(`${base}/`)} aria-label="Back">
+    <button
+      class="back-btn"
+      onclick={() => goto(`${base}/`)}
+      aria-label={$t("lesson.back")}
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="24"
@@ -363,37 +372,37 @@ Student's question: "${tutorQuestion}"`,
     <div class="placeholder"></div>
   </header>
 
-  {#if lessonComplete}
+    {#if lessonComplete}
     <!-- Lesson Complete Screen -->
     <div class="completion-screen">
       <div class="completion-content">
         <div class="trophy">🏆</div>
-        <h1>Lesson Complete!</h1>
-        <p class="subtitle">You've mastered Introductions</p>
+        <h1>{$t("lesson.completedTitle")}</h1>
+        <p class="subtitle">{$t("lesson.completedSubtitle")}</p>
 
         <div class="stats-grid">
           <div class="stat-item">
             <span class="stat-value">+{totalXpEarned}</span>
-            <span class="stat-label">XP Earned</span>
+            <span class="stat-label">{$t("lesson.stats.xp")}</span>
           </div>
           <div class="stat-item">
             <span class="stat-value">{exercises.length}</span>
-            <span class="stat-label">Questions</span>
+            <span class="stat-label">{$t("lesson.stats.questions")}</span>
           </div>
           <div class="stat-item">
             <span class="stat-value">100%</span>
-            <span class="stat-label">Accuracy</span>
+            <span class="stat-label">{$t("lesson.stats.accuracy")}</span>
           </div>
         </div>
 
         <button class="finish-btn" onclick={finishLesson}>
-          Continue Learning
+          {$t("lesson.continueLearning")}
         </button>
       </div>
     </div>
   {:else}
     <div class="lesson-content">
-      <h2 class="lesson-title">Lesson 1: Introductions</h2>
+      <h2 class="lesson-title">{$t("lesson.title")}</h2>
 
       <!-- Character Area -->
       <div class="scene">
@@ -423,7 +432,9 @@ Student's question: "${tutorQuestion}"`,
 
       <!-- Question -->
       <div class="question-area">
-        <p class="instruction">Translate: "{currentExercise.original}"</p>
+        <p class="instruction">
+          {$t("lesson.translate", { text: currentExercise.original })}
+        </p>
 
         <div class="answer-line">
           {#each selectedWords as word (word.id)}
@@ -432,7 +443,7 @@ Student's question: "${tutorQuestion}"`,
             </button>
           {/each}
           {#if selectedWords.length === 0}
-            <span class="placeholder-text">Select words below</span>
+            <span class="placeholder-text">{$t("lesson.selectWords")}</span>
           {/if}
         </div>
 
@@ -474,7 +485,7 @@ Student's question: "${tutorQuestion}"`,
           </div>
 
           <div class="feedback-content">
-            <h3 class="feedback-title">Not quite right</h3>
+            <h3 class="feedback-title">{$t("lesson.notQuiteRight")}</h3>
 
             {#if isExplaining}
               <div class="explanation-loading">
@@ -497,13 +508,13 @@ Student's question: "${tutorQuestion}"`,
                 </div>
               {/if}
 
-              <div class="tutor-input-container">
-                <span class="tutor-label">Ask your personal tutor</span>
+                <div class="tutor-input-container">
+                <span class="tutor-label">{$t("lesson.askTutor")}</span>
                 <div class="tutor-input-box">
                   <input
                     type="text"
                     class="tutor-input"
-                    placeholder="Why is this word order?"
+                    placeholder={$t("lesson.tutorPlaceholder")}
                     bind:value={tutorQuestion}
                     onkeydown={handleTutorKeydown}
                     disabled={isAskingTutor}
@@ -551,11 +562,11 @@ Student's question: "${tutorQuestion}"`,
             </div>
           {/if}
 
-          <button class="retry-btn" onclick={() => (isCorrect = null)}>
-            Try Again
-          </button>
-        </div>
-      {/if}
+        <button class="retry-btn" onclick={() => (isCorrect = null)}>
+          {$t("lesson.tryAgain")}
+        </button>
+      </div>
+    {/if}
 
       <!-- Success Feedback -->
       {#if isCorrect === true}
@@ -574,11 +585,11 @@ Student's question: "${tutorQuestion}"`,
               <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
-          <h3>Correct! +15 XP</h3>
+          <h3>{$t("lesson.correct", { xp: 15 })}</h3>
           <button class="continue-btn" onclick={nextExercise}>
             {currentExerciseIndex < exercises.length - 1
-              ? "Next Question"
-              : "Finish Lesson"}
+              ? $t("lesson.nextQuestion")
+              : $t("lesson.finishLesson")}
           </button>
         </div>
       {/if}
@@ -592,7 +603,7 @@ Student's question: "${tutorQuestion}"`,
           onclick={checkAnswer}
           disabled={selectedWords.length === 0}
         >
-          Check
+          {$t("lesson.check")}
         </button>
       </footer>
     {/if}
@@ -603,8 +614,8 @@ Student's question: "${tutorQuestion}"`,
   open={showPaywall}
   mode={paywallMode}
   featureLabel={paywallFeature}
-  on:close={() => (showPaywall = false)}
-  on:paid={() => (showPaywall = false)}
+  onclose={() => (showPaywall = false)}
+  onpaid={() => (showPaywall = false)}
 />
 
 <style>

@@ -5,8 +5,9 @@
 	import { getCompletion, buildExerciseSystemPrompt } from '$lib/ai/index.js';
 	import type { Exercise } from '$lib/types/exercise.js';
 	import type { UserProfile } from '$lib/types/user.js';
+	import { t } from '$lib/i18n';
 
-	let profile = getUserProfile();
+	let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
 	let exercises = $state<Exercise[]>([]);
 	let loading = $state(false);
 	let currentExerciseIndex = $state(0);
@@ -15,7 +16,8 @@
 	let isCorrect = $state(false);
 	let errorMessage = $state('');
 
-	onMount(() => {
+	onMount(async () => {
+		profile = await getUserProfile();
 		if (!profile) {
 			window.location.href = `${base}/onboarding`;
 			return;
@@ -50,7 +52,7 @@
 			}
 		} catch (error) {
 			console.error('Failed to generate exercises:', error);
-			errorMessage = 'Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.';
+			errorMessage = $t('exercises.connectionError');
 		} finally {
 			loading = false;
 		}
@@ -77,8 +79,8 @@
 
 <div class="exercises-page">
 	<header class="header">
-		<h1>Ejercicios</h1>
-		<p class="subtitle">Practica con ejercicios adaptados a tu nivel</p>
+		<h1>{$t('exercises.title')}</h1>
+		<p class="subtitle">{$t('exercises.subtitle')}</p>
 	</header>
 
 	{#if exercises.length === 0}
@@ -86,19 +88,21 @@
 			<div class="illustration">
 				<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>
 			</div>
-			<h3>¿Listo para practicar?</h3>
-			<p>Generaré ejercicios basados en tu nivel y áreas de mejora.</p>
+			<h3>{$t('exercises.emptyTitle')}</h3>
+			<p>{$t('exercises.emptyDescription')}</p>
 			<button
 				class="btn primary"
 				onclick={generateExercises}
 				disabled={loading}
 			>
-				{loading ? 'Generando...' : 'Generar Ejercicios'}
+				{loading ? $t('exercises.generating') : $t('exercises.generate')}
 			</button>
 			{#if errorMessage}
 				<div class="error-message">
 					<p>{errorMessage}</p>
-					<a href={`${base}/settings`} class="btn secondary">Ir a Configuración</a>
+					<a href={`${base}/settings`} class="btn secondary">
+						{$t('exercises.settingsLink')}
+					</a>
 				</div>
 			{/if}
 		</div>
@@ -138,7 +142,7 @@
 						class="text-input"
 						bind:value={selectedAnswer}
 						disabled={showResult}
-						placeholder="Tu respuesta..."
+						placeholder={$t('exercises.answerPlaceholder')}
 					/>
 				{/if}
 
@@ -146,34 +150,41 @@
 					<div class="result" class:correct={isCorrect} class:incorrect={!isCorrect}>
 						{#if isCorrect}
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-							<span>¡Correcto!</span>
+							<span>{$t('exercises.correct')}</span>
 						{:else}
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-							<span>Incorrecto. La respuesta correcta es: {currentExercise.correctAnswer}</span>
+							<span>
+								{$t('exercises.incorrect', {
+									answer: Array.isArray(currentExercise.correctAnswer)
+										? currentExercise.correctAnswer.join(', ')
+										: currentExercise.correctAnswer
+								})}
+							</span>
 						{/if}
 					</div>
 
 					{#if currentExercise.explanation}
 						<div class="explanation">
-							<strong>Explicación:</strong> {currentExercise.explanation}
+							<strong>{$t('exercises.explanationLabel')}</strong>
+							{currentExercise.explanation}
 						</div>
 					{/if}
 
 					<button class="btn primary" onclick={nextExercise}>
-						{progress < total ? 'Siguiente' : 'Terminar'}
+						{progress < total ? $t('exercises.next') : $t('exercises.finish')}
 					</button>
 				{:else}
 					<button class="btn primary" onclick={checkAnswer} disabled={!selectedAnswer}>
-						Responder
+						{$t('exercises.answer')}
 					</button>
 				{/if}
 			</div>
 		{:else}
 			<div class="completion">
-				<h2>¡Completado!</h2>
-				<p>Has completado todos los ejercicios.</p>
+				<h2>{$t('exercises.completedTitle')}</h2>
+				<p>{$t('exercises.completedDescription')}</p>
 				<button class="btn primary" onclick={() => { exercises = []; currentExerciseIndex = 0; }}>
-					Generar Más
+					{$t('exercises.generateMore')}
 				</button>
 			</div>
 		{/if}

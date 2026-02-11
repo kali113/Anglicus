@@ -1,22 +1,23 @@
 <script lang="ts">
   import { base } from "$app/paths";
   import type { SkillProgress } from "$lib/types/user";
+  import { t } from "$lib/i18n";
 
   let { skills = [] } = $props<{ skills?: SkillProgress[] }>();
 
   // Static layout data
   const layout = [
-    { id: "greetings", name: "Greetings", x: 50, y: 80, icon: "💬" },
-    { id: "food", name: "Food", x: 150, y: 40, icon: "🍴" },
-    { id: "directions", name: "Directions", x: 250, y: 80, icon: "🔒" },
-    { id: "travel", name: "Viajes", x: 150, y: 140, icon: "✈️" },
-    { id: "family", name: "Familia", x: 50, y: 200, icon: "👨‍👩‍👧" },
-    { id: "hobbies", name: "Hobbies", x: 150, y: 260, icon: "🎨" },
-    { id: "shopping", name: "Compras", x: 250, y: 320, icon: "🛍️" },
-    { id: "food2", name: "Restaurante", x: 150, y: 380, icon: "🍽️" },
-    { id: "emotions", name: "Emociones", x: 50, y: 440, icon: "🎭" },
-    { id: "weather", name: "Clima", x: 150, y: 500, icon: "☀️" },
-    { id: "nature", name: "Naturaleza", x: 250, y: 560, icon: "🌳" },
+    { id: "greetings", x: 50, y: 80, icon: "💬" },
+    { id: "food", x: 150, y: 40, icon: "🍴" },
+    { id: "directions", x: 250, y: 80, icon: "🔒" },
+    { id: "travel", x: 150, y: 140, icon: "✈️" },
+    { id: "family", x: 50, y: 200, icon: "👨‍👩‍👧" },
+    { id: "hobbies", x: 150, y: 260, icon: "🎨" },
+    { id: "shopping", x: 250, y: 320, icon: "🛍️" },
+    { id: "food2", x: 150, y: 380, icon: "🍽️" },
+    { id: "emotions", x: 50, y: 440, icon: "🎭" },
+    { id: "weather", x: 150, y: 500, icon: "☀️" },
+    { id: "nature", x: 250, y: 560, icon: "🌳" },
   ];
 
   // Merge layout with current status
@@ -27,6 +28,7 @@
         ...node,
         status: userSkill?.status || "locked",
         stars: userSkill?.stars || 0,
+        label: $t(`skills.${node.id}.name`),
       };
     }),
   );
@@ -46,10 +48,10 @@
   ];
 </script>
 
-<div class="skill-tree">
+  <div class="skill-tree">
   <div class="header">
-    <h3>Árbol de Habilidades</h3>
-    <span class="unlocked-text">Desbloqueado</span>
+    <h3>{$t("skillTree.title")}</h3>
+    <span class="unlocked-text">{$t("skillTree.unlocked")}</span>
   </div>
 
   <div class="tree-viz">
@@ -72,7 +74,7 @@
         class="node {skill.status}"
         style="left: {skill.x}px; top: {skill.y}px;"
         disabled={skill.status === "locked"}
-        aria-label={`Start ${skill.name} lesson`}
+        aria-label={$t("skillTree.startLesson", { lesson: skill.label })}
         onclick={() => {
           // We can dispatch an event here or just let the parent handle navigation if we wrapped in <a>
           // For now, let's just log it or maybe complete it for demo purposes?
@@ -89,7 +91,7 @@
             <div class="check">✓</div>
           {/if}
         </div>
-        <span class="label">{skill.name}</span>
+        <span class="label">{skill.label}</span>
       </button>
     {/each}
   </div>

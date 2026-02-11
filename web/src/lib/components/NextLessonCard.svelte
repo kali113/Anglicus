@@ -1,6 +1,7 @@
 <script lang="ts">
   import CircularProgress from "./CircularProgress.svelte";
   import Card from "./Card.svelte";
+  import { t } from "$lib/i18n";
 
   interface Props {
     lessonTitle: string;
@@ -13,9 +14,11 @@
 
 <Card variant="lesson" class="next-lesson">
   <div class="lesson-info">
-    <span class="label">Siguiente lección:</span>
+    <span class="label">{$t("nextLesson.label")}</span>
     <h2>{lessonTitle}</h2>
-    <button class="btn-continue" onclick={onContinue}> Continuar </button>
+    <button class="btn-continue" onclick={onContinue}>
+      {$t("nextLesson.continue")}
+    </button>
   </div>
   <div class="progress-wrapper">
     <CircularProgress percentage={progress} size={100} />

@@ -14,32 +14,23 @@
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
   import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
   import QuickChat from "$lib/components/QuickChat.svelte";
+  import { t } from "$lib/i18n";
 
   let user = $state<UserProfile | null>(null);
   let todayActivity = $state(0);
-  let currentLesson = $state({ title: "Start Learning", id: "greetings" });
+  let currentLesson = $state({ id: "greetings" });
   let isLoading = $state(true);
 
-  const skillTitles: Record<string, string> = {
-    greetings: "Greetings",
-    food: "Food & Drink",
-    directions: "Directions",
-    travel: "Travel Basics",
-    family: "Family",
-    hobbies: "Hobbies",
-    shopping: "Shopping",
-    food2: "Dining Out",
-    emotions: "Emotions",
-    weather: "Weather",
-    nature: "Nature",
-  };
+  const currentLessonTitle = $derived(
+    $t(`skills.${currentLesson.id}.name`),
+  );
 
-  onMount(() => {
-    if (!hasCompletedOnboarding()) {
+  onMount(async () => {
+    if (!(await hasCompletedOnboarding())) {
       window.location.href = `${base}/onboarding`;
       return;
     }
-    user = getUserProfile();
+    user = await getUserProfile();
     isLoading = false;
 
     if (user) {
@@ -54,7 +45,6 @@
 
       if (currentSkill) {
         currentLesson = {
-          title: skillTitles[currentSkill.id] || currentSkill.id,
           id: currentSkill.id,
         };
       }
@@ -69,19 +59,19 @@
 </script>
 
 {#if isLoading}
-  <div class="loading-screen">
-    <div class="spinner"></div>
-    <p>Cargando...</p>
-  </div>
-{:else if user}
-  <div class="dashboard">
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p>{$t("common.loading")}</p>
+    </div>
+  {:else if user}
+    <div class="dashboard">
     <!-- Main Content Area -->
     <div class="main-content">
       <header class="welcome-header">
-        <h1>Bienvenido de nuevo, {user.name}!</h1>
+        <h1>{$t("dashboard.welcomeBack", { name: user.name })}</h1>
         <div class="streak-badge">
           <span class="fire">🔥</span>
-          <span>{user.streakDays} Días de racha</span>
+          <span>{$t("dashboard.streak", { days: user.streakDays })}</span>
         </div>
       </header>
 
@@ -91,7 +81,7 @@
       <div class="hero-section">
         <!-- Next Lesson Card -->
         <NextLessonCard
-          lessonTitle={currentLesson.title}
+          lessonTitle={currentLessonTitle}
           progress={60}
           onContinue={navigateToLesson}
         />
@@ -99,15 +89,15 @@
         <!-- Quick Stats Row -->
         <div class="quick-stats">
           <StatCard
-            title="Meta diaria"
+            title={$t("dashboard.dailyGoal")}
             value={todayActivity}
-            unit="/20 mins"
+            unit={$t("dashboard.dailyGoalUnit", { minutes: 20 })}
             progress={(todayActivity / 20) * 100}
           />
           <StatCard
-            title="Palabras aprendidas"
+            title={$t("dashboard.wordsLearned")}
             value={user.wordsLearned}
-            unit="palabras"
+            unit={$t("units.words")}
             showArrow={true}
           />
         </div>

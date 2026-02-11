@@ -10,6 +10,7 @@
   import ChatMessage from "$lib/components/ChatMessage.svelte";
   import { getWelcomeMessage, getSystemPrompt } from "$lib/ai/chat-utils";
   import type { Message } from "$lib/types/api";
+  import type { LanguageCode } from "$lib/types/user";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
     checkBillingAccess,
@@ -17,22 +18,27 @@
     markPaywallShown,
     recordBillingUsage,
   } from "$lib/billing/index.js";
+  import { t } from "$lib/i18n";
 
-  export let lessonId: string;
-  export let onComplete: () => void;
+  interface $$Props {
+    lessonId: string;
+    onComplete: () => void;
+  }
 
-  let messages: Message[] = [];
-  let inputValue = "";
-  let isLoading = false;
+  let { lessonId, onComplete } = $props();
+
+  let messages = $state<Message[]>([]);
+  let inputValue = $state("");
+  let isLoading = $state(false);
   let chatContainer: HTMLElement;
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("lessonChat"));
-  const profile = getUserProfile();
-  const targetLanguage = profile?.targetLanguage ?? "en";
+  let targetLanguage = $state<LanguageCode>("en");
 
-  // Initial welcome message based on lesson ID
-  onMount(() => {
+  onMount(async () => {
+    const profile = await getUserProfile();
+    targetLanguage = profile?.targetLanguage ?? "en";
     const welcomeMsg = getWelcomeMessage(lessonId, targetLanguage);
     messages = [{ role: "assistant", content: welcomeMsg }];
   });
@@ -47,7 +53,7 @@
   async function sendMessage() {
     if (!inputValue.trim() || isLoading) return;
 
-    const decision = checkBillingAccess("lessonChat");
+    const decision = await checkBillingAccess("lessonChat");
     if (decision) {
       if (decision.mode === "block") {
         openPaywall("block", getFeatureLabel("lessonChat"));
@@ -92,22 +98,21 @@
       if (data.choices && data.choices[0]) {
         const aiMsg = data.choices[0].message.content;
         messages = [...messages, { role: "assistant", content: aiMsg }];
-        recordBillingUsage("lessonChat");
+        await recordBillingUsage("lessonChat");
 
         // Gamification hooks
         if (messages.length % 4 === 0) {
           // Every 2 exchanges
-          addXp(10);
-          incrementWordsLearned(1);
-          updateWeeklyActivity(2); // 2 minutes approx
+          await addXp(10);
+          await incrementWordsLearned(1);
+          await updateWeeklyActivity(2); // 2 minutes approx
         }
       } else {
         messages = [
           ...messages,
           {
             role: "assistant",
-            content:
-              "Sorry, I'm having trouble connecting right now. Let's try again.",
+            content: $t("lessonChat.error"),
           },
         ];
       }
@@ -117,7 +122,7 @@
         ...messages,
         {
           role: "assistant",
-          content: "Connection error. Please check if the API is running.",
+          content: $t("lessonChat.connectionError"),
         },
       ];
     } finally {
@@ -133,11 +138,11 @@
     }
   }
 
-  function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(mode: "nag" | "block", feature: string) {
     paywallMode = mode;
     paywallFeature = feature;
     showPaywall = true;
-    markPaywallShown();
+    await markPaywallShown();
   }
 </script>
 
@@ -161,15 +166,15 @@
     <div class="input-wrapper">
       <textarea
         bind:value={inputValue}
-        on:keydown={handleKeydown}
-        placeholder="Type your answer here..."
+        onkeydown={handleKeydown}
+        placeholder={$t("lessonChat.placeholder")}
         rows="1"
       ></textarea>
       <button
         class="send-btn"
-        on:click={sendMessage}
+        onclick={sendMessage}
         disabled={isLoading || !inputValue.trim()}
-        aria-label="Send message"
+        aria-label={$t("lessonChat.send")}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -189,9 +194,9 @@
     </div>
 
     <div class="actions">
-      <button class="action-btn secondary" on:click={onComplete}
-        >Finish Lesson</button
-      >
+      <button class="action-btn secondary" onclick={onComplete}>
+        {$t("lessonChat.finish")}
+      </button>
     </div>
   </div>
 </div>
@@ -200,8 +205,8 @@
   open={showPaywall}
   mode={paywallMode}
   featureLabel={paywallFeature}
-  on:close={() => (showPaywall = false)}
-  on:paid={() => (showPaywall = false)}
+  onclose={() => (showPaywall = false)}
+  onpaid={() => (showPaywall = false)}
 />
 
 <style>

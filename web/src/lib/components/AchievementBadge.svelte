@@ -1,7 +1,12 @@
 <script lang="ts">
   import type { Achievement } from "$lib/types/user";
+  import { t } from "$lib/i18n";
 
   let { achievement } = $props<{ achievement: Achievement }>();
+  const label = $derived(() => {
+    const value = $t(`achievements.${achievement.id}`);
+    return value.startsWith("achievements.") ? achievement.name : value;
+  });
 </script>
 
 <div class="badge" class:locked={!achievement.unlocked}>
@@ -25,7 +30,7 @@
       >
     {/if}
   </div>
-  <span class="name">{achievement.name}</span>
+  <span class="name">{label}</span>
   {#if achievement.unlocked}
     <div class="check">
       <svg

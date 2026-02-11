@@ -1,0 +1,519 @@
+{
+  "app": {
+    "name": "Anglicus"
+  },
+  "nav": {
+    "home": "Home",
+    "lessons": "Lessons",
+    "practice": "Practice",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "languageSwitch": "Switch language to {language}"
+  },
+  "languages": {
+    "name": {
+      "en": "English",
+      "es": "Spanish"
+    },
+    "short": {
+      "en": "EN",
+      "es": "ES"
+    }
+  },
+  "footer": {
+    "terms": "Terms",
+    "privacy": "Privacy",
+    "cookies": "Cookies",
+    "dataProtection": "Data protection",
+    "tagline": "Anglicus · Learn with confidence"
+  },
+  "common": {
+    "loading": "Loading...",
+    "close": "Close",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "retry": "Retry"
+  },
+  "units": {
+    "words": "words"
+  },
+  "days": {
+    "sunShort": "Sun",
+    "monShort": "Mon",
+    "tueShort": "Tue",
+    "wedShort": "Wed",
+    "thuShort": "Thu",
+    "friShort": "Fri",
+    "satShort": "Sat"
+  },
+  "weeklyChart": {
+    "minutesTooltip": "{minutes} min"
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back, {name}!",
+    "streak": "{days} day streak",
+    "dailyGoal": "Daily goal",
+    "dailyGoalUnit": "/{minutes} min",
+    "wordsLearned": "Words learned"
+  },
+  "nextLesson": {
+    "label": "Next lesson:",
+    "continue": "Continue"
+  },
+  "sidebar": {
+    "totalXp": "Total XP:",
+    "wordsLearned": "Words learned:",
+    "currentStreak": "Current streak:",
+    "streakDays": "{days} days",
+    "weeklyActivity": "Weekly activity",
+    "achievements": "Achievements",
+    "unlocked": "Unlocked"
+  },
+  "quickChat": {
+    "error": "Sorry, I couldn't connect. Try again later!",
+    "title": "Ask your AI Tutor",
+    "clear": "Clear",
+    "placeholder": "Ask anything about {language}...",
+    "send": "Send message"
+  },
+  "skillTree": {
+    "title": "Skill Tree",
+    "unlocked": "Unlocked",
+    "startLesson": "Start {lesson} lesson"
+  },
+  "interactiveTree": {
+    "aria": "Interactive skill tree map",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "reset": "Reset view"
+  },
+  "categories": {
+    "grammar": "Grammar",
+    "vocabulary": "Vocabulary",
+    "situational": "Situational",
+    "business": "Business"
+  },
+  "support": {
+    "title": "Support Anglicus",
+    "subtitle": "ETH, BTC, BNB, and SOL donations available.",
+    "cta": "☕ Buy Me a Coffee",
+    "hide": "Hide",
+    "show": "Show",
+    "qrAlt": "QR {ticker}",
+    "copied": "Copied",
+    "copy": "Copy",
+    "verify": "Verify",
+    "footnote": "Verify the address on the official explorer before sending.",
+    "compactTitle": "Support with crypto",
+    "compactSubtitle": "Donations in ETH, BTC, BNB, and SOL."
+  },
+  "paywall": {
+    "featureDefault": "AI Tutor",
+    "loadError": "We couldn't load payment info. Try again.",
+    "confirmed": "Payment confirmed. Your Pro plan is active.",
+    "pending": "Payment pending. It will activate once the network confirms.",
+    "verifyError": "Could not verify the payment.",
+    "title": "Unlock Pro",
+    "subtitleNag": "Want to go faster? {feature} is unlimited in Pro.",
+    "subtitleBlock": "You've reached the free limit for {feature}.",
+    "benefitTutor": "✔ Unlimited AI Tutor",
+    "benefitExplanations": "✔ Advanced explanations and corrections",
+    "benefitQuickChat": "✔ Unlimited quick chat",
+    "loadingPrice": "Loading price...",
+    "period": "/ {days} days",
+    "discountApplied": "{percent}% OFF applied",
+    "sendBtc": "Send BTC ({network})",
+    "network": {
+      "testnet": "Testnet",
+      "mainnet": "Mainnet"
+    },
+    "txPlaceholder": "Paste the TXID here",
+    "verifying": "Verifying...",
+    "verify": "Verify payment",
+    "cryptoNote": "Want to support the project with crypto? These addresses include verification links.",
+    "byok": "BYOK is always free.",
+    "byokLink": "Set up your API key",
+    "keepFree": "Keep free"
+  },
+  "billing": {
+    "features": {
+      "tutor": "AI Tutor",
+      "lessonChat": "Lesson Tutor",
+      "quickChat": "Quick Chat",
+      "lessonExplanation": "Explanations",
+      "tutorQuestion": "Ask the tutor"
+    }
+  },
+  "lessonChat": {
+    "error": "Sorry, I'm having trouble connecting right now. Let's try again.",
+    "connectionError": "Connection error. Please check if the API is running.",
+    "placeholder": "Type your answer here...",
+    "send": "Send message",
+    "finish": "Finish lesson"
+  },
+  "lessons": {
+    "title": "Your Learning Path",
+    "subtitle": "Complete lessons to unlock new skills and achievements"
+  },
+  "lessonDetail": {
+    "back": "Back",
+    "practiceMode": "Practice Mode",
+    "completed": "Lesson Completed!",
+    "earned": "You earned {xp} and learned {words}.",
+    "newWords": "{words} new words"
+  },
+  "tutor": {
+    "connectionError": "Connection error. Go to Settings to choose another API or add your own key.",
+    "assistantError": "Sorry, there was a connection error.",
+    "title": "AI Tutor",
+    "subtitle": "Practice {language} with me",
+    "emptyGreeting": "Hi! I'm your {language} tutor.",
+    "emptyPrompt": "Type something to start practicing.",
+    "settingsLink": "Settings",
+    "placeholder": "Type your message...",
+    "send": "Send message"
+  },
+  "exercises": {
+    "connectionError": "Connection error. Go to Settings to choose another API or add your own key.",
+    "title": "Exercises",
+    "subtitle": "Practice with exercises tailored to your level",
+    "emptyTitle": "Ready to practice?",
+    "emptyDescription": "I'll generate exercises based on your level and areas to improve.",
+    "generating": "Generating...",
+    "generate": "Generate exercises",
+    "settingsLink": "Go to Settings",
+    "answerPlaceholder": "Your answer...",
+    "correct": "Correct!",
+    "incorrect": "Incorrect. The correct answer is: {answer}",
+    "explanationLabel": "Explanation:",
+    "next": "Next",
+    "finish": "Finish",
+    "answer": "Answer",
+    "completedTitle": "Completed!",
+    "completedDescription": "You've completed all exercises.",
+    "generateMore": "Generate more"
+  },
+  "lesson": {
+    "explanationFallback": "The correct answer is: {answer}. Try to match the word order exactly!",
+    "tutorError": "Sorry, I couldn't process your question. Try rephrasing it!",
+    "back": "Back",
+    "completedTitle": "Lesson Complete!",
+    "completedSubtitle": "You've mastered Introductions",
+    "stats": {
+      "xp": "XP Earned",
+      "questions": "Questions",
+      "accuracy": "Accuracy"
+    },
+    "continueLearning": "Continue Learning",
+    "title": "Lesson 1: Introductions",
+    "translate": "Translate: \"{text}\"",
+    "selectWords": "Select words below",
+    "notQuiteRight": "Not quite right",
+    "askTutor": "Ask your personal tutor",
+    "tutorPlaceholder": "Why is this word order?",
+    "tryAgain": "Try Again",
+    "correct": "Correct! +{xp} XP",
+    "nextQuestion": "Next Question",
+    "finishLesson": "Finish Lesson",
+    "check": "Check"
+  },
+  "profile": {
+    "avatarAlt": "Avatar",
+    "level": "Level {level}",
+    "totalXp": "Total XP:",
+    "wordsLearned": "Words learned:",
+    "currentStreak": "Current streak:",
+    "streakDays": "{days} days",
+    "weeklyActivity": "Weekly activity",
+    "achievements": "Achievements",
+    "unlocked": "Unlocked"
+  },
+  "achievements": {
+    "early_bird": "Early Bird",
+    "weekender": "Weekend Warrior",
+    "polyglot": "Polyglot",
+    "files_on_fire": "Streak on Fire",
+    "unstoppable": "Unstoppable",
+    "scholar": "Scholar",
+    "word_master": "Word Master",
+    "sharpshooter": "Sharpshooter"
+  },
+  "settings": {
+    "alerts": {
+      "apiKeySaved": "API key saved securely",
+      "apiKeyError": "Error saving API key",
+      "notificationsPermission": "You need to allow notifications to enable reminders.",
+      "emailRequired": "Enter an email to enable reminders.",
+      "emailInvalid": "The email is not valid.",
+      "emailSaveFailed": "Could not save the email reminder.",
+      "emailDisableFailed": "Could not disable the email reminder.",
+      "testEmailRequired": "You need a valid email to send the test.",
+      "testEmailFailed": "Could not send the test email.",
+      "testEmailSent": "Test email sent.",
+      "notificationTestPermission": "You must allow notifications to see the test.",
+      "remindersDeleteFailed": "Could not delete reminders on the server."
+    },
+    "title": "Settings",
+    "notifications": {
+      "title": "Notifications",
+      "description": "Configure practice reminders.",
+      "browserReminders": "Browser reminders",
+      "test": "Test",
+      "browserHelp": "They will show while the app is open with permission enabled.",
+      "reminderTime": "Reminder time",
+      "frequency": "Frequency",
+      "frequencyDaily": "Daily",
+      "frequencyWeekly": "Weekly",
+      "emailReminders": "Email reminders",
+      "sendTest": "Send test",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@email.com",
+      "emailHelp": "Your email is stored encrypted only to send reminders. You can delete it anytime."
+    },
+    "validation": {
+      "emailInvalid": "Invalid email."
+    },
+    "save": "Save",
+    "deleteData": "Delete data",
+    "apiMode": {
+      "title": "API Mode",
+      "description": "Choose how you want to connect to AI",
+      "autoTitle": "Automatic",
+      "autoDescription": "Try all options",
+      "serverTitle": "Server",
+      "serverDescription": "Use owner keys",
+      "byokTitle": "My Key",
+      "byokDescription": "Use your API key"
+    },
+    "apiKey": {
+      "title": "Configure API Key",
+      "description": "Your key is stored encrypted on your device",
+      "placeholder": "sk-...",
+      "save": "Save key",
+      "baseUrlLabel": "Base URL (optional - default: api.openai.com)",
+      "baseUrlPlaceholder": "https://api.openai.com"
+    },
+    "connectionTest": {
+      "title": "Test Connection",
+      "description": "Verify the API works",
+      "testing": "Testing...",
+      "success": "✅ Works",
+      "failed": "❌ Failed",
+      "testServer": "Test Server",
+      "testByok": "Test My Key"
+    },
+    "dangerZone": {
+      "title": "Danger Zone",
+      "clearData": "Clear all data"
+    },
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "level": "Level",
+      "streak": "Streak",
+      "streakDays": "{days} days"
+    },
+    "deleteModal": {
+      "title": "Delete all data?",
+      "description": "This action cannot be undone. You'll lose all your progress.",
+      "confirm": "Yes, delete everything"
+    }
+  },
+  "onboarding": {
+    "redirecting": "Redirecting to the placement test..."
+  },
+  "legal": {
+    "headTitle": "Legal | Anglicus",
+    "title": "Legal",
+    "lastUpdated": "Last updated: {date}",
+    "disclaimer": "This summary is not legal advice. For legal questions, consult a professional.",
+    "terms": {
+      "title": "Terms of Service",
+      "body": "Anglicus is an educational tool. The service is provided \"as is\" and may change over time. You are responsible for the content you share and for complying with applicable law. If you are a minor, use the app with guardian permission."
+    },
+    "contact": "Contact: support@anglicus.app",
+    "privacy": {
+      "title": "Privacy",
+      "body": "Your progress and settings are stored on your device (localStorage). If you enable email reminders, your email is stored encrypted only for sending reminders and is never sold. You can disable or delete this data from Settings."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "We use local storage and essential technical cookies for functionality and security. We do not use advertising cookies."
+    },
+    "dataProtection": {
+      "title": "Data Protection",
+      "body": "You can request access, correction, or deletion of your data. Deletion can be done from Settings (Delete all data) or by emailing support@anglicus.app."
+    }
+  },
+  "placement": {
+    "languageOptions": {
+      "en": "English (for Spanish speakers)",
+      "es": "Spanish (for English speakers)"
+    },
+    "goals": {
+      "travel": "Travel",
+      "work": "Work",
+      "study": "Study",
+      "movies": "Movies & Music",
+      "general": "General"
+    },
+    "promo": {
+      "alreadyApplied": "You already have a code applied.",
+      "applied": "Code applied: {percent}% OFF",
+      "used": "This code has already been used.",
+      "invalid": "Invalid code. Check and try again."
+    },
+    "defaultName": "Friend",
+    "reminderError": "Email reminder couldn't be activated. You can try later in Settings.",
+    "levels": {
+      "A1": "Beginner",
+      "A2": "Elementary",
+      "B1": "Intermediate",
+      "B2": "Upper Intermediate",
+      "C1": "Advanced",
+      "C2": "Proficient"
+    },
+    "step0": {
+      "title": "Which language do you want to learn?",
+      "subtitle": "Choose your learning goal"
+    },
+    "step1": {
+      "title": "Welcome to Anglicus!",
+      "description": "We'll assess your {language} level with a quick, personalized test.",
+      "subtitle": "The test has 5 questions and takes about 5 minutes.",
+      "start": "Start"
+    },
+    "step2": {
+      "title": "What's your name?",
+      "namePlaceholder": "Your name",
+      "emailPlaceholder": "Your email (optional)",
+      "emailOptIn": "I want to receive email reminders.",
+      "consent": "Optional. You can unsubscribe in Settings. See the {link}.",
+      "consentLink": "Privacy policy"
+    },
+    "validation": {
+      "emailInvalid": "Invalid email."
+    },
+    "step3": {
+      "title": "Do you have a code?",
+      "subtitle": "Optional. Use it to unlock a Pro discount.",
+      "placeholder": "ABCDEFGH",
+      "validating": "Validating...",
+      "apply": "Apply"
+    },
+    "step4": {
+      "title": "What are your goals?",
+      "subtitle": "Select all that apply",
+      "startTest": "Start Test"
+    },
+    "step5": {
+      "generating": "Generating personalized test...",
+      "questionProgress": "Question {current} of {total}"
+    },
+    "results": {
+      "title": "Test completed!",
+      "levelLabel": "Your {language} level is:",
+      "correctAnswers": "Correct answers: {correct} / {total}",
+      "startLearning": "Start Learning"
+    }
+  },
+  "skills": {
+    "greetings": {
+      "name": "Greetings",
+      "description": "Learn to say hello and goodbye"
+    },
+    "pronouns": {
+      "name": "Pronouns",
+      "description": "I, You, He, She, It, We, They"
+    },
+    "to_be": {
+      "name": "Verb To Be",
+      "description": "Am, Is, Are"
+    },
+    "basics_1": {
+      "name": "Basics 1",
+      "description": "Common everyday words"
+    },
+    "food": {
+      "name": "Food",
+      "description": "Ordering and discussing food"
+    },
+    "family": {
+      "name": "Family",
+      "description": "Family members and relationships"
+    },
+    "present_simple": {
+      "name": "Present Simple",
+      "description": "Habits and facts"
+    },
+    "clothing": {
+      "name": "Clothing",
+      "description": "Clothes and accessories"
+    },
+    "colors": {
+      "name": "Colors",
+      "description": "Describing objects"
+    },
+    "places": {
+      "name": "Places",
+      "description": "City, Park, School"
+    },
+    "travel": {
+      "name": "Travel",
+      "description": "Airports and Hotels"
+    },
+    "directions": {
+      "name": "Directions",
+      "description": "Left, Right, Straight"
+    },
+    "past_simple": {
+      "name": "Past Simple",
+      "description": "Talking about yesterday"
+    },
+    "hobbies": {
+      "name": "Hobbies",
+      "description": "Sports and activities"
+    },
+    "weather": {
+      "name": "Weather",
+      "description": "Sun, Rain, Snow"
+    },
+    "shopping": {
+      "name": "Shopping",
+      "description": "Buying things"
+    },
+    "future_tense": {
+      "name": "Future Tense",
+      "description": "Will and Going to"
+    },
+    "emotions": {
+      "name": "Emotions",
+      "description": "Expressing feelings"
+    },
+    "health": {
+      "name": "Health",
+      "description": "Doctor and Medicine"
+    },
+    "business_1": {
+      "name": "Business 1",
+      "description": "Office basics"
+    },
+    "abstract_nouns": {
+      "name": "Abstract Nouns",
+      "description": "Ideas and Concepts"
+    },
+    "conditionals": {
+      "name": "Conditionals",
+      "description": "If... then..."
+    },
+    "nature": {
+      "name": "Nature",
+      "description": "Environment"
+    },
+    "food2": {
+      "name": "Dining Out",
+      "description": "Restaurant basics"
+    }
+  }
+}

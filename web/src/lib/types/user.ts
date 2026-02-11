@@ -78,15 +78,6 @@ export interface UserStats {
   accuracyByCategory: Record<WeakArea, { correct: number; total: number }>;
 }
 
-export const LEVELS: Record<EnglishLevel, string> = {
-  A1: "Principiante",
-  A2: "Elemental",
-  B1: "Intermedio",
-  B2: "Intermedio Alto",
-  C1: "Avanzado",
-  C2: "Competente",
-};
-
 export const LANGUAGE_LABELS: Record<LanguageCode, Record<LanguageCode, string>> = {
   en: { en: "English", es: "Inglés" },
   es: { en: "Spanish", es: "Español" },
@@ -98,24 +89,6 @@ export function getLanguageLabel(
 ): string {
   return LANGUAGE_LABELS[language][uiLanguage];
 }
-
-export const GOALS: Record<LearningGoal, string> = {
-  travel: "Viajes",
-  work: "Trabajo",
-  study: "Estudios",
-  movies: "Películas y música",
-  general: "Mejora general",
-};
-
-export const WEAK_AREAS: Record<WeakArea, string> = {
-  articles: "Artículos (the/a/an)",
-  present_perfect: "Present Perfect",
-  past_tense: "Pasados (past simple/continuous)",
-  prepositions: "Preposiciones",
-  false_friends: "Falsos amigos",
-  conditionals: "Condicionales",
-  phrasal_verbs: "Phrasal verbs",
-};
 
 // Mistake tracking types (merged from mistake.ts)
 export interface Mistake {

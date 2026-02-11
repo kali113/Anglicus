@@ -3,6 +3,7 @@
   import { base } from "$app/paths";
   import { SKILL_TREE_DATA, type SkillNode } from "$lib/data/skills";
   import type { SkillProgress } from "$lib/types/user";
+  import { t } from "$lib/i18n";
 
   let { userSkills = [] } = $props<{ userSkills?: SkillProgress[] }>();
 
@@ -53,6 +54,8 @@
 
     return {
       ...node,
+      name: $t(`skills.${node.id}.name`),
+      description: $t(`skills.${node.id}.description`),
       x: flippedX,
       y: flippedY,
       status,
@@ -235,7 +238,7 @@
   ontouchend={handleTouchEnd}
   ontouchcancel={handleTouchEnd}
   role="application"
-  aria-label="Interactive Skill Tree Map"
+  aria-label={$t("interactiveTree.aria")}
 >
   <!-- Decorative Background Elements -->
   <div class="bg-grid"></div>
@@ -355,7 +358,7 @@
     <button
       class="control-btn"
       onclick={() => (scale = Math.min(2.5, scale + 0.2))}
-      aria-label="Zoom in"
+      aria-label={$t("interactiveTree.zoomIn")}
     >
       <svg
         viewBox="0 0 24 24"
@@ -370,7 +373,7 @@
     <button
       class="control-btn"
       onclick={() => (scale = Math.max(0.4, scale - 0.2))}
-      aria-label="Zoom out"
+      aria-label={$t("interactiveTree.zoomOut")}
     >
       <svg
         viewBox="0 0 24 24"
@@ -381,7 +384,11 @@
         <line x1="5" y1="12" x2="19" y2="12"></line>
       </svg>
     </button>
-    <button class="control-btn" onclick={updateInitialView} aria-label="Reset view">
+    <button
+      class="control-btn"
+      onclick={updateInitialView}
+      aria-label={$t("interactiveTree.reset")}
+    >
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -398,19 +405,19 @@
   <div class="legend">
     <div class="legend-item">
       <span class="legend-dot" style="background: #8b5cf6;"></span>
-      <span>Grammar</span>
+      <span>{$t("categories.grammar")}</span>
     </div>
     <div class="legend-item">
       <span class="legend-dot" style="background: #06b6d4;"></span>
-      <span>Vocabulary</span>
+      <span>{$t("categories.vocabulary")}</span>
     </div>
     <div class="legend-item">
       <span class="legend-dot" style="background: #10b981;"></span>
-      <span>Situational</span>
+      <span>{$t("categories.situational")}</span>
     </div>
     <div class="legend-item">
       <span class="legend-dot" style="background: #f59e0b;"></span>
-      <span>Business</span>
+      <span>{$t("categories.business")}</span>
     </div>
   </div>
 </div>
