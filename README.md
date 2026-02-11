@@ -1,21 +1,68 @@
-# Anglicus - Tu tutor de inglés con IA
+# Anglicus — AI English tutor for Spanish speakers
 
-Anglicus es una app gratuita para practicar inglés con inteligencia artificial. Está diseñada especialmente para hispanohablantes.
+[English](#english) | [Español](#español)
 
-## ¿Qué puedes hacer?
+## English
 
-- **Chatear con un tutor IA** - Practica inglés conversando con una inteligencia artificial que te corrige y ayuda
-- **Hacer ejercicios personalizados** - Ejercicios adaptados a tu nivel y a los errores que sueles cometer
-- **Aprender de tus errores** - La app guarda tus errores comunes para ayudarte a mejorar
+Anglicus is an AI English tutor designed for Spanish speakers.
 
-## Cómo usarla
+### What you can do
 
-### Versión web
-Solo entra aquí: **https://kali113.github.io/Anglicus/**
+- **Chat with an AI tutor** — Practice English with corrections and explanations
+- **Personalized exercises** — Activities adapted to your level and common mistakes
+- **Learn from your errors** — Mistake tracking to focus future practice
+- **Paywall for premium features** — Optional upgrades for advanced content
+- **Crypto support** — Crypto-friendly payment options for upgrades
+- **i18n UI** — Interface localized for ES/EN
 
-Funciona desde tu navegador en el celular, tablet o computadora.
+### How to use it
 
-### Instalar en tu celular (como app)
+#### Web version
+Just visit: **https://kali113.github.io/Anglicus/**  
+Works in your browser on phone, tablet, or desktop.
+
+#### Install on your phone (as an app)
+
+**iPhone/iPad:**
+1. Open the link in Safari
+2. Tap Share
+3. Select "Add to Home Screen"
+
+**Android:**
+1. Open the link in Chrome
+2. Tap the menu (three dots)
+3. Select "Install app"
+
+**Desktop:**
+1. Open the link in Chrome or Edge
+2. Click the install icon in the address bar
+
+### Have ideas or found a bug?
+
+Open an issue in this repository.
+
+---
+
+## Español
+
+Anglicus es un tutor de inglés con IA diseñado para hispanohablantes.
+
+### Qué puedes hacer
+
+- **Chatear con un tutor IA** — Practica inglés con correcciones y explicaciones
+- **Ejercicios personalizados** — Actividades adaptadas a tu nivel y errores comunes
+- **Aprender de tus errores** — Seguimiento de errores para enfocar la práctica
+- **Paywall (muro de pago) para funciones premium** — Actualizaciones opcionales
+- **Soporte cripto** — Opciones de pago en cripto para upgrades
+- **Interfaz i18n** — UI localizada para ES/EN
+
+### Cómo usarla
+
+#### Versión web
+Solo entra aquí: **https://kali113.github.io/Anglicus/**  
+Funciona en tu navegador en celular, tablet o computadora.
+
+#### Instalar en tu celular (como app)
 
 **iPhone/iPad:**
 1. Abre el enlace en Safari
@@ -24,7 +71,7 @@ Funciona desde tu navegador en el celular, tablet o computadora.
 
 **Android:**
 1. Abre el enlace en Chrome
-2. Toca el menú (los tres puntitos)
+2. Toca el menú (tres puntitos)
 3. Selecciona "Instalar app"
 
 **Computadora:**
@@ -32,7 +79,7 @@ Funciona desde tu navegador en el celular, tablet o computadora.
 2. Aparecerá un icono de instalación en la barra de direcciones
 3. Haz clic para instalar
 
-## ¿Tienes ideas o encontraste un error?
+### ¿Tienes ideas o encontraste un error?
 
 ¡Cuéntanos! Puedes abrir un "issue" en este repositorio.
 
