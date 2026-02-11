@@ -6,10 +6,12 @@ on:
     paths:
       - "twa/**"
       - ".github/workflows/apk.yml"
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: "apk-${{ github.ref }}"
@@ -19,8 +21,8 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     env:
-      JAVA_HOME: /usr/lib/jvm/temurin-17-jdk-amd64
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      BUBBLEWRAP_KEYSTORE_PASSWORD: android
+      BUBBLEWRAP_KEY_PASSWORD: android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,6 +30,20 @@ jobs:
           sparse-checkout: |
             twa
           sparse-checkout-cone-mode: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -38,38 +54,46 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('twa/twa-manifest.json') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      - name: Setup SDK & Bubblewrap
+      - name: Install SDK packages
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Setup Bubblewrap
         working-directory: twa
         run: |
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" > /dev/null 2>&1
           npm install -g @bubblewrap/cli@1.24.1 --no-audit --no-fund --prefer-offline
           mkdir -p ~/.bubblewrap
           echo '{"jdkPath":"'"$JAVA_HOME"'","androidSdkPath":"'"$ANDROID_SDK_ROOT"'"}' > ~/.bubblewrap/config.json
-          bubblewrap update --manifest twa-manifest.json --skipVersionUpgrade --jdkPath "$JAVA_HOME"
 
-      - name: Build & sign APK
+      - name: Create signing keystore
         working-directory: twa
         run: |
-          ./gradlew :app:assembleRelease --no-daemon --build-cache \
-            -Dorg.gradle.parallel=true \
-            -Dorg.gradle.caching=true \
-            -Dorg.gradle.jvmargs="-Xmx2g"
-
-          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          keytool -genkeypair -v -keystore debug.keystore -alias debug \
+          keytool -genkeypair -v -keystore android.keystore -alias android \
             -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
+            -storepass "$BUBBLEWRAP_KEYSTORE_PASSWORD" \
+            -keypass "$BUBBLEWRAP_KEY_PASSWORD" \
             -dname "CN=Debug,O=Debug,C=US" 2>/dev/null
 
-          $ANDROID_SDK_ROOT/build-tools/34.0.0/zipalign -f 4 "$APK" aligned.apk
-          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner sign \
-            --ks debug.keystore --ks-pass pass:android \
-            --key-pass pass:android --ks-key-alias debug \
-            --out anglicus.apk aligned.apk
+      - name: Build APK
+        working-directory: twa
+        run: |
+          bubblewrap build --manifest . --skipPwaValidation
+          if [ -f app-release-signed.apk ]; then
+            mv app-release-signed.apk anglicus.apk
+          elif [ -f app-release.apk ]; then
+            mv app-release.apk anglicus.apk
+          fi
+          test -f anglicus.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: anglicus-apk
           path: twa/anglicus.apk
+
+      - name: Upload APK to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: twa/anglicus.apk
