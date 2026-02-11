@@ -3,7 +3,7 @@
   import { base } from "$app/paths";
   import type { UserProfile } from "$lib/types/user";
 
-  export let user: UserProfile | null = null;
+  let { user = null }: { user?: UserProfile | null } = $props();
 </script>
 
 <nav class="navbar">

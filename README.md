@@ -32,6 +32,17 @@ Funciona desde tu navegador en el celular, tablet o computadora.
 2. Aparecerá un icono de instalación en la barra de direcciones
 3. Haz clic para instalar
 
+## ☕ Apóyanos con crypto / Support us with crypto
+
+Si te gusta Anglicus, puedes apoyar el proyecto con una donación en criptomonedas:
+
+| Red / Network | Dirección / Address |
+|---|---|
+| **ETH** | `0x2e30F75873B1A3A07A55179E6e7CBb7Fa8a3B0a7` |
+| **BTC** | `bc1qnk5zfsu7pzm3suf88qnpxu36pkx0vscnq04qeg` |
+| **BNB** | `0x2e30F75873B1A3A07A55179E6e7CBb7Fa8a3B0a7` |
+| **Solana** | `H9WXRbYgizvGA3B2gywupwdw reocGoexu7YeLMdYPAZ8` |
+
 ## ¿Tienes ideas o encontraste un error?
 
 ¡Cuéntanos! Puedes abrir un "issue" en este repositorio.

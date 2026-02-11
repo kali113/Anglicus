@@ -2,7 +2,7 @@
   import { fly } from "svelte/transition";
   import type { Message } from "$lib/types/api";
 
-  export let message: Message;
+  let { message }: { message: Message } = $props();
 </script>
 
 <div class="message {message.role}" in:fly={{ y: 20, duration: 300 }}>
