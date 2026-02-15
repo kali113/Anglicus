@@ -1,7 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { base } from "$app/paths";
-  import { registerUser } from "$lib/auth/index.js";
+  import { onMount } from "svelte";
+  import {
+    getGoogleClientId,
+    loadGoogleIdentityScript,
+    loginWithGoogleIdToken,
+    registerUser,
+    setToken,
+  } from "$lib/auth/index.js";
   import { t } from "$lib/i18n";
 
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -10,6 +17,67 @@
   let password = $state("");
   let errorMessage = $state("");
   let isLoading = $state(false);
+  let isGoogleLoading = $state(false);
+
+  const googleClientId = getGoogleClientId();
+  const hasGoogleAuthConfigured = googleClientId.trim().length > 0;
+  let googleButtonContainer = $state<HTMLDivElement | null>(null);
+
+  async function handleGoogleCredential(credential: string) {
+    isGoogleLoading = true;
+    errorMessage = "";
+
+    try {
+      const token = await loginWithGoogleIdToken(credential);
+      setToken(token);
+      goto(`${base}/`);
+    } catch (error) {
+      errorMessage =
+        error instanceof Error
+          ? error.message
+          : $t("auth.errors.googleLoginFailed");
+    } finally {
+      isGoogleLoading = false;
+    }
+  }
+
+  function handleUnavailableGoogleSignIn() {
+    errorMessage = $t("auth.errors.googleUnavailable");
+  }
+
+  onMount(async () => {
+    if (!hasGoogleAuthConfigured || !googleButtonContainer) {
+      return;
+    }
+
+    try {
+      await loadGoogleIdentityScript();
+      if (!window.google?.accounts?.id) {
+        throw new Error("Google Identity not available");
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response: { credential?: string }) => {
+          if (!response.credential) {
+            errorMessage = $t("auth.errors.googleLoginFailed");
+            return;
+          }
+
+          void handleGoogleCredential(response.credential);
+        },
+      });
+
+      window.google.accounts.id.renderButton(googleButtonContainer, {
+        theme: "outline",
+        size: "large",
+        text: "continue_with",
+        width: 360,
+      });
+    } catch {
+      errorMessage = $t("auth.errors.googleUnavailable");
+    }
+  });
 
   async function handleRegister() {
     if (!email.trim() || !password.trim()) {
@@ -46,6 +114,24 @@
     <h1>{$t("auth.registerTitle")}</h1>
     <p class="helper">{$t("auth.registerHelper")}</p>
 
+    <div class="google-login">
+      {#if hasGoogleAuthConfigured}
+        <div bind:this={googleButtonContainer}></div>
+      {:else}
+        <button class="google-fallback" type="button" onclick={handleUnavailableGoogleSignIn}>
+          <img class="google-icon" src="{base}/google-logo.svg" alt="" />
+          <span>{$t("auth.googleButton")}</span>
+        </button>
+        <p class="helper">{$t("auth.googleConfigHint")}</p>
+      {/if}
+
+      {#if isGoogleLoading}
+        <p class="helper">{$t("common.loading")}</p>
+      {/if}
+    </div>
+
+    <p class="divider"><span>{$t("auth.or")}</span></p>
+
     <label class="field">
       <span>{$t("auth.emailLabel")}</span>
       <input type="email" bind:value={email} autocomplete="email" required />
@@ -60,7 +146,7 @@
       <p class="error">{errorMessage}</p>
     {/if}
 
-    <button class="btn primary" type="submit" disabled={isLoading}>
+    <button class="btn primary" type="submit" disabled={isLoading || isGoogleLoading}>
       {isLoading ? $t("common.loading") : $t("auth.registerButton")}
     </button>
 
@@ -101,8 +187,68 @@
   .helper {
     margin: 0;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.7);
+  }
+
+  .google-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .google-fallback {
+    width: 100%;
+    max-width: 360px;
+    min-height: 42px;
+    border-radius: 999px;
+    border: 1px solid #dadce0;
+    background: #fff;
+    color: #3c4043;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .google-fallback:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .google-fallback:active {
+    background: #f1f3f4;
+  }
+
+  .google-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .divider {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: rgba(226, 232, 240, 0.7);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: rgba(148, 163, 184, 0.35);
   }
 
   .field {
