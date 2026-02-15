@@ -14,6 +14,7 @@ import {
   verifyPassword,
 } from "../lib/auth.js";
 import {
+  createGoogleUser,
   createUser,
   getUserByEmailHash,
   getUserById,
@@ -24,6 +25,13 @@ import {
 
 const CODE_REGEX = /^\d{6}$/;
 const DEFAULT_BYOK_BASE_URL = "https://api.openai.com";
+const GOOGLE_TOKENINFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo";
+
+type GoogleTokenInfo = {
+  aud?: string;
+  email?: string;
+  email_verified?: string;
+};
 
 function requireAuthDatabase(env: Env): D1Database | null {
   if (!env.DB) return null;
@@ -62,6 +70,19 @@ async function sendVerificationEmail(
   }
 
   return true;
+}
+
+async function verifyGoogleIdToken(idToken: string): Promise<GoogleTokenInfo | null> {
+  const response = await fetch(
+    `${GOOGLE_TOKENINFO_ENDPOINT}?id_token=${encodeURIComponent(idToken)}`,
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as GoogleTokenInfo;
+  return payload;
 }
 
 export async function handleAuthRegister(
@@ -269,6 +290,77 @@ export async function handleAuthLogin(
     return jsonSuccess({ token });
   } catch (error) {
     console.error("Login error:", error);
+    return jsonError("Internal server error", "server_error", 500);
+  }
+}
+
+export async function handleAuthGoogle(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const db = requireAuthDatabase(env);
+  if (!db || !env.EMAIL_PEPPER || !env.JWT_SECRET) {
+    return jsonError("Auth service not configured", "server_error", 503);
+  }
+
+  const contentType = request.headers.get("Content-Type") || "";
+  if (!contentType.includes("application/json")) {
+    return jsonError(
+      "Content-Type must be application/json",
+      "invalid_request_error",
+      415,
+    );
+  }
+
+  try {
+    const body = (await request.json()) as { idToken?: string };
+    if (!body.idToken || typeof body.idToken !== "string") {
+      return jsonError("Google ID token is required", "invalid_request_error", 400);
+    }
+
+    const tokenInfo = await verifyGoogleIdToken(body.idToken);
+    if (!tokenInfo) {
+      return jsonError("Invalid Google token", "invalid_request_error", 401);
+    }
+
+    if (env.GOOGLE_CLIENT_ID && tokenInfo.aud !== env.GOOGLE_CLIENT_ID) {
+      return jsonError("Google token audience mismatch", "invalid_request_error", 401);
+    }
+
+    if (!tokenInfo.email || tokenInfo.email_verified !== "true") {
+      return jsonError("Google account email is not verified", "invalid_request_error", 401);
+    }
+
+    const normalizedEmail = normalizeEmail(tokenInfo.email);
+    const emailHash = await hashEmail(normalizedEmail, env.EMAIL_PEPPER);
+    const existing = await getUserByEmailHash(db, emailHash);
+
+    const userId = existing?.id ?? crypto.randomUUID();
+    if (existing) {
+      if (!existing.is_verified) {
+        await markUserVerified(db, userId);
+      }
+      if (existing.auth_provider !== "google") {
+        await setAuthProvider(db, userId, "google");
+      }
+    } else {
+      await createGoogleUser(db, userId, emailHash);
+    }
+
+    const user = existing ?? (await getUserById(db, userId));
+    if (!user) {
+      return jsonError("Unable to create account", "server_error", 500);
+    }
+
+    const token = await issueJwt(env.JWT_SECRET, {
+      user_id: user.id,
+      plan_type: user.plan_type,
+      auth_provider: "google",
+    });
+
+    return jsonSuccess({ token });
+  } catch (error) {
+    console.error("Google auth error:", error);
     return jsonError("Internal server error", "server_error", 500);
   }
 }

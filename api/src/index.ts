@@ -22,6 +22,7 @@ import {
   handleAuthByok,
   handleAuthLogin,
   handleAuthRefresh,
+  handleAuthGoogle,
   handleAuthRegister,
   handleAuthVerify,
 } from "./routes/auth.js";
@@ -61,6 +62,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   AUTH_FROM_EMAIL?: string;
   JWT_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
   EMAIL_PEPPER?: string;
   REMINDER_ENCRYPTION_KEY?: string;
   REMINDER_FROM_EMAIL?: string;
@@ -143,6 +145,10 @@ app.post("/auth/verify", async (c) => {
 
 app.post("/auth/login", async (c) => {
   return handleAuthLogin(c.req.raw, c.env);
+});
+
+app.post("/auth/google", async (c) => {
+  return handleAuthGoogle(c.req.raw, c.env);
 });
 
 app.post("/auth/refresh", async (c) => {

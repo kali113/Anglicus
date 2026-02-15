@@ -55,8 +55,13 @@
       "passwordInvalid": "Password must be at least 8 characters and include upper, lower, and a number.",
       "loginFailed": "Could not sign in.",
       "registerFailed": "Could not register.",
-      "verifyFailed": "Could not verify."
-    }
+      "verifyFailed": "Could not verify.",
+      "googleLoginFailed": "Could not sign in with Google.",
+      "googleUnavailable": "Google sign-in is unavailable right now."
+    },
+    "or": "or",
+    "googleButton": "Sign in with Google",
+    "googleConfigHint": "Google sign-in needs app configuration. Ask support to enable it."
   },
   "units": {
     "words": "words"

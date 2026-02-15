@@ -79,6 +79,19 @@ export async function createUser(
     .run();
 }
 
+export async function createGoogleUser(
+  db: D1Database,
+  userId: string,
+  emailHash: string,
+): Promise<void> {
+  await db
+    .prepare(
+      "INSERT INTO users (id, email_hash, password_hash, verification_code, is_verified, auth_provider, plan_type) VALUES (?, ?, NULL, NULL, 1, 'google', 'free')",
+    )
+    .bind(userId, emailHash)
+    .run();
+}
+
 export async function updatePendingUser(
   db: D1Database,
   userId: string,
