@@ -1,5 +1,7 @@
 import type { Env } from "../index.js";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 import { jsonError, jsonSuccess } from "../lib/response.js";
+import { sanitizePublicHttpsBaseUrl } from "../lib/security.js";
 import {
   extractBearerToken,
   generateVerificationCode,
@@ -25,7 +27,23 @@ import {
 
 const CODE_REGEX = /^\d{6}$/;
 const DEFAULT_BYOK_BASE_URL = "https://api.openai.com";
-const GOOGLE_TOKENINFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo";
+const DEFAULT_BYOK_ALLOWED_HOSTS = [
+  "api.openai.com",
+  "openrouter.ai",
+  "api.groq.com",
+  "api.together.xyz",
+  "api.mistral.ai",
+  "router.huggingface.co",
+  "generativelanguage.googleapis.com",
+  "api.cohere.ai",
+  "integrate.api.nvidia.com",
+  "api.cerebras.ai",
+  "api.anthropic.com",
+];
+const GOOGLE_JWKS = createRemoteJWKSet(
+  new URL("https://www.googleapis.com/oauth2/v3/certs"),
+);
+const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
 
 type GoogleTokenInfo = {
   aud?: string;
@@ -45,6 +63,19 @@ function constantTimeEqual(left: string, right: string): boolean {
 function requireAuthDatabase(env: Env): D1Database | null {
   if (!env.DB) return null;
   return env.DB;
+}
+
+function getAllowedByokHosts(env: Env): Set<string> {
+  const configuredHosts = (env.BYOK_ALLOWED_HOSTS || "")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter((host) => host.length > 0);
+
+  if (configuredHosts.length > 0) {
+    return new Set(configuredHosts);
+  }
+
+  return new Set(DEFAULT_BYOK_ALLOWED_HOSTS);
 }
 
 async function sendVerificationEmail(
@@ -81,17 +112,27 @@ async function sendVerificationEmail(
   return true;
 }
 
-async function verifyGoogleIdToken(idToken: string): Promise<GoogleTokenInfo | null> {
-  const response = await fetch(
-    `${GOOGLE_TOKENINFO_ENDPOINT}?id_token=${encodeURIComponent(idToken)}`,
-  );
-
-  if (!response.ok) {
+async function verifyGoogleIdToken(
+  idToken: string,
+  clientId: string,
+): Promise<GoogleTokenInfo | null> {
+  try {
+    const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
+      audience: clientId,
+      issuer: GOOGLE_ISSUERS,
+    });
+    return {
+      aud: typeof payload.aud === "string" ? payload.aud : undefined,
+      email: typeof payload.email === "string" ? payload.email : undefined,
+      email_verified:
+        typeof payload.email_verified === "string" ||
+        typeof payload.email_verified === "boolean"
+          ? String(payload.email_verified)
+          : undefined,
+    };
+  } catch {
     return null;
   }
-
-  const payload = (await response.json()) as GoogleTokenInfo;
-  return payload;
 }
 
 export async function handleAuthRegister(
@@ -327,19 +368,17 @@ export async function handleAuthGoogle(
       return jsonError("Google ID token is required", "invalid_request_error", 400);
     }
 
-    const tokenInfo = await verifyGoogleIdToken(body.idToken);
+    if (!env.GOOGLE_CLIENT_ID) {
+      return jsonError("Google authentication is not configured", "server_error", 503);
+    }
+
+    const tokenInfo = await verifyGoogleIdToken(body.idToken, env.GOOGLE_CLIENT_ID);
     if (!tokenInfo) {
       return jsonError("Invalid Google token", "invalid_request_error", 401);
     }
 
-    if (!env.GOOGLE_CLIENT_ID) {
-      return jsonError("Google authentication is not configured", "server_error", 503);
-    }
-    if (tokenInfo.aud !== env.GOOGLE_CLIENT_ID) {
-      return jsonError("Google token audience mismatch", "invalid_request_error", 401);
-    }
-
-    if (!tokenInfo.email || tokenInfo.email_verified !== "true") {
+    const isEmailVerified = tokenInfo.email_verified?.toLowerCase() === "true";
+    if (!tokenInfo.email || !isEmailVerified) {
       return jsonError("Google account email is not verified", "invalid_request_error", 401);
     }
 
@@ -461,12 +500,20 @@ export async function handleAuthByok(
     const baseUrl =
       (typeof body.baseUrl === "string" && body.baseUrl.trim()) ||
       DEFAULT_BYOK_BASE_URL;
-    if (!/^https?:\/\//i.test(baseUrl)) {
+    const parsedBase = sanitizePublicHttpsBaseUrl(baseUrl);
+    if (!parsedBase) {
       return jsonError("Base URL is invalid", "invalid_request_error", 400);
     }
+    const allowedHosts = getAllowedByokHosts(env);
+    if (!allowedHosts.has(parsedBase.hostname.toLowerCase())) {
+      return jsonError("Base URL host is not allowed", "invalid_request_error", 400);
+    }
 
-    const normalizedBase = baseUrl.replace(/\/$/, "");
-    const response = await fetch(`${normalizedBase}/v1/models`, {
+    const normalizedBaseHref = parsedBase.href.endsWith("/")
+      ? parsedBase.href
+      : `${parsedBase.href}/`;
+    const modelsUrl = new URL("v1/models", normalizedBaseHref);
+    const response = await fetch(modelsUrl, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${body.apiKey}`,

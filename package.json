@@ -17,6 +17,11 @@
     "deploy:api": "cd api && npm run deploy",
     "install:all": "npm install && cd web && npm install && cd ../api && npm install"
   },
+  "overrides": {
+    "@sveltejs/kit": {
+      "cookie": "npm:cookie@1.1.1"
+    }
+  },
   "engines": {
     "node": ">=18.0.0"
   }

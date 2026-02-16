@@ -85,6 +85,7 @@ export interface Env {
   FEEDBACK_RATE_LIMIT_PER_MINUTE?: string;
   ALLOWED_ORIGINS?: string;
   ALLOW_LOCAL_PROVIDERS?: string;
+  BYOK_ALLOWED_HOSTS?: string;
 
   // Billing configuration
   BTC_RECEIVING_ADDRESS?: string;
