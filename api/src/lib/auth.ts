@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { sha256Hex } from "./crypto.js";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 const VERIFICATION_WINDOW_MS = 15 * 60 * 1000;
 
@@ -16,8 +15,62 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function isValidLocalPart(local: string): boolean {
+  if (!local || local.length > 64) return false;
+  if (local.startsWith(".") || local.endsWith(".") || local.includes("..")) return false;
+
+  const allowedSpecial = "!#$%&'*+/=?^_`{|}~-";
+  for (const ch of local) {
+    const code = ch.charCodeAt(0);
+    const isAlphaNum =
+      (code >= 48 && code <= 57) ||
+      (code >= 65 && code <= 90) ||
+      (code >= 97 && code <= 122);
+    if (isAlphaNum || ch === "." || allowedSpecial.includes(ch)) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+function isValidDomain(domain: string): boolean {
+  if (!domain || domain.length > 253) return false;
+  if (domain.startsWith(".") || domain.endsWith(".") || domain.includes("..")) return false;
+
+  const labels = domain.split(".");
+  if (labels.length < 2) return false;
+
+  for (const label of labels) {
+    if (!label || label.length > 63) return false;
+    if (label.startsWith("-") || label.endsWith("-")) return false;
+
+    for (const ch of label) {
+      const code = ch.charCodeAt(0);
+      const isAlphaNum =
+        (code >= 48 && code <= 57) ||
+        (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122);
+      if (!isAlphaNum && ch !== "-") return false;
+    }
+  }
+
+  return true;
+}
+
 export function isValidEmail(email: string): boolean {
-  return EMAIL_REGEX.test(email.trim());
+  const value = email.trim();
+  if (value.length < 3 || value.length > 254) return false;
+  if (/\s/.test(value)) return false;
+
+  const at = value.indexOf("@");
+  if (at <= 0 || at !== value.lastIndexOf("@") || at >= value.length - 1) {
+    return false;
+  }
+
+  const local = value.slice(0, at);
+  const domain = value.slice(at + 1);
+  return isValidLocalPart(local) && isValidDomain(domain);
 }
 
 export function isValidPassword(password: string): boolean {

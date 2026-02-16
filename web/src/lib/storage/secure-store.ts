@@ -18,6 +18,7 @@ const STORAGE_KEYS = {
   rateLimit: "_a1r_rate"
 };
 const STORAGE_SCHEMA_VERSION = "2";
+const STORAGE_ENCRYPTION_PREFIX = "enc:v1:";
 
 // Simple device fingerprint
 function getDeviceFingerprint(): string {
@@ -48,6 +49,87 @@ async function verifyChecksum(data: string, checksum: string | null): Promise<bo
   if (!checksum) return false;
   const computed = await generateChecksum(data);
   return computed === checksum;
+}
+
+async function deriveStorageKey(): Promise<CryptoKey | null> {
+  if (!isBrowser() || !window.crypto?.subtle) return null;
+
+  try {
+    const seed = `${getDeviceFingerprint()}|${location.origin}|${STORAGE_SCHEMA_VERSION}`;
+    const encoded = new TextEncoder().encode(seed);
+    const hash = await window.crypto.subtle.digest("SHA-256", encoded);
+    return await window.crypto.subtle.importKey(
+      "raw",
+      hash,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"],
+    );
+  } catch {
+    return null;
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function base64ToBytes(value: string): Uint8Array {
+  return Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
+}
+
+async function encryptForStorage(data: string): Promise<string | null> {
+  const key = await deriveStorageKey();
+  if (!key) return null;
+
+  try {
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode(data);
+    const ciphertext = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      key,
+      plaintext,
+    );
+
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    return `${STORAGE_ENCRYPTION_PREFIX}${bytesToBase64(combined)}`;
+  } catch {
+    return null;
+  }
+}
+
+async function decryptFromStorage(data: string): Promise<string | null> {
+  if (!data.startsWith(STORAGE_ENCRYPTION_PREFIX)) {
+    // Legacy plaintext entries remain readable for migration.
+    return data;
+  }
+
+  const key = await deriveStorageKey();
+  if (!key) return null;
+
+  try {
+    const encoded = data.slice(STORAGE_ENCRYPTION_PREFIX.length);
+    const combined = base64ToBytes(encoded);
+    if (combined.length < 13) return null;
+
+    const iv = combined.slice(0, 12);
+    const ciphertext = combined.slice(12);
+    const plaintext = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      ciphertext,
+    );
+
+    return new TextDecoder().decode(plaintext);
+  } catch {
+    return null;
+  }
 }
 
 // IndexedDB wrapper for persistent backup storage
@@ -202,20 +284,25 @@ export async function detectStorageClear(): Promise<boolean> {
 export async function secureSet(key: "primary" | "backup", data: string): Promise<void> {
   if (!isBrowser()) return;
 
-  const checksum = await generateChecksum(data);
+  const protectedData = await encryptForStorage(data);
+  if (!protectedData) {
+    throw new Error("Unable to encrypt secure storage payload");
+  }
+
+  const checksum = await generateChecksum(protectedData);
   const fingerprint = getDeviceFingerprint();
 
   if (key === "primary") {
-    localStorage.setItem(STORAGE_KEYS.primary, data);
+    localStorage.setItem(STORAGE_KEYS.primary, protectedData);
     localStorage.setItem(STORAGE_KEYS.checksum, checksum);
     localStorage.setItem(STORAGE_KEYS.fingerprint, fingerprint);
     localStorage.setItem(STORAGE_KEYS.timestamp, Date.now().toString());
     localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
     
     // Also backup to IndexedDB (harder to clear)
-    await indexedDBStore.set(STORAGE_KEYS.backup, data);
+    await indexedDBStore.set(STORAGE_KEYS.backup, protectedData);
   } else {
-    await indexedDBStore.set(STORAGE_KEYS.backup, data);
+    await indexedDBStore.set(STORAGE_KEYS.backup, protectedData);
   }
 }
 
@@ -229,22 +316,36 @@ export async function secureGet(): Promise<string | null> {
   if (primaryData && storedChecksum) {
     const isValid = await verifyChecksum(primaryData, storedChecksum);
     if (isValid) {
+      const unwrapped = await decryptFromStorage(primaryData);
+      if (unwrapped === null) return null;
       if (localStorage.getItem(STORAGE_KEYS.schema) !== STORAGE_SCHEMA_VERSION) {
         localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
       }
-      return primaryData;
+      return unwrapped;
     }
   }
 
   // If primary is invalid/missing, try backup from IndexedDB
   const backupData = await indexedDBStore.get(STORAGE_KEYS.backup);
   if (backupData) {
+    const unwrapped = await decryptFromStorage(backupData);
+    if (unwrapped === null) return null;
+
     // Restore primary from backup
-    const checksum = await generateChecksum(backupData);
-    localStorage.setItem(STORAGE_KEYS.primary, backupData);
+    let protectedBackup = backupData;
+    if (!backupData.startsWith(STORAGE_ENCRYPTION_PREFIX)) {
+      const encrypted = await encryptForStorage(unwrapped);
+      if (encrypted) {
+        protectedBackup = encrypted;
+        await indexedDBStore.set(STORAGE_KEYS.backup, protectedBackup);
+      }
+    }
+
+    const checksum = await generateChecksum(protectedBackup);
+    localStorage.setItem(STORAGE_KEYS.primary, protectedBackup);
     localStorage.setItem(STORAGE_KEYS.checksum, checksum);
     localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
-    return backupData;
+    return unwrapped;
   }
 
   return null;
