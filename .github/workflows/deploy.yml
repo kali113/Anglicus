@@ -45,8 +45,22 @@ jobs:
           NODE_ENV: production
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
 
+      - name: Resolve build output directory
+        run: |
+          if [ -f web/build/index.html ]; then
+            echo "OUTPUT_DIR=web/build" >> "$GITHUB_ENV"
+          elif [ -d web/.svelte-kit/cloudflare ]; then
+            echo "OUTPUT_DIR=web/.svelte-kit/cloudflare" >> "$GITHUB_ENV"
+          else
+            echo "Unable to find a supported build output directory." >&2
+            exit 1
+          fi
+
       - name: Create 404.html for SPA routing
-        run: cp web/build/index.html web/build/404.html
+        run: |
+          if [ -f "$OUTPUT_DIR/index.html" ] && [ ! -f "$OUTPUT_DIR/404.html" ]; then
+            cp "$OUTPUT_DIR/index.html" "$OUTPUT_DIR/404.html"
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -54,7 +68,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: web/build
+          path: ${{ env.OUTPUT_DIR }}
 
       - name: Deploy to GitHub Pages
         id: deployment
