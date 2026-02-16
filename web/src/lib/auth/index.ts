@@ -45,6 +45,17 @@ export function loadGoogleIdentityScript(): Promise<void> {
     );
 
     if (existing) {
+      // If Google Identity API is already available, resolve immediately
+      if (window.google?.accounts?.id) {
+        resolve();
+        return;
+      }
+      // Check if script has already loaded using readyState
+      const scriptEl = existing as HTMLScriptElement & { readyState?: string };
+      if (scriptEl.readyState === "complete" || scriptEl.readyState === "loaded") {
+        resolve();
+        return;
+      }
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener(
         "error",

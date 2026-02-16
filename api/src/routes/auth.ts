@@ -323,7 +323,10 @@ export async function handleAuthGoogle(
       return jsonError("Invalid Google token", "invalid_request_error", 401);
     }
 
-    if (env.GOOGLE_CLIENT_ID && tokenInfo.aud !== env.GOOGLE_CLIENT_ID) {
+    if (!env.GOOGLE_CLIENT_ID) {
+      return jsonError("Google authentication is not configured", "server_error", 503);
+    }
+    if (tokenInfo.aud !== env.GOOGLE_CLIENT_ID) {
       return jsonError("Google token audience mismatch", "invalid_request_error", 401);
     }
 

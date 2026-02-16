@@ -187,7 +187,7 @@
   .helper {
     margin: 0;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.7);
   }
 
