@@ -43,6 +43,7 @@ jobs:
         working-directory: web
         env:
           NODE_ENV: production
+          GITHUB_PAGES: "true"
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
 
       - name: Resolve build output directory
