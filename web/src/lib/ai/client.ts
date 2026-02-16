@@ -11,7 +11,12 @@ import type {
   ChatCompletionResponse,
   ApiError,
 } from "$lib/types/api.js";
-import { getToken, refreshToken, setToken } from "$lib/auth/index.js";
+import {
+  AuthRequestError,
+  getToken,
+  refreshToken,
+  setToken,
+} from "$lib/auth/index.js";
 import { getSettings, getApiKey } from "$lib/storage/index.js";
 import { isBrowser } from "$lib/storage/base-store.js";
 
@@ -126,9 +131,14 @@ async function tryBackend(
         },
         body: JSON.stringify(request),
       });
-    } catch {
-      redirectToLogin();
-      throw new AiRequestError("auth_required", 401, "auth_required");
+    } catch (error) {
+      if (error instanceof AuthRequestError && error.status === 401) {
+        redirectToLogin();
+        throw new AiRequestError("auth_required", 401, "auth_required");
+      }
+      throw error instanceof Error
+        ? error
+        : new Error("Token refresh failed");
     }
   }
 

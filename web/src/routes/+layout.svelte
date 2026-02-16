@@ -12,7 +12,13 @@
   import Navbar from "$lib/components/Navbar.svelte";
   import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import { refreshPaymentStatus } from "$lib/billing/index.js";
-  import { clearToken, getToken, refreshToken, setToken } from "$lib/auth/index.js";
+  import {
+    AuthRequestError,
+    clearToken,
+    getToken,
+    refreshToken,
+    setToken,
+  } from "$lib/auth/index.js";
   import { t } from "$lib/i18n";
 
   let { children } = $props();
@@ -29,7 +35,9 @@
         const refreshed = await refreshToken();
         setToken(refreshed);
       } catch (error) {
-        clearToken();
+        if (error instanceof AuthRequestError && error.status === 401) {
+          clearToken();
+        }
         console.error("Token refresh failed:", error);
       }
     };

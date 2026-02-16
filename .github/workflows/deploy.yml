@@ -45,6 +45,7 @@ jobs:
           NODE_ENV: production
           GITHUB_PAGES: "true"
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
       - name: Resolve build output directory
         run: |

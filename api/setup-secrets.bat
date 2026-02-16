@@ -24,6 +24,7 @@ echo   - CEREBRAS_API_KEY    (Cerebras)
 echo   - RESEND_API_KEY      (Resend - for feedback emails)
 echo   - JWT_SECRET          (JWT signing secret)
 echo   - EMAIL_PEPPER        (Email hashing pepper)
+echo   - GOOGLE_CLIENT_ID    (Google OAuth Web client ID)
 echo   - OWNER_EMAIL         (Your email for feedback)
 echo.
 
@@ -87,6 +88,7 @@ call :set_secret "CEREBRAS_API_KEY" "Set Cerebras API key"
 call :set_secret "RESEND_API_KEY" "Set Resend API key (for feedback emails)"
 call :set_secret "JWT_SECRET" "Set JWT secret (64+ random chars)"
 call :set_secret "EMAIL_PEPPER" "Set email pepper (32+ random chars)"
+call :set_secret "GOOGLE_CLIENT_ID" "Set Google OAuth Web client ID (free)"
 call :set_secret "OWNER_EMAIL" "Set owner email address (feedback recipient)"
 
 echo.

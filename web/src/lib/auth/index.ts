@@ -1,12 +1,34 @@
 import { isBrowser } from "$lib/storage/base-store.js";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_CLIENT_ID =
+  import.meta.env.GOOGLE_CLIENT_ID ||
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "";
 const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 const TOKEN_KEY = "anglicus_auth_token";
 let refreshTokenPromise: Promise<string> | null = null;
 
 let googleScriptPromise: Promise<void> | null = null;
+
+type ErrorPayload = {
+  error?: {
+    message?: string;
+    type?: string;
+  };
+  message?: string;
+};
+
+export class AuthRequestError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export function getToken(): string | null {
   if (!isBrowser()) return null;
@@ -78,9 +100,20 @@ export function loadGoogleIdentityScript(): Promise<void> {
   return googleScriptPromise;
 }
 
+async function parseErrorPayload(
+  response: Response,
+  fallback: string,
+): Promise<{ message: string; code?: string }> {
+  const data = (await response.json().catch(() => null)) as ErrorPayload | null;
+  return {
+    message: data?.error?.message || data?.message || fallback,
+    code: data?.error?.type,
+  };
+}
+
 async function parseErrorMessage(response: Response, fallback: string): Promise<string> {
-  const data = await response.json().catch(() => null);
-  return data?.error?.message || fallback;
+  const { message } = await parseErrorPayload(response, fallback);
+  return message;
 }
 
 export async function registerUser(email: string, password: string): Promise<void> {
@@ -173,8 +206,8 @@ export async function refreshToken(): Promise<string> {
     });
 
     if (!response.ok) {
-      const message = await parseErrorMessage(response, "Token refresh failed");
-      throw new Error(message);
+      const { message, code } = await parseErrorPayload(response, "Token refresh failed");
+      throw new AuthRequestError(message, response.status, code);
     }
 
     const data = (await response.json()) as { token?: string };
