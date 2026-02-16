@@ -55,8 +55,13 @@
       "passwordInvalid": "La contrasena debe tener 8+ caracteres e incluir mayusculas, minusculas y un numero.",
       "loginFailed": "No se pudo iniciar sesion.",
       "registerFailed": "No se pudo registrar.",
-      "verifyFailed": "No se pudo verificar."
-    }
+      "verifyFailed": "No se pudo verificar.",
+      "googleLoginFailed": "No se pudo iniciar sesión con Google.",
+      "googleUnavailable": "El acceso con Google no está disponible ahora."
+    },
+    "or": "o",
+    "googleButton": "Iniciar sesión con Google",
+    "googleConfigHint": "El acceso con Google requiere configuración de la app. Pide a soporte que lo habilite."
   },
   "units": {
     "words": "palabras"

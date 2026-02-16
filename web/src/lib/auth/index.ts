@@ -1,7 +1,11 @@
 import { isBrowser } from "$lib/storage/base-store.js";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 const TOKEN_KEY = "anglicus_auth_token";
+
+let googleScriptPromise: Promise<void> | null = null;
 
 export function getToken(): string | null {
   if (!isBrowser()) return null;
@@ -16,6 +20,50 @@ export function setToken(token: string): void {
 export function clearToken(): void {
   if (!isBrowser()) return;
   localStorage.removeItem(TOKEN_KEY);
+}
+
+export function getGoogleClientId(): string {
+  return GOOGLE_CLIENT_ID;
+}
+
+export function loadGoogleIdentityScript(): Promise<void> {
+  if (!isBrowser()) {
+    return Promise.resolve();
+  }
+
+  if (window.google?.accounts?.id) {
+    return Promise.resolve();
+  }
+
+  if (googleScriptPromise) {
+    return googleScriptPromise;
+  }
+
+  googleScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${GOOGLE_SCRIPT_SRC}"]`,
+    );
+
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Failed to load Google Identity script")),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = GOOGLE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google Identity script"));
+    document.head.appendChild(script);
+  });
+
+  return googleScriptPromise;
 }
 
 async function parseErrorMessage(response: Response, fallback: string): Promise<string> {
@@ -76,6 +124,26 @@ export async function loginUser(email: string, password: string): Promise<string
   return data.token;
 }
 
+export async function loginWithGoogleIdToken(idToken: string): Promise<string> {
+  const response = await fetch(`${BACKEND_URL}/auth/google`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response, "Google sign in failed");
+    throw new Error(message);
+  }
+
+  const data = (await response.json()) as { token?: string };
+  if (!data.token) {
+    throw new Error("Invalid Google login response");
+  }
+
+  return data.token;
+}
+
 export async function refreshToken(): Promise<string> {
   const token = getToken();
   if (!token) {
@@ -127,5 +195,21 @@ export async function enableByok(
       "API key validation failed",
     );
     throw new Error(message);
+  }
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        id?: {
+          initialize: (config: Record<string, unknown>) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: Record<string, unknown>,
+          ) => void;
+        };
+      };
+    };
   }
 }
