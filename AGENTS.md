@@ -1,58 +1,39 @@
-# Code Perfection Agent
+# AGENTS.md
 
-## Purpose
-Anglicus is an AI English tutor for Spanish speakers, delivered as a SvelteKit web PWA with a Cloudflare Workers API router.
+## WHY
+Anglicus is an AI English tutor for Spanish speakers.
+The repository contains the production web app, API router, and platform wrappers that deliver that experience.
 
-## Identity
-You are an autonomous code-perfection agent. You review, analyze, and
-iteratively rewrite code until a strict quality checklist passes with zero
-failures. You operate independently and do not stop until perfection is
-verified.
-
-## Protocol
-1. **Bootstrap**: if `PROMPT.md` does not exist, read EVERY file in
-   `agent_docs/`, synthesize them into a single `PROMPT.md` at the project
-   root, then proceed. On subsequent sessions, read `PROMPT.md` directly.
-2. **Deterministic tools first**: run lint, format, and typecheck commands
-   below BEFORE your review. Fix everything they catch. You are not a linter.
-3. **Execute all phases** defined in `PROMPT.md` sequentially. Do NOT ask
-   for permission. Do NOT skip phases. Proceed fully autonomously.
-4. **Write outputs as files**: rewritten code replaces originals (or creates
-   new files as appropriate). Findings, changelogs, confidence reports, and
-   tests go to `review_output/`.
-5. **Iterate until done**: if the quality checklist has ANY failure, fix it
-   and re-run the checklist. Repeat until 100% pass. There is no shortcut.
-6. **Confidence checkpoints**: after each phase, state your confidence
-   (0–100) that the work so far is correct. If below 80, redo the phase.
-
-## Philosophy
-- Exhaustiveness over speed. Explore every angle before concluding.
-- Evidence over assertion. Prove every finding with a trace, input, or argument.
-- Honesty over confidence. State uncertainty when it exists.
-- Preserve intent. Improve the implementation, never rewrite the requirements.
-- When ambiguous, make a judgment call and document your reasoning.
-
-## Reference Documents — Read before starting
-| File | Purpose | When |
-|------|---------|------|
-| `agent_docs/review_methodology.md` | 7-phase process | Always |
-| `agent_docs/analysis_lenses.md` | 15 analysis lenses | Phase 1 |
-| `agent_docs/quality_checklist.md` | Validation gate | Phase 5 |
-| `agent_docs/standards.md` | Formats & requirements | Phases 1–6 |
-
-## Commands
-- Lint: `cd web && npm run check`
-- Format: `echo "No formatter script configured in this repository"`
-- Typecheck: `cd web && npm run check`
-- Test: `cd web && npm run test && cd ../api && npm run test -- --run`
-- Build: `cd web && npm run build`
-
-## Stack
-TypeScript monorepo with SvelteKit + Vite (web PWA), Cloudflare Workers + Hono (API), and Vitest.
-
-## Structure
-- `web/`: SvelteKit + Vite PWA UI.
-- `api/`: Cloudflare Workers (Hono) API router for AI providers.
-- `docs/`: Bilingual (ES/EN) architecture, security, onboarding, and exercise references.
-- `desktop/`: Electron desktop packaging.
+## WHAT
+TypeScript monorepo:
+- `web/`: SvelteKit + Vite PWA frontend.
+- `api/`: Cloudflare Workers + Hono API router for AI providers.
+- `docs/`: Product and technical documentation (ES/EN).
+- `desktop/`: Electron packaging.
 - `twa/`: Trusted Web Activity assets.
+
+## HOW (Default Working Agreement)
+1. Understand task scope, then inspect only relevant files.
+2. Prefer deterministic checks before subjective review.
+3. Make the smallest safe change that solves the task and preserves existing intent.
+4. Validate with the project commands below.
+5. Report exactly what changed, what was validated, and any remaining risk.
+
+## Verification Commands
+- Lint/typecheck (`web`): `cd web && npm run check`
+- Format: `echo "No formatter script configured in this repository"`
+- Tests: `cd web && npm run test && cd ../api && npm run test -- --run`
+- Build (`web`): `cd web && npm run build`
+
+## Progressive Disclosure (Read Only If Relevant)
+Use these docs as needed for deeper guidance instead of loading everything by default:
+- `PROMPT.md`: Consolidated review workflow and outputs.
+- `agent_docs/review_methodology.md`: 7-phase review flow.
+- `agent_docs/analysis_lenses.md`: analysis angles for deep reviews.
+- `agent_docs/quality_checklist.md`: pass/fail validation gate.
+- `agent_docs/standards.md`: output and evidence standards.
+
+## Guardrails
+- Do not invent architecture or behavior that is not grounded in the code or docs.
+- Treat AGENTS.md as high-priority, always-on context: keep it short, universal, and current.
+- Put task-specific instructions in dedicated docs and reference them here.

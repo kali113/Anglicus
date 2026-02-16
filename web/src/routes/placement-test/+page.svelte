@@ -87,11 +87,11 @@
   }
 
   const goals = $derived([
-    { value: "travel" as LearningGoal, emoji: "✈️", label: "Travel / Viajes" },
-    { value: "work" as LearningGoal, emoji: "💼", label: "Work / Trabajo" },
-    { value: "study" as LearningGoal, emoji: "📚", label: "Study / Estudios" },
-    { value: "movies" as LearningGoal, emoji: "🎬", label: "Movies & Music / Cine y Música" },
-    { value: "general" as LearningGoal, emoji: "🌟", label: "General" },
+    { value: "travel" as LearningGoal, emoji: "✈️", label: $t("placement.goals.travel") },
+    { value: "work" as LearningGoal, emoji: "💼", label: $t("placement.goals.work") },
+    { value: "study" as LearningGoal, emoji: "📚", label: $t("placement.goals.study") },
+    { value: "movies" as LearningGoal, emoji: "🎬", label: $t("placement.goals.movies") },
+    { value: "general" as LearningGoal, emoji: "🌟", label: $t("placement.goals.general") },
   ]);
 
   let step = $state(0); // 0: language, 1: welcome, 2: name, 3: promo, 4: goals, 5: test
@@ -110,6 +110,10 @@
   onMount(() => {
     void tryApplyReferralFromUrl();
   });
+
+  function localized(en: string, es: string): string {
+    return uiLanguage === "es" ? es : en;
+  }
 
   function getPlacementPrompt(): string {
     if (targetLanguage === "es") {
@@ -362,12 +366,15 @@ Make sure the correctAnswer matches exactly one of the options.`;
     if (referralHash) {
       promoStatus = "used";
       promoMessage =
-        "Referral discount already active. Promo codes do not stack. / El descuento por referido ya está activo. Los códigos promo no se acumulan.";
+        localized(
+          "Referral discount already active. Promo codes do not stack.",
+          "El descuento por referido ya está activo. Los códigos promo no se acumulan.",
+        );
       return;
     }
     if (promoHash) {
       promoStatus = "used";
-      promoMessage = "You already have a code applied. / Ya tienes un código aplicado.";
+      promoMessage = $t("placement.promo.alreadyApplied");
       return;
     }
     promoSaving = true;
@@ -378,13 +385,15 @@ Make sure the correctAnswer matches exactly one of the options.`;
     if (result.valid && result.codeHash) {
       promoHash = result.codeHash;
       promoStatus = "valid";
-      promoMessage = `Code applied: ${result.discountPercent ?? 0}% OFF / Código aplicado: ${result.discountPercent ?? 0}% OFF`;
+      promoMessage = $t("placement.promo.applied", {
+        percent: result.discountPercent ?? 0,
+      });
     } else if (result.reason === "used") {
       promoStatus = "used";
-      promoMessage = "This code has already been used. / Este código ya fue utilizado.";
+      promoMessage = $t("placement.promo.used");
     } else {
       promoStatus = "invalid";
-      promoMessage = "Invalid code. Check and try again. / Código inválido. Revisa e intenta otra vez.";
+      promoMessage = $t("placement.promo.invalid");
     }
 
     promoSaving = false;
@@ -400,13 +409,19 @@ Make sure the correctAnswer matches exactly one of the options.`;
     const result = await validateReferralCode(referralCode);
     if (!result.valid || !result.codeHash) {
       referralMessage =
-        "Referral code invalid. You can still use a promo code. / Código de referido inválido. Aún puedes usar un código promo.";
+        localized(
+          "Referral code invalid. You can still use a promo code.",
+          "Código de referido inválido. Aún puedes usar un código promo.",
+        );
       return;
     }
 
     referralHash = result.codeHash;
     referralDiscountPercent = result.discountPercent ?? 25;
-    referralMessage = `Referral discount applied: ${referralDiscountPercent}% OFF / Descuento de referido aplicado: ${referralDiscountPercent}% OFF`;
+    referralMessage = localized(
+      `Referral discount applied: ${referralDiscountPercent}% OFF`,
+      `Descuento de referido aplicado: ${referralDiscountPercent}% OFF`,
+    );
     promoHash = null;
     promoCode = "";
     promoStatus = "idle";
@@ -429,7 +444,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     }
     const profile: UserProfile = {
       schemaVersion: 2,
-      name: userName || "Friend / Amigo",
+      name: userName || $t("placement.defaultName"),
       email: normalizedEmail || undefined,
       level: assessedLevel,
       nativeLanguage,
@@ -472,7 +487,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       });
 
       if (!subscribed) {
-        alert("Email reminder couldn't be activated. You can try later in Settings. / No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuración.");
+        alert($t("placement.reminderError"));
       } else {
         void trackEvent("reminder_enabled", { channel: "email" });
       }
@@ -482,15 +497,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   function getLevelLabel(level: EnglishLevel): string {
-    const labels: Record<EnglishLevel, string> = {
-      A1: "Beginner / Principiante",
-      A2: "Elementary / Elemental",
-      B1: "Intermediate / Intermedio",
-      B2: "Upper Intermediate / Intermedio Alto",
-      C1: "Advanced / Avanzado",
-      C2: "Proficient / Proficiente",
-    };
-    return labels[level];
+    return $t(`placement.levels.${level}`);
   }
 
   function getLevelEmoji(level: EnglishLevel): string {
@@ -506,7 +513,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 </script>
 
-<div class="placement-test">
+<div class="placement-test" class:locale-es={uiLanguage === "es"} class:locale-en={uiLanguage !== "es"}>
   {#if step === 0}
     <div class="step">
       <h1>
@@ -520,20 +527,14 @@ Make sure the correctAnswer matches exactly one of the options.`;
         <span class="lang-es">Elige tu objetivo de aprendizaje</span>
       </p>
       <div class="language-options">
-        <button class="language-card" onclick={() => {
-          targetLanguage = "en";
-          step = 1;
-        }}>
-          <span class="language-name">English</span>
-          <span class="language-subtitle">for Spanish speakers / para hispanohablantes</span>
-        </button>
-        <button class="language-card" onclick={() => {
-          targetLanguage = "es";
-          step = 1;
-        }}>
-          <span class="language-name">Español</span>
-          <span class="language-subtitle">for English speakers / para angloparlantes</span>
-        </button>
+        {#each languageOptions as option}
+          <button class="language-card" onclick={() => {
+            targetLanguage = option.value;
+            step = 1;
+          }}>
+            <span class="language-name">{option.label}</span>
+          </button>
+        {/each}
       </div>
     </div>
   {:else if step === 1}
@@ -586,7 +587,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="text"
         bind:value={userName}
-        placeholder="Your name / Tu nombre"
+        placeholder={localized("Your name", "Tu nombre")}
         class="input"
         onkeydown={(e) =>
           e.key === "Enter" &&
@@ -597,7 +598,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="email"
         bind:value={userEmail}
-        placeholder="Your email (optional) / Tu email (opcional)"
+        placeholder={localized("Your email (optional)", "Tu email (opcional)")}
         class="input"
         oninput={handleEmailInput}
       />
@@ -668,7 +669,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
           onclick={handleApplyPromo}
           disabled={!promoCode.trim() || promoSaving}
         >
-          {promoSaving ? "Validating... / Validando..." : "Apply / Aplicar"}
+          {promoSaving ? localized("Validating...", "Validando...") : localized("Apply", "Aplicar")}
         </button>
         <button class="btn primary" onclick={() => (step = 4)}>
           <span class="lang-en">Continue</span>
@@ -830,11 +831,22 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
 <style>
   .placement-test {
+    --onboarding-text-primary: var(--text, #f3f4f6);
+    --onboarding-text-secondary: var(--text-secondary, #cbd5e1);
+    --onboarding-text-muted: var(--text-muted, #94a3b8);
+    color: var(--onboarding-text-primary);
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
+  }
+
+  .placement-test.locale-es .lang-en,
+  .placement-test.locale-es .lang-divider,
+  .placement-test.locale-en .lang-es,
+  .placement-test.locale-en .lang-divider {
+    display: none;
   }
 
   .step {
@@ -844,21 +856,24 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   .step h1 {
+    color: var(--onboarding-text-primary);
     font-size: 2rem;
     margin-bottom: 1rem;
   }
 
   .step h2 {
+    color: var(--onboarding-text-primary);
     font-size: 1.5rem;
     margin-bottom: 1rem;
   }
 
   .step p {
-    color: var(--text-secondary);
+    color: var(--onboarding-text-primary);
     margin-bottom: 0.5rem;
   }
 
   .subtitle {
+    color: var(--onboarding-text-secondary);
     font-size: 0.875rem;
     margin-bottom: 1.5rem;
   }
@@ -877,15 +892,29 @@ Make sure the correctAnswer matches exactly one of the options.`;
     width: 100%;
     padding: 0.875rem 1rem;
     font-size: 1rem;
+    color: var(--onboarding-text-primary);
+    background: color-mix(in srgb, var(--bg-card, #1f2937) 92%, white 8%);
     border: 2px solid var(--border);
     border-radius: 12px;
     margin-bottom: 1.5rem;
     box-sizing: border-box;
   }
 
+  .input::placeholder {
+    color: var(--onboarding-text-muted);
+  }
+
   .input:focus {
     outline: none;
     border-color: var(--primary);
+  }
+
+  .input:-webkit-autofill,
+  .input:-webkit-autofill:hover,
+  .input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--onboarding-text-primary);
+    caret-color: var(--onboarding-text-primary);
+    box-shadow: inset 0 0 0 1000px color-mix(in srgb, var(--bg-card, #1f2937) 92%, white 8%);
   }
 
   .error-text {
@@ -900,7 +929,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     justify-content: center;
     gap: 0.5rem;
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: var(--onboarding-text-secondary);
     margin-bottom: 0.5rem;
   }
 
@@ -911,7 +940,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   .consent-note {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--onboarding-text-muted);
     margin-bottom: 1.5rem;
   }
 
@@ -943,25 +972,26 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   .language-name {
+    color: var(--onboarding-text-primary);
     font-weight: 600;
   }
 
   .language-subtitle {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: var(--onboarding-text-secondary);
     margin-top: 0.25rem;
   }
 
   .lang-en {
-    color: var(--text-primary);
+    color: var(--onboarding-text-primary);
   }
 
   .lang-es {
-    color: var(--text-secondary);
+    color: var(--onboarding-text-primary);
   }
 
   .lang-divider {
-    color: var(--text-muted);
+    color: var(--onboarding-text-muted);
     margin: 0 0.5rem;
   }
 
@@ -1004,6 +1034,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   .goal-label {
+    color: var(--onboarding-text-primary);
     font-weight: 500;
   }
 
@@ -1032,12 +1063,13 @@ Make sure the correctAnswer matches exactly one of the options.`;
   }
 
   .btn.secondary {
-    background: rgba(148, 163, 184, 0.2);
-    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.15);
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    color: var(--onboarding-text-primary);
   }
 
   .btn.secondary:hover:not(:disabled) {
-    background: rgba(148, 163, 184, 0.35);
+    background: rgba(148, 163, 184, 0.3);
   }
 
   .actions {
@@ -1108,13 +1140,14 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   .question-number {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: var(--onboarding-text-secondary);
     margin: 0;
   }
 
   .question-card {
     background: var(--bg);
     border: 1px solid var(--border);
+    color: var(--onboarding-text-primary);
     border-radius: 16px;
     padding: 1.5rem;
     text-align: left;
@@ -1147,6 +1180,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     border: 2px solid var(--border);
     border-radius: 12px;
     background: var(--bg);
+    color: var(--onboarding-text-primary);
     text-align: left;
     cursor: pointer;
     transition: all 0.2s;
@@ -1190,7 +1224,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   .score-summary {
     margin-bottom: 1.5rem;
-    color: var(--text-secondary);
+    color: var(--onboarding-text-secondary);
   }
 
   .conversion-panel {
