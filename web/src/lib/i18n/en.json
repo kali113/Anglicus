@@ -78,7 +78,12 @@
     "streak": "{days} day streak",
     "dailyGoal": "Daily goal",
     "dailyGoalUnit": "/{minutes} min",
-    "wordsLearned": "Words learned"
+    "wordsLearned": "Words learned",
+    "speakingScore": "Speaking score",
+    "speakingAttempts": "{count} sessions",
+    "reactivationTitle": "Welcome back - let's restart your momentum",
+    "reactivationBody": "You were away for {days} days. Enable reminders to keep your streak alive this week.",
+    "reactivationCta": "Set reminders"
   },
   "nextLesson": {
     "label": "Next lesson:",
@@ -165,7 +170,8 @@
       "lessonChat": "Lesson Tutor",
       "quickChat": "Quick Chat",
       "lessonExplanation": "Explanations",
-      "tutorQuestion": "Ask the tutor"
+      "tutorQuestion": "Ask the tutor",
+      "speaking": "Speaking Coach"
     }
   },
   "lessonChat": {
@@ -195,7 +201,26 @@
     "emptyPrompt": "Type something to start practicing.",
     "settingsLink": "Settings",
     "placeholder": "Type your message...",
-    "send": "Send message"
+    "send": "Send message",
+    "voiceMode": "Speaking coach",
+    "voiceReady": "Use your microphone to practice speaking.",
+    "voiceUnavailable": "Speech mode is not available in this browser.",
+    "voiceOffline": "Speech mode is disabled while offline. Text chat still works.",
+    "voicePermissionDenied": "Microphone permission denied. Enable it in browser settings.",
+    "voiceMicLost": "Microphone disconnected during recording.",
+    "voiceInterrupted": "Recording was interrupted. Please try again.",
+    "voiceStart": "Start recording",
+    "voiceStop": "Stop recording",
+    "voiceRecording": "Recording...",
+    "voiceProcessing": "Processing speech...",
+    "voiceSilenceStop": "Stopped automatically after silence.",
+    "voiceLimitStop": "Stopped automatically at max duration.",
+    "voiceTooLarge": "Recording too large. Please keep it shorter.",
+    "voiceNoTranscript": "No transcript was produced. Please try again or type your message.",
+    "voiceScore": "Speaking score: {score}/100",
+    "voiceFeedback": "Feedback",
+    "voiceDrills": "Next drills",
+    "voiceRetry": "Retry recording"
   },
   "exercises": {
     "connectionError": "Connection error. Go to Settings to choose another API or add your own key.",
@@ -307,7 +332,9 @@
       "serverTitle": "Server",
       "serverDescription": "Use owner keys",
       "byokTitle": "My Key",
-      "byokDescription": "Use your API key"
+      "byokDescription": "Use your API key",
+      "advancedBadge": "Advanced",
+      "pitchTip": "For investor demos, keep Automatic or Server mode as the primary path. BYOK is best for advanced users."
     },
     "apiKey": {
       "title": "Configure API Key",

@@ -198,3 +198,49 @@ export function applyRateLimitCheck(
   const headers = createRateLimitHeaders(result, limiter.getLimit());
   return { allowed: result.allowed, headers };
 }
+
+export async function applyPersistentRateLimitCheck(
+  db: D1Database,
+  request: Request,
+  options: { scope: string; requestsPerMinute: number },
+): Promise<{ allowed: boolean; headers: Record<string, string> }> {
+  const clientIp = getClientIp(request);
+  const now = Date.now();
+  const windowMs = 60 * 1000;
+  const windowStart = Math.floor(now / windowMs) * windowMs;
+  const resetTime = windowStart + windowMs;
+
+  await db
+    .prepare(
+      "INSERT INTO rate_limits (scope, identifier, window_start, count) VALUES (?, ?, ?, 1) ON CONFLICT(scope, identifier, window_start) DO UPDATE SET count = count + 1",
+    )
+    .bind(options.scope, clientIp, windowStart)
+    .run();
+
+  const row = await db
+    .prepare(
+      "SELECT count FROM rate_limits WHERE scope = ? AND identifier = ? AND window_start = ?",
+    )
+    .bind(options.scope, clientIp, windowStart)
+    .first<{ count: number }>();
+  const count = row?.count ?? 0;
+  const allowed = count <= options.requestsPerMinute;
+  const remaining = Math.max(0, options.requestsPerMinute - count);
+  const headers = createRateLimitHeaders(
+    {
+      allowed,
+      remaining,
+      resetTime,
+    },
+    options.requestsPerMinute,
+  );
+
+  if (Math.random() < 0.02) {
+    await db
+      .prepare("DELETE FROM rate_limits WHERE scope = ? AND window_start < ?")
+      .bind(options.scope, windowStart - 60 * 60 * 1000)
+      .run();
+  }
+
+  return { allowed, headers };
+}

@@ -3,9 +3,15 @@
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import type { LanguageCode } from "$lib/types/user.js";
-  import { AiRequestError, getCompletion, ContextEngine } from "$lib/ai/index.js";
+  import {
+    AiRequestError,
+    getCompletion,
+    ContextEngine,
+    getSpeechSynthesisHint,
+  } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import SpeakingCoach from "$lib/components/SpeakingCoach.svelte";
   import {
     checkBillingAccess,
     getFeatureLabel,
@@ -26,6 +32,10 @@
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
+  const lastAssistantMessage = $derived(
+    [...messages].reverse().find((message) => message.role === "assistant")
+      ?.content ?? "",
+  );
 
   onMount(async () => {
     profile = await getUserProfile();
@@ -37,29 +47,34 @@
     scrollToBottom();
   });
 
-  async function sendMessage() {
-    if (!inputMessage.trim() || isLoading || !profile) return;
+  async function submitMessage(
+    content: string,
+    source: "text" | "voice",
+  ): Promise<void> {
+    if (!content.trim() || isLoading || !profile) return;
+    const feature = source === "voice" ? "speaking" : "tutor";
 
-    const decision = await checkBillingAccess("tutor");
-    if (decision) {
-      if (decision.mode === "block") {
-        openPaywall("block", getFeatureLabel("tutor"));
-        return;
-      }
-      if (decision.mode === "nag") {
-        openPaywall("nag", getFeatureLabel("tutor"));
+    if (source === "text") {
+      const decision = await checkBillingAccess("tutor");
+      if (decision) {
+        if (decision.mode === "block") {
+          openPaywall("block", getFeatureLabel("tutor"));
+          return;
+        }
+        if (decision.mode === "nag") {
+          openPaywall("nag", getFeatureLabel("tutor"));
+        }
       }
     }
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      content: inputMessage,
+      content,
       timestamp: new Date().toISOString(),
     };
 
     messages = [...messages, userMessage];
-    inputMessage = "";
     isLoading = true;
     errorMessage = "";
 
@@ -80,7 +95,7 @@
 
       const response = await getCompletion(apiMessages, {
         maxTokens: 300,
-        feature: "tutor",
+        feature,
       });
 
       const assistantMessage: ChatMessage = {
@@ -91,10 +106,14 @@
       };
 
       messages = [...messages, assistantMessage];
-      await recordBillingUsage("tutor");
+      if (source === "text") {
+        await recordBillingUsage("tutor");
+      } else {
+        void speakAssistantResponse(response.content);
+      }
     } catch (error) {
       if (error instanceof AiRequestError && error.status === 429) {
-        await openPaywall("block", getFeatureLabel("tutor"));
+        await openPaywall("block", getFeatureLabel(feature));
         return;
       }
       errorMessage = $t("tutor.connectionError");
@@ -113,6 +132,17 @@
     }
   }
 
+  async function sendMessage() {
+    if (!inputMessage.trim()) return;
+    const content = inputMessage.trim();
+    inputMessage = "";
+    await submitMessage(content, "text");
+  }
+
+  async function handleVoiceTranscript(transcript: string): Promise<void> {
+    await submitMessage(transcript, "voice");
+  }
+
   function scrollToBottom() {
     setTimeout(() => {
       if (chatContainer) {
@@ -127,6 +157,27 @@
     showPaywall = true;
     await markPaywallShown();
   }
+
+  async function speakAssistantResponse(text: string): Promise<void> {
+    if (!("speechSynthesis" in window) || !text.trim()) return;
+    try {
+      const language = targetLanguage === "en" ? "en" : "es";
+      const hint = await getSpeechSynthesisHint(text, language);
+      const utterance = new SpeechSynthesisUtterance(hint.text);
+      utterance.lang = hint.language === "en" ? "en-US" : "es-ES";
+      const voices = window.speechSynthesis.getVoices();
+      const matchedVoice = voices.find((voice) =>
+        voice.lang.toLowerCase().startsWith(utterance.lang.toLowerCase().slice(0, 2)),
+      );
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.warn("Voice playback unavailable:", error);
+    }
+  }
 </script>
 
   <div class="tutor-page">
@@ -138,6 +189,13 @@
       })}
     </p>
   </header>
+
+  <SpeakingCoach
+    {targetLanguage}
+    referenceText={lastAssistantMessage}
+    onTranscript={handleVoiceTranscript}
+    onPaywall={openPaywall}
+  />
 
   <div bind:this={chatContainer} class="chat-container">
     {#if messages.length === 0}

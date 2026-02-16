@@ -8,6 +8,7 @@ import { cors, parseAllowedOrigins } from "./lib/cors.js";
 import {
   RateLimiter,
   applyRateLimitCheck,
+  applyPersistentRateLimitCheck,
 } from "./lib/rate-limiter.js";
 import { extractBearerToken, getCurrentDayNumber, verifyJwt } from "./lib/auth.js";
 import {
@@ -25,10 +26,16 @@ import {
   handleAuthRegister,
   handleAuthVerify,
 } from "./routes/auth.js";
+import {
+  handleAnalyticsFunnel,
+  handleAnalyticsTrack,
+} from "./routes/analytics.js";
 import { handleFeedback } from "./routes/feedback.js";
 import {
   handleBillingConfig,
   handleBillingPromo,
+  handleBillingReferral,
+  handleBillingStatus,
   handleBillingVerify,
 } from "./routes/billing.js";
 import {
@@ -37,6 +44,11 @@ import {
   handleReminderTest,
   handleReminderCron,
 } from "./routes/reminders.js";
+import {
+  handleSpeechTranscribe,
+  handleSpeechPronunciation,
+  handleSpeechSynthesize,
+} from "./routes/speech.js";
 
 // Type definition for Cloudflare Worker environment
 export interface Env {
@@ -79,6 +91,9 @@ export interface Env {
   BTC_NETWORK?: string;
   BTC_PRICE_USD?: string;
   PROMO_CODE_PEPPER?: string;
+  REFERRAL_CODE_PEPPER?: string;
+  REFERRAL_CODE_HASHES?: string;
+  REFERRAL_DISCOUNT_PERCENT?: string;
 }
 
 // Module-level rate limiter (persists within isolate lifecycle)
@@ -188,7 +203,9 @@ app.use("/v1/*", async (c, next) => {
 
   const user = c.get("user");
   const path = new URL(c.req.url).pathname;
-  if (path !== "/v1/chat/completions") {
+  const usageTrackedPath =
+    path === "/v1/chat/completions" || path.startsWith("/v1/speech/");
+  if (!usageTrackedPath) {
     await next();
     return;
   }
@@ -239,7 +256,21 @@ app.get("/v1/models", async (c) => {
 app.post("/v1/chat/completions", async (c) => {
   // Get module-level rate limiter
   const limiter = getRateLimiter(c.env);
-  const { allowed, headers } = applyRateLimitCheck(limiter, c.req.raw);
+  let allowed: boolean;
+  let headers: Record<string, string>;
+  try {
+    if (c.env.DB) {
+      ({ allowed, headers } = await applyPersistentRateLimitCheck(c.env.DB, c.req.raw, {
+        scope: "chat",
+        requestsPerMinute: limiter.getLimit(),
+      }));
+    } else {
+      ({ allowed, headers } = applyRateLimitCheck(limiter, c.req.raw));
+    }
+  } catch (error) {
+    console.error("Persistent rate limit failed, falling back to in-memory:", error);
+    ({ allowed, headers } = applyRateLimitCheck(limiter, c.req.raw));
+  }
 
   for (const [key, value] of Object.entries(headers)) {
     c.header(key, value);
@@ -268,10 +299,54 @@ app.post("/v1/chat/completions", async (c) => {
   );
 });
 
+app.post("/v1/speech/transcribe", async (c) => {
+  const response = await handleSpeechTranscribe(c.req.raw, c.env);
+  const responseHeaders = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 413 | 415 | 503 | 500,
+    responseHeaders,
+  );
+});
+
+app.post("/v1/speech/pronunciation", async (c) => {
+  const response = await handleSpeechPronunciation(c.req.raw, c.env);
+  const responseHeaders = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 500,
+    responseHeaders,
+  );
+});
+
+app.post("/v1/speech/synthesize", async (c) => {
+  const response = await handleSpeechSynthesize(c.req.raw, c.env);
+  const responseHeaders = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 500,
+    responseHeaders,
+  );
+});
+
 // Feedback endpoint
 app.post("/api/feedback", async (c) => {
   const limiter = getFeedbackRateLimiter(c.env);
-  const { allowed, headers } = applyRateLimitCheck(limiter, c.req.raw);
+  let allowed: boolean;
+  let headers: Record<string, string>;
+  try {
+    if (c.env.DB) {
+      ({ allowed, headers } = await applyPersistentRateLimitCheck(c.env.DB, c.req.raw, {
+        scope: "feedback",
+        requestsPerMinute: limiter.getLimit(),
+      }));
+    } else {
+      ({ allowed, headers } = applyRateLimitCheck(limiter, c.req.raw));
+    }
+  } catch (error) {
+    console.error("Persistent feedback rate limit failed, falling back to in-memory:", error);
+    ({ allowed, headers } = applyRateLimitCheck(limiter, c.req.raw));
+  }
   for (const [key, value] of Object.entries(headers)) {
     c.header(key, value);
   }
@@ -318,12 +393,52 @@ app.post("/api/billing/promo", async (c) => {
   );
 });
 
+app.post("/api/billing/referral", async (c) => {
+  const response = await handleBillingReferral(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 500,
+    headers,
+  );
+});
+
 app.post("/api/billing/verify", async (c) => {
   const response = await handleBillingVerify(c.req.raw, c.env);
   const headers = Object.fromEntries(response.headers.entries());
   return c.newResponse(
     response.body,
-    response.status as 200 | 400 | 402 | 404 | 500,
+    response.status as 200 | 400 | 401 | 402 | 404 | 503 | 500,
+    headers,
+  );
+});
+
+app.get("/api/billing/status", async (c) => {
+  const response = await handleBillingStatus(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 401 | 503 | 500,
+    headers,
+  );
+});
+
+app.post("/api/analytics/event", async (c) => {
+  const response = await handleAnalyticsTrack(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 401 | 415 | 503 | 500,
+    headers,
+  );
+});
+
+app.get("/api/analytics/funnel", async (c) => {
+  const response = await handleAnalyticsFunnel(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 401 | 503 | 500,
     headers,
   );
 });

@@ -12,6 +12,7 @@
   import Navbar from "$lib/components/Navbar.svelte";
   import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import { refreshPaymentStatus } from "$lib/billing/index.js";
+  import { clearToken, getToken, refreshToken, setToken } from "$lib/auth/index.js";
   import { t } from "$lib/i18n";
 
   let { children } = $props();
@@ -21,19 +22,33 @@
   let user = $state<UserProfile | null>(null);
 
   onMount(() => {
+    const refreshAuthSession = async () => {
+      const token = getToken();
+      if (!token) return;
+      try {
+        const refreshed = await refreshToken();
+        setToken(refreshed);
+      } catch (error) {
+        clearToken();
+        console.error("Token refresh failed:", error);
+      }
+    };
+
+    const runPaymentSync = () => {
+      refreshAuthSession()
+        .then(() => refreshPaymentStatus())
+        .catch((error) => {
+          console.error("Payment check failed:", error);
+        });
+    };
+
     (async () => {
       onboardingComplete = await hasCompletedOnboarding();
       user = await getUserProfile();
     })();
 
-    refreshPaymentStatus().catch((error) => {
-      console.error("Payment check failed:", error);
-    });
-    const paymentInterval = window.setInterval(() => {
-      refreshPaymentStatus().catch((error) => {
-        console.error("Payment check failed:", error);
-      });
-    }, 1000 * 60 * 5);
+    runPaymentSync();
+    const paymentInterval = window.setInterval(runPaymentSync, 1000 * 60 * 5);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker

@@ -1,6 +1,9 @@
 import { isBrowser } from "$lib/storage/base-store.js";
 import { getSettings } from "$lib/storage/settings-store.js";
 import { checkSuspiciousActivity } from "$lib/storage/secure-store.js";
+import { getToken, refreshToken, setToken } from "$lib/auth/index.js";
+import { trackEvent } from "$lib/analytics/index.js";
+import { getTodayKey } from "$lib/utils/date.js";
 import { get } from "svelte/store";
 import { t } from "$lib/i18n";
 import {
@@ -11,22 +14,20 @@ import {
 import type { BillingInfo, BillingUsage } from "$lib/types/user.js";
 import {
   PROMO_CODE_DISCOUNT_PERCENT,
-  PROMO_CODE_HASHES,
-  PROMO_CODE_PREFIX,
 } from "$lib/billing/promo-codes.js";
 
 const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
 const PROMO_COOKIE_NAME = "anglicus_promo";
-const PROMO_SALT_KEY = "anglicus_promo_salt";
 
 export type BillingFeature =
   | "tutor"
   | "lessonChat"
   | "quickChat"
   | "lessonExplanation"
-  | "tutorQuestion";
+  | "tutorQuestion"
+  | "speaking";
 
 type UsageKey = Exclude<keyof BillingUsage, "date">;
 
@@ -35,6 +36,7 @@ const FREE_LIMITS: Record<UsageKey, number> = {
   quickChatMessages: 8,
   lessonExplanations: 5,
   tutorQuestions: 3,
+  speakingSessions: 6,
 };
 
 const NAG_PROBABILITY = 0.30;
@@ -46,6 +48,7 @@ const FEATURE_USAGE_MAP: Record<BillingFeature, UsageKey> = {
   quickChat: "quickChatMessages",
   lessonExplanation: "lessonExplanations",
   tutorQuestion: "tutorQuestions",
+  speaking: "speakingSessions",
 };
 
 export type BillingDecision = {
@@ -64,6 +67,13 @@ export type PromoValidationResult = {
   discountPercent?: number;
 };
 
+export type ReferralValidationResult = {
+  valid: boolean;
+  reason?: "invalid";
+  codeHash?: string;
+  discountPercent?: number;
+};
+
 export type BillingPaymentConfig = {
   address: string;
   network: "mainnet" | "testnet";
@@ -71,13 +81,29 @@ export type BillingPaymentConfig = {
   subscriptionDays: number;
   priceUsd?: number;
   discountPercent?: number;
+  discountSource?: "promo" | "referral";
 };
 
 export type BillingPaymentResult = {
-  status: "pending" | "confirmed";
+  status:
+    | "pending_unconfirmed"
+    | "pending_confirming"
+    | "confirmed"
+    | "verification_delayed"
+    | "reorg_review";
   paidUntil?: string;
   paidSats: number;
   requiredSats: number;
+  source?: "blockstream" | "mempool";
+  reason?: string;
+};
+
+export type BillingServerStatus = {
+  planType: "free" | "pro";
+  planExpiresDay: number | null;
+  isActive: boolean;
+  effectivePlanType: "free" | "pro";
+  paidUntil?: string;
 };
 
 export function getFeatureLabel(feature: BillingFeature): string {
@@ -104,6 +130,7 @@ function normalizeBilling(billing: BillingInfo): { billing: BillingInfo; changed
         quickChatMessages: 0,
         lessonExplanations: 0,
         tutorQuestions: 0,
+        speakingSessions: 0,
       },
     };
     changed = true;
@@ -126,11 +153,43 @@ function normalizeBilling(billing: BillingInfo): { billing: BillingInfo; changed
     changed = true;
   }
 
-  return { billing: updated, changed };
-}
+  if (updated.referralCodeHash) {
+    const referralPercent = updated.discountPercent ?? 25;
+    if (
+      updated.discountSource !== "referral" ||
+      updated.discountPercent !== referralPercent ||
+      updated.promoCodeHash
+    ) {
+      updated = {
+        ...updated,
+        discountSource: "referral",
+        discountPercent: referralPercent,
+        promoCodeHash: undefined,
+      };
+      changed = true;
+    }
+  } else if (updated.promoCodeHash) {
+    if (
+      updated.discountSource !== "promo" ||
+      updated.discountPercent !== PROMO_CODE_DISCOUNT_PERCENT
+    ) {
+      updated = {
+        ...updated,
+        discountSource: "promo",
+        discountPercent: PROMO_CODE_DISCOUNT_PERCENT,
+      };
+      changed = true;
+    }
+  } else if (updated.discountPercent || updated.discountSource) {
+    updated = {
+      ...updated,
+      discountPercent: undefined,
+      discountSource: undefined,
+    };
+    changed = true;
+  }
 
-function getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return { billing: updated, changed };
 }
 
 async function getBillingSnapshot(): Promise<{ billing: BillingInfo } | null> {
@@ -246,11 +305,16 @@ export async function recordBillingUsage(feature: BillingFeature): Promise<void>
 
   const billing = snapshot.billing;
   const usageKey = FEATURE_USAGE_MAP[feature];
+  const previousUsage = billing.usage[usageKey];
   const updatedUsage = {
     ...billing.usage,
-    [usageKey]: billing.usage[usageKey] + 1,
+    [usageKey]: previousUsage + 1,
   };
   await updateUserProfile({ billing: { ...billing, usage: updatedUsage } });
+
+  if (previousUsage === 0) {
+    void trackEvent("activation_first_action", { feature });
+  }
 }
 
 export async function markPaywallShown(): Promise<void> {
@@ -265,6 +329,7 @@ export async function markPaywallShown(): Promise<void> {
       lastPaywallShownAt: new Date().toISOString(),
     },
   });
+  void trackEvent("paywall_shown");
 }
 
 export async function getUsageInfo(feature: BillingFeature): Promise<{ used: number; limit: number; remaining: number; percentUsed: number } | null> {
@@ -298,18 +363,33 @@ export async function validatePromoCode(
   const normalized = normalizePromoCode(rawCode);
   if (!normalized) return { valid: false, reason: "invalid" };
 
-  const codeHash = await hashPromoCode(normalized);
-  const alreadyUsed = redeemedHashes.includes(codeHash);
-  if (alreadyUsed) return { valid: false, reason: "used" };
-
-  if (!PROMO_CODE_HASHES.includes(codeHash)) {
+  const response = await fetch(`${BACKEND_URL}/api/billing/promo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: normalized }),
+  });
+  if (!response.ok) {
     return { valid: false, reason: "invalid" };
   }
+
+  const result = (await response.json()) as {
+    valid?: boolean;
+    reason?: "invalid";
+    discountPercent?: number;
+    promoToken?: string;
+  };
+  if (!result.valid || !result.promoToken) {
+    return { valid: false, reason: result.reason || "invalid" };
+  }
+
+  const codeHash = result.promoToken;
+  const alreadyUsed = redeemedHashes.includes(codeHash);
+  if (alreadyUsed) return { valid: false, reason: "used" };
 
   return {
     valid: true,
     codeHash,
-    discountPercent: PROMO_CODE_DISCOUNT_PERCENT,
+    discountPercent: result.discountPercent ?? PROMO_CODE_DISCOUNT_PERCENT,
   };
 }
 
@@ -318,9 +398,12 @@ export async function applyPromoToBilling(
   promoHash: string,
 ): Promise<BillingInfo> {
   if (!isBrowser()) return billing;
-
-  const token = await createPromoToken(promoHash);
-  setPromoCookie(token);
+  if (billing.referralCodeHash) {
+    return {
+      ...billing,
+        discountSource: "referral",
+      };
+  }
 
   const redeemed = billing.redeemedCodeHashes.includes(promoHash)
     ? billing.redeemedCodeHashes
@@ -329,8 +412,62 @@ export async function applyPromoToBilling(
   return {
     ...billing,
     discountPercent: PROMO_CODE_DISCOUNT_PERCENT,
+    discountSource: "promo",
     promoCodeHash: promoHash,
+    referralCodeHash: undefined,
     redeemedCodeHashes: redeemed,
+  };
+}
+
+export async function validateReferralCode(
+  rawCode: string,
+): Promise<ReferralValidationResult> {
+  if (!isBrowser()) return { valid: false, reason: "invalid" };
+
+  const normalized = normalizeReferralCode(rawCode);
+  if (!normalized) return { valid: false, reason: "invalid" };
+
+  const response = await fetch(`${BACKEND_URL}/api/billing/referral`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: normalized }),
+  });
+
+  if (!response.ok) {
+    return { valid: false, reason: "invalid" };
+  }
+
+  const result = (await response.json()) as {
+    valid?: boolean;
+    reason?: "invalid";
+    discountPercent?: number;
+    referralToken?: string;
+  };
+
+  if (!result.valid || !result.referralToken) {
+    return { valid: false, reason: result.reason || "invalid" };
+  }
+
+  return {
+    valid: true,
+    codeHash: result.referralToken,
+    discountPercent: result.discountPercent,
+  };
+}
+
+export async function applyReferralToBilling(
+  billing: BillingInfo,
+  referralHash: string,
+  discountPercent: number,
+): Promise<BillingInfo> {
+  if (!isBrowser()) return billing;
+
+  return {
+    ...billing,
+    discountPercent,
+    discountSource: "referral",
+    referralCodeHash: referralHash,
+    promoCodeHash: undefined,
   };
 }
 
@@ -350,13 +487,45 @@ export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
   return (await response.json()) as BillingPaymentConfig;
 }
 
+async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Response> {
+  const token = getToken();
+  if (!token) {
+    throw new Error("No auth token");
+  }
+
+  const firstHeaders = new Headers(init.headers);
+  firstHeaders.set("Authorization", `Bearer ${token}`);
+
+  const firstResponse = await fetch(url, {
+    ...init,
+    headers: firstHeaders,
+  });
+  if (firstResponse.status !== 401) {
+    return firstResponse;
+  }
+
+  const refreshed = await refreshToken();
+  setToken(refreshed);
+
+  const retryHeaders = new Headers(init.headers);
+  retryHeaders.set("Authorization", `Bearer ${refreshed}`);
+  return fetch(url, {
+    ...init,
+    headers: retryHeaders,
+  });
+}
+
 export async function verifyPayment(txId: string): Promise<BillingPaymentResult> {
   const snapshot = await getBillingSnapshot();
   const promoToken = snapshot?.billing.promoCodeHash;
-  const response = await fetch(`${BACKEND_URL}/api/billing/verify`, {
+  const referralToken = snapshot?.billing.referralCodeHash;
+  void trackEvent("payment_initiated", {
+    txIdPrefix: txId.trim().slice(0, 12),
+  });
+  const response = await fetchWithAuthRetry(`${BACKEND_URL}/api/billing/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ txId, promoToken }),
+    body: JSON.stringify({ txId, promoToken, referralToken }),
   });
 
   if (!response.ok) {
@@ -379,15 +548,29 @@ export async function verifyPayment(txId: string): Promise<BillingPaymentResult>
     billing.plan = "pro";
     billing.status = "active";
     billing.paidUntil = result.paidUntil;
+    void trackEvent("payment_confirmed", {
+      requiredSats: result.requiredSats,
+      paidSats: result.paidSats,
+      source: result.source || "unknown",
+    });
   } else {
     billing.status = "pending";
   }
 
   await updateUserProfile({ billing });
+  if (result.status === "confirmed") {
+    await syncBillingFromServer().catch((error) => {
+      console.error("Billing server sync failed:", error);
+    });
+  }
   return result;
 }
 
 export async function refreshPaymentStatus(): Promise<void> {
+  await syncBillingFromServer().catch((error) => {
+    console.error("Billing status sync failed:", error);
+  });
+
   const snapshot = await getBillingSnapshot();
   if (!snapshot) return;
 
@@ -397,42 +580,50 @@ export async function refreshPaymentStatus(): Promise<void> {
   await verifyPayment(billing.lastPaymentTxId);
 }
 
+export async function syncBillingFromServer(): Promise<void> {
+  const token = getToken();
+  if (!token) return;
+
+  const snapshot = await getBillingSnapshot();
+  if (!snapshot) return;
+
+  const response = await fetchWithAuthRetry(`${BACKEND_URL}/api/billing/status`, {
+    method: "GET",
+  });
+  if (!response.ok) return;
+
+  const server = (await response.json()) as BillingServerStatus;
+  const billing = snapshot.billing;
+  const nextBilling: BillingInfo = { ...billing };
+
+  if (server.effectivePlanType === "pro") {
+    nextBilling.plan = "pro";
+    nextBilling.status = "active";
+    nextBilling.paidUntil = server.paidUntil;
+  } else if (billing.status !== "pending") {
+    nextBilling.plan = "free";
+    nextBilling.status = billing.status === "active" ? "expired" : "none";
+    nextBilling.paidUntil = undefined;
+  }
+
+  if (
+    nextBilling.plan !== billing.plan ||
+    nextBilling.status !== billing.status ||
+    nextBilling.paidUntil !== billing.paidUntil
+  ) {
+    await updateUserProfile({ billing: nextBilling });
+  }
+}
+
 function normalizePromoCode(rawCode: string): string | null {
   const cleaned = rawCode.trim().toUpperCase();
   if (!/^[A-Z0-9]{8}$/.test(cleaned)) return null;
   return cleaned;
 }
 
-async function hashPromoCode(code: string): Promise<string> {
-  return await sha256Hex(`${PROMO_CODE_PREFIX}:${code}`);
+function normalizeReferralCode(rawCode: string): string | null {
+  const cleaned = rawCode.trim().toUpperCase();
+  if (!/^[A-Z0-9]{6,16}$/.test(cleaned)) return null;
+  return cleaned;
 }
 
-function getPromoSalt(): string {
-  const existing = localStorage.getItem(PROMO_SALT_KEY);
-  if (existing) return existing;
-
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  const salt = Array.from(bytes)
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  localStorage.setItem(PROMO_SALT_KEY, salt);
-  return salt;
-}
-
-async function createPromoToken(codeHash: string): Promise<string> {
-  const salt = getPromoSalt();
-  return await sha256Hex(`${salt}:${codeHash}`);
-}
-
-function setPromoCookie(token: string): void {
-  const maxAge = 60 * 60 * 24 * 365;
-  document.cookie = `${PROMO_COOKIE_NAME}=${token}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
-}
-
-async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}

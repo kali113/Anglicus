@@ -3,6 +3,10 @@
 ## Scope
 This repository contains the PWA (web/) and the serverless backend (api/).
 
+## Canonical docs
+- `AGENTS.md` for quick repository map and workflows.
+- `docs/CONTRIBUTING.md` for contributor setup and process.
+
 ## Structure
 ```
 /web   - PWA web app (SvelteKit + Vite)
@@ -44,7 +48,7 @@ npm run dev
 
 **API**
 - `npm run dev`
-- `npm test`
+- `npm run test`
 - `npm run deploy`
 
 ## APK (TWA)

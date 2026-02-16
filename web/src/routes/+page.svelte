@@ -14,12 +14,16 @@
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
   import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
   import QuickChat from "$lib/components/QuickChat.svelte";
+  import { trackEvent } from "$lib/analytics/index.js";
+  import { getSettings } from "$lib/storage/settings-store.js";
   import { t } from "$lib/i18n";
 
   let user = $state<UserProfile | null>(null);
   let todayActivity = $state(0);
   let currentLesson = $state({ id: "greetings" });
   let isLoading = $state(true);
+  let showComebackNudge = $state(false);
+  let comebackDays = $state(0);
 
   const currentLessonTitle = $derived(
     $t(`skills.${currentLesson.id}.name`),
@@ -32,6 +36,8 @@
     if (!currentSkill) return 0;
     return Math.round((currentSkill.stars / 3) * 100);
   });
+  const speakingScore = $derived(() => user?.speaking?.averageScore ?? 0);
+  const speakingAttempts = $derived(() => user?.speaking?.totalAttempts ?? 0);
 
   onMount(async () => {
     if (!(await hasCompletedOnboarding())) {
@@ -42,6 +48,22 @@
     isLoading = false;
 
     if (user) {
+      const daysAway = getDaysAway(user.lastActiveAt);
+      if (daysAway >= 2) {
+        comebackDays = daysAway;
+        showComebackNudge = true;
+
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const dedupeKey = `anglicus_reactivation_nudge_${todayKey}`;
+        if (!sessionStorage.getItem(dedupeKey)) {
+          sessionStorage.setItem(dedupeKey, "1");
+          void trackEvent("reactivation_nudge_shown", {
+            daysAway,
+            remindersEnabled: getSettings().emailRemindersEnabled,
+          });
+        }
+      }
+
       // Calculate today's activity
       const dayIndex = new Date().getDay();
       todayActivity = user.weeklyActivity[dayIndex] || 0;
@@ -64,6 +86,12 @@
     // In a real app, this might route more dynamically
     window.location.href = `${base}/lesson`;
   }
+
+  function getDaysAway(isoDate: string): number {
+    const timestamp = new Date(isoDate).getTime();
+    if (!Number.isFinite(timestamp)) return 0;
+    return Math.max(0, Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24)));
+  }
 </script>
 
 {#if isLoading}
@@ -82,6 +110,14 @@
           <span>{$t("dashboard.streak", { days: user.streakDays })}</span>
         </div>
       </header>
+
+      {#if showComebackNudge}
+        <div class="reactivation-banner">
+          <p class="reactivation-title">{$t("dashboard.reactivationTitle")}</p>
+          <p>{$t("dashboard.reactivationBody", { days: comebackDays })}</p>
+          <a class="reactivation-link" href="{base}/settings">{$t("dashboard.reactivationCta")}</a>
+        </div>
+      {/if}
 
       <!-- Quick Chat Section -->
       <QuickChat />
@@ -107,6 +143,12 @@
             value={user.wordsLearned}
             unit={$t("units.words")}
             showArrow={true}
+          />
+          <StatCard
+            title={$t("dashboard.speakingScore")}
+            value={speakingScore()}
+            unit={$t("dashboard.speakingAttempts", { count: speakingAttempts() })}
+            progress={speakingScore()}
           />
         </div>
 
@@ -171,9 +213,34 @@
     gap: 2rem;
   }
 
+  .reactivation-banner {
+    margin-bottom: 1rem;
+    border: 1px solid rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 14px;
+    padding: 0.85rem 1rem;
+  }
+
+  .reactivation-banner p {
+    margin: 0;
+  }
+
+  .reactivation-title {
+    font-weight: 700;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .reactivation-link {
+    display: inline-block;
+    margin-top: 0.4rem;
+    color: #fde68a;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
   .quick-stats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.5rem;
   }
 

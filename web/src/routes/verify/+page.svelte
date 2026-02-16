@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import { base } from "$app/paths";
   import { setToken, verifyUser } from "$lib/auth/index.js";
+  import { trackEvent } from "$lib/analytics/index.js";
   import { t } from "$lib/i18n";
 
   let email = $state("");
@@ -21,6 +22,7 @@
     try {
       const token = await verifyUser(email.trim(), code.trim());
       setToken(token);
+      void trackEvent("signup_completed");
       goto(`${base}/`);
     } catch (error) {
       errorMessage =
@@ -65,6 +67,12 @@
     <button class="btn primary" type="submit" disabled={isLoading}>
       {isLoading ? $t("common.loading") : $t("auth.verifyButton")}
     </button>
+
+    <p class="trust-copy">
+      <span class="lang-en">After verification, you can start learning immediately and upgrade to Pro anytime.</span>
+      <span class="lang-divider"> / </span>
+      <span class="lang-es">Tras verificarte, puedes empezar a aprender de inmediato y mejorar a Pro en cualquier momento.</span>
+    </p>
 
     <div class="links">
       <a href="{base}/login">{$t("auth.loginLink")}</a>
@@ -127,6 +135,14 @@
     margin: 0;
     color: #fca5a5;
     font-size: 0.9rem;
+  }
+
+  .trust-copy {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.72);
+    text-align: center;
+    line-height: 1.4;
   }
 
   .links {

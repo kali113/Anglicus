@@ -9,7 +9,8 @@ import {
 } from "electron";
 import path from "path";
 
-const APP_URL = process.env.ANGLICUS_URL ?? "https://kali113.github.io/Anglicus/";
+const DEFAULT_APP_URL = "https://kali113.github.io/Anglicus/";
+const APP_URL = resolveAppUrl(process.env.ANGLICUS_URL);
 const APP_NAME = "Anglicus";
 const APP_ID = "io.github.kali113.anglicus";
 const APP_ORIGIN = new URL(APP_URL).origin;
@@ -18,6 +19,28 @@ const ICON_PATH = path.join(__dirname, "..", "assets", "icon.png");
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+function resolveAppUrl(rawUrl?: string): string {
+  if (!rawUrl) return DEFAULT_APP_URL;
+  try {
+    const parsed = new URL(rawUrl);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return DEFAULT_APP_URL;
+    }
+    return parsed.toString();
+  } catch {
+    return DEFAULT_APP_URL;
+  }
+}
+
+function isSafeHttpUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 function showMainWindow(): void {
   if (!mainWindow) {
@@ -72,8 +95,24 @@ function createWindow(): void {
   mainWindow.loadURL(APP_URL);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    if (isSafeHttpUrl(url)) {
+      void shell.openExternal(url);
+    }
     return { action: "deny" };
+  });
+
+  mainWindow.webContents.on("will-navigate", (event, url) => {
+    try {
+      const nextOrigin = new URL(url).origin;
+      if (nextOrigin !== APP_ORIGIN) {
+        event.preventDefault();
+        if (isSafeHttpUrl(url)) {
+          void shell.openExternal(url);
+        }
+      }
+    } catch {
+      event.preventDefault();
+    }
   });
 
   mainWindow.on("close", (event) => {
@@ -112,7 +151,11 @@ if (!gotLock) {
           return;
         }
 
-        callback(new URL(requestUrl).origin === APP_ORIGIN);
+        try {
+          callback(new URL(requestUrl).origin === APP_ORIGIN);
+        } catch {
+          callback(false);
+        }
       },
     );
 
