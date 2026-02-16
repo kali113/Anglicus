@@ -3,13 +3,31 @@
  * Uses encrypted localStorage + IndexedDB backup + integrity checks
  */
 
-import type { BillingInfo, UserProfile } from "$lib/types/user.js";
+import type { BillingInfo, SpeakingStats, UserProfile } from "$lib/types/user.js";
+import { getTodayKey } from "$lib/utils/date.js";
 import { isBrowser } from "./base-store.js";
 import { encrypt, decrypt } from "./crypto.js";
 import { secureGet, secureSet, checkSuspiciousActivity, incrementSessionUsage } from "./secure-store.js";
 
-function getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+const CURRENT_PROFILE_SCHEMA_VERSION = 2;
+let profileMutationQueue: Promise<void> = Promise.resolve();
+
+async function enqueueProfileMutation(
+  mutator: (profile: UserProfile) => boolean | Promise<boolean>,
+): Promise<void> {
+  profileMutationQueue = profileMutationQueue
+    .then(async () => {
+      const profile = await getUserProfile();
+      if (!profile) return;
+      const changed = await mutator(profile);
+      if (!changed) return;
+      await saveUserProfile(profile);
+    })
+    .catch((error) => {
+      console.error("Profile mutation error:", error);
+    });
+
+  await profileMutationQueue;
 }
 
 export function getDefaultBilling(): BillingInfo {
@@ -22,15 +40,36 @@ export function getDefaultBilling(): BillingInfo {
       quickChatMessages: 0,
       lessonExplanations: 0,
       tutorQuestions: 0,
+      speakingSessions: 0,
     },
     paywallImpressions: 0,
     redeemedCodeHashes: [],
   };
 }
 
+export function getDefaultSpeaking(): SpeakingStats {
+  return {
+    totalAttempts: 0,
+    totalDurationMs: 0,
+    averageScore: 0,
+    lastScore: 0,
+    recentSessions: [],
+  };
+}
+
+function unlockAchievementIf(profile: UserProfile, id: string, condition: boolean): void {
+  if (!condition) return;
+  const achievement = profile.achievements.find((item) => item.id === id);
+  if (achievement && !achievement.unlocked) {
+    achievement.unlocked = true;
+  }
+}
+
 function mergeWithDefaults(storedProfile: any): UserProfile {
   const defaultBilling = getDefaultBilling();
+  const defaultSpeaking = getDefaultSpeaking();
   const defaults = {
+    schemaVersion: CURRENT_PROFILE_SCHEMA_VERSION,
     nativeLanguage: "es",
     targetLanguage: "en",
     totalXP: 0,
@@ -59,6 +98,7 @@ function mergeWithDefaults(storedProfile: any): UserProfile {
       { id: 'weather', status: 'locked', stars: 0 },
       { id: 'nature', status: 'locked', stars: 0 }
     ],
+    speaking: defaultSpeaking,
     billing: defaultBilling,
   };
 
@@ -78,11 +118,33 @@ function mergeWithDefaults(storedProfile: any): UserProfile {
       storedProfile.billing?.redeemedCodeHashes || defaultBilling.redeemedCodeHashes,
   };
 
+  const mergedSpeaking = {
+    ...defaultSpeaking,
+    ...(storedProfile.speaking || {}),
+    recentSessions: Array.isArray(storedProfile.speaking?.recentSessions)
+      ? storedProfile.speaking.recentSessions
+          .filter(
+            (session: any) =>
+              session &&
+              typeof session.timestamp === "string" &&
+              typeof session.durationMs === "number" &&
+              typeof session.score === "number",
+          )
+          .slice(-20)
+      : defaultSpeaking.recentSessions,
+  };
+
   return {
     ...defaults,
     ...storedProfile,
+    schemaVersion:
+      typeof storedProfile.schemaVersion === "number" &&
+      storedProfile.schemaVersion >= CURRENT_PROFILE_SCHEMA_VERSION
+        ? storedProfile.schemaVersion
+        : CURRENT_PROFILE_SCHEMA_VERSION,
     achievements: mergedAchievements,
     skills: storedProfile.skills || defaults.skills,
+    speaking: mergedSpeaking,
     billing: mergedBilling,
   };
 }
@@ -140,7 +202,11 @@ async function loadProfile(): Promise<UserProfile | null> {
       return mergeWithDefaults(storedProfile);
     }
 
-    return mergeWithDefaults(storedProfile);
+    const merged = mergeWithDefaults(storedProfile);
+    if (storedProfile.schemaVersion !== CURRENT_PROFILE_SCHEMA_VERSION) {
+      await saveUserProfile(merged);
+    }
+    return merged;
   } catch (error) {
     console.error("Error loading profile:", error);
     return null;
@@ -151,7 +217,12 @@ export async function saveUserProfile(profile: UserProfile): Promise<void> {
   if (!isBrowser()) return;
 
   try {
-    const json = JSON.stringify(profile);
+    const normalizedProfile = mergeWithDefaults({
+      ...profile,
+      schemaVersion: CURRENT_PROFILE_SCHEMA_VERSION,
+      lastActiveAt: new Date().toISOString(),
+    });
+    const json = JSON.stringify(normalizedProfile);
     const encrypted = await encrypt(json);
     
     if (encrypted !== null) {
@@ -164,7 +235,6 @@ export async function saveUserProfile(profile: UserProfile): Promise<void> {
       await secureSet("backup", json);
     }
     
-    await updateLastActive();
     incrementSessionUsage();
   } catch (error) {
     console.error("Error saving user profile:", error);
@@ -181,42 +251,17 @@ export function clearUserProfile(): void {
 }
 
 export async function updateUserProfile(updates: Partial<UserProfile>): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
-
-  const updated = { ...profile, ...updates };
-  await saveUserProfile(updated);
+  await enqueueProfileMutation((profile) => {
+    Object.assign(profile, updates);
+    return true;
+  });
 }
 
 export async function updateLastActive(): Promise<void> {
-  if (!isBrowser()) return;
-
-  try {
-    const data = await secureGet();
-    if (!data) return;
-
-    let profile: any;
-    const decrypted = await decrypt(data);
-    if (decrypted !== null) {
-      profile = JSON.parse(decrypted);
-    } else {
-      try {
-        profile = JSON.parse(data);
-      } catch {
-        return;
-      }
-    }
-
+  await enqueueProfileMutation((profile) => {
     profile.lastActiveAt = new Date().toISOString();
-
-    const json = JSON.stringify(profile);
-    const encrypted = await encrypt(json);
-    if (encrypted !== null) {
-      await secureSet("primary", encrypted);
-    }
-  } catch (error) {
-    console.error("Error updating last active:", error);
-  }
+    return true;
+  });
 }
 
 export async function hasCompletedOnboarding(): Promise<boolean> {
@@ -224,137 +269,146 @@ export async function hasCompletedOnboarding(): Promise<boolean> {
 }
 
 export async function updateStreakDays(): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
+  await enqueueProfileMutation((profile) => {
+    const now = new Date();
+    const lastActive = new Date(profile.lastActiveAt);
+    const diffDays = Math.floor(
+      (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
-  const now = new Date();
-  const lastActive = new Date(profile.lastActiveAt);
-  const diffDays = Math.floor(
-    (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24),
-  );
+    if (diffDays === 1) {
+      profile.streakDays++;
+    } else if (diffDays > 1) {
+      profile.streakDays = 1;
+    } else if (diffDays === 0 && profile.streakDays === 0) {
+      profile.streakDays = 1;
+    }
 
-  if (diffDays === 1) {
-    profile.streakDays++;
-  } else if (diffDays > 1) {
-    profile.streakDays = 1;
-  } else if (diffDays === 0 && profile.streakDays === 0) {
-    profile.streakDays = 1;
-  }
-
-  profile.lastActiveAt = now.toISOString();
-  await saveUserProfile(profile);
+    profile.lastActiveAt = now.toISOString();
+    return true;
+  });
 }
 
 export async function addXp(amount: number): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
-  
-  profile.totalXP += amount;
-  await saveUserProfile(profile);
+  await enqueueProfileMutation((profile) => {
+    profile.totalXP += amount;
+    return true;
+  });
 }
 
 export async function updateWeeklyActivity(minutes: number): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
-
-  const today = new Date().getDay();
-  profile.weeklyActivity[today] += minutes;
-  await saveUserProfile(profile);
+  await enqueueProfileMutation((profile) => {
+    const today = new Date().getDay();
+    profile.weeklyActivity[today] += minutes;
+    return true;
+  });
 }
 
 export async function unlockAchievement(id: string): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
-
-  const achievement = profile.achievements.find(a => a.id === id);
-  if (achievement && !achievement.unlocked) {
+  await enqueueProfileMutation((profile) => {
+    const achievement = profile.achievements.find((a) => a.id === id);
+    if (!achievement || achievement.unlocked) return false;
     achievement.unlocked = true;
-    await saveUserProfile(profile);
-  }
+    return true;
+  });
 }
 
 export async function incrementWordsLearned(count: number): Promise<void> {
-  const profile = await getUserProfile();
-  if (!profile) return;
-  
-  profile.wordsLearned += count;
-  await saveUserProfile(profile);
+  await enqueueProfileMutation((profile) => {
+    profile.wordsLearned += count;
+    return true;
+  });
 }
 
 export async function completeLesson(skillId: string): Promise<void> {
-  let profile = await getUserProfile();
-  if (!profile) return;
+  await enqueueProfileMutation((profile) => {
+    profile.totalXP = (profile.totalXP || 0) + 50;
+    profile.wordsLearned = (profile.wordsLearned || 0) + 12;
 
-  profile.totalXP = (profile.totalXP || 0) + 50;
-  profile.wordsLearned = (profile.wordsLearned || 0) + 12;
-  
-  const dayIndex = new Date().getDay();
-  if (!profile.weeklyActivity) profile.weeklyActivity = [0,0,0,0,0,0,0];
-  profile.weeklyActivity[dayIndex] += 15;
+    const now = new Date();
+    const dayIndex = now.getDay();
+    if (!profile.weeklyActivity) profile.weeklyActivity = [0, 0, 0, 0, 0, 0, 0];
+    profile.weeklyActivity[dayIndex] += 15;
 
-  if (!profile.skills) profile.skills = [];
-  const skillIndex = profile.skills.findIndex(s => s.id === skillId);
-  
-  if (skillIndex !== -1) {
-    profile.skills[skillIndex].status = 'completed';
-    profile.skills[skillIndex].stars = 3;
-    
-    const nextSkill = profile.skills[skillIndex + 1];
-    if (nextSkill && nextSkill.status === 'locked') {
-      nextSkill.status = 'current';
+    if (!profile.skills) profile.skills = [];
+    const skillIndex = profile.skills.findIndex((s) => s.id === skillId);
+
+    if (skillIndex !== -1) {
+      profile.skills[skillIndex].status = "completed";
+      profile.skills[skillIndex].stars = 3;
+
+      const nextSkill = profile.skills[skillIndex + 1];
+      if (nextSkill && nextSkill.status === "locked") {
+        nextSkill.status = "current";
+      }
     }
-  }
 
-  await saveUserProfile(profile);
+    const lastActive = new Date(profile.lastActiveAt);
+    const diffDays = Math.floor(
+      (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (diffDays === 1) {
+      profile.streakDays++;
+    } else if (diffDays > 1) {
+      profile.streakDays = 1;
+    } else if (diffDays === 0 && profile.streakDays === 0) {
+      profile.streakDays = 1;
+    }
+    profile.lastActiveAt = now.toISOString();
 
-  await updateStreakDays(); 
-  
-  profile = await getUserProfile();
-  if (!profile) return;
+    const isWeekend = dayIndex === 0 || dayIndex === 6;
+    unlockAchievementIf(profile, "early_bird", profile.totalXP > 0);
+    unlockAchievementIf(profile, "weekender", isWeekend);
+    unlockAchievementIf(profile, "polyglot", profile.wordsLearned >= 50);
+    unlockAchievementIf(profile, "files_on_fire", profile.streakDays >= 3);
+    unlockAchievementIf(profile, "unstoppable", profile.streakDays >= 7);
+    unlockAchievementIf(profile, "scholar", profile.totalXP >= 500);
+    unlockAchievementIf(profile, "word_master", profile.wordsLearned >= 50);
+    unlockAchievementIf(
+      profile,
+      "sharpshooter",
+      skillIndex !== -1 && profile.skills[skillIndex].stars === 3,
+    );
 
-  const earlyBird = profile.achievements.find(a => a.id === 'early_bird');
-  if (earlyBird && !earlyBird.unlocked && profile.totalXP > 0) {
-    earlyBird.unlocked = true;
-  }
+    return true;
+  });
+}
 
-  const today = new Date().getDay();
-  const isWeekend = today === 0 || today === 6;
-  const weekender = profile.achievements.find(a => a.id === 'weekender');
-  if (weekender && !weekender.unlocked && isWeekend) {
-    weekender.unlocked = true;
-  }
+export async function recordSpeakingPractice(
+  durationMs: number,
+  score: number,
+  transcript?: string,
+): Promise<void> {
+  await enqueueProfileMutation((profile) => {
+    const boundedDuration = Math.max(0, Math.round(durationMs));
+    const boundedScore = Math.max(0, Math.min(100, Math.round(score)));
+    const now = new Date().toISOString();
+    const previousStats = profile.speaking || getDefaultSpeaking();
+    const previousAttempts = previousStats.totalAttempts;
+    const previousTotalScore = previousStats.averageScore * previousAttempts;
+    const totalAttempts = previousAttempts + 1;
+    const averageScore = Math.round(
+      (previousTotalScore + boundedScore) / totalAttempts,
+    );
+    const recentSessions = [
+      ...previousStats.recentSessions.slice(-19),
+      {
+        timestamp: now,
+        durationMs: boundedDuration,
+        score: boundedScore,
+        transcript: transcript?.trim() || undefined,
+      },
+    ];
 
-  const polyglot = profile.achievements.find(a => a.id === 'polyglot');
-  if (polyglot && !polyglot.unlocked && profile.wordsLearned >= 50) {
-    polyglot.unlocked = true;
-  }
+    profile.speaking = {
+      totalAttempts,
+      totalDurationMs: previousStats.totalDurationMs + boundedDuration,
+      averageScore,
+      lastScore: boundedScore,
+      lastPracticeAt: now,
+      recentSessions,
+    };
 
-  const fireStreak = profile.achievements.find(a => a.id === 'files_on_fire');
-  if (fireStreak && !fireStreak.unlocked && profile.streakDays >= 3) {
-    fireStreak.unlocked = true;
-  }
-
-  const unstoppable = profile.achievements.find(a => a.id === 'unstoppable');
-  if (unstoppable && !unstoppable.unlocked && profile.streakDays >= 7) {
-    unstoppable.unlocked = true;
-  }
-
-  const scholar = profile.achievements.find(a => a.id === 'scholar');
-  if (scholar && !scholar.unlocked && profile.totalXP >= 500) {
-    scholar.unlocked = true;
-  }
-
-  const wordMaster = profile.achievements.find(a => a.id === 'word_master');
-  if (wordMaster && !wordMaster.unlocked && profile.wordsLearned >= 50) {
-    wordMaster.unlocked = true;
-  }
-
-  if (skillIndex !== -1 && profile.skills[skillIndex].stars === 3) {
-     const sharpshooter = profile.achievements.find(a => a.id === 'sharpshooter');
-     if (sharpshooter && !sharpshooter.unlocked) {
-       sharpshooter.unlocked = true;
-     }
-  }
-
-  await saveUserProfile(profile);
+    return true;
+  });
 }

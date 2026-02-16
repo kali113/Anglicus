@@ -23,6 +23,7 @@ export interface BillingUsage {
   quickChatMessages: number;
   lessonExplanations: number;
   tutorQuestions: number;
+  speakingSessions: number;
 }
 
 export interface BillingInfo {
@@ -35,11 +36,14 @@ export interface BillingInfo {
   paywallImpressions: number;
   lastPaywallShownAt?: string;
   discountPercent?: number;
+  discountSource?: "promo" | "referral";
   promoCodeHash?: string;
+  referralCodeHash?: string;
   redeemedCodeHashes: string[];
 }
 
 export interface UserProfile {
+  schemaVersion: number;
   name: string;
   email?: string;
   level: EnglishLevel;
@@ -55,7 +59,24 @@ export interface UserProfile {
   weeklyActivity: number[]; // 7 values for Sun-Sat
   achievements: Achievement[];
   skills: SkillProgress[];
+  speaking: SpeakingStats;
   billing: BillingInfo;
+}
+
+export interface SpeakingSession {
+  timestamp: string;
+  durationMs: number;
+  score: number;
+  transcript?: string;
+}
+
+export interface SpeakingStats {
+  totalAttempts: number;
+  totalDurationMs: number;
+  averageScore: number;
+  lastScore: number;
+  lastPracticeAt?: string;
+  recentSessions: SpeakingSession[];
 }
 
 export interface SkillProgress {

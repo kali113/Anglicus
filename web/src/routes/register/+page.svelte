@@ -9,6 +9,7 @@
     registerUser,
     setToken,
   } from "$lib/auth/index.js";
+  import { trackEvent } from "$lib/analytics/index.js";
   import { t } from "$lib/i18n";
 
   const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -93,6 +94,8 @@
     errorMessage = "";
 
     try {
+      const emailDomain = email.trim().split("@")[1] || "unknown";
+      void trackEvent("signup_started", { emailDomain });
       await registerUser(email.trim(), password);
       goto(`${base}/verify`);
     } catch (error) {
@@ -149,6 +152,12 @@
     <button class="btn primary" type="submit" disabled={isLoading || isGoogleLoading}>
       {isLoading ? $t("common.loading") : $t("auth.registerButton")}
     </button>
+
+    <p class="trust-copy">
+      <span class="lang-en">No credit card required to start. Upgrade to Pro only when you want unlimited tutor sessions.</span>
+      <span class="lang-divider"> / </span>
+      <span class="lang-es">No necesitas tarjeta para empezar. Mejora a Pro solo cuando quieras sesiones ilimitadas con el tutor.</span>
+    </p>
 
     <div class="links">
       <a href="{base}/login">{$t("auth.loginLink")}</a>
@@ -271,6 +280,14 @@
     margin: 0;
     color: #fca5a5;
     font-size: 0.9rem;
+  }
+
+  .trust-copy {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.72);
+    text-align: center;
+    line-height: 1.4;
   }
 
   .links {

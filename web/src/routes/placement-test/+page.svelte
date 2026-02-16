@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { goto } from "$app/navigation";
   import { base } from "$app/paths";
   import {
     saveUserProfile,
     getDefaultBilling,
+    getDefaultSpeaking,
   } from "$lib/storage/user-store.js";
   import { getSettings, updateSettings } from "$lib/storage/settings-store.js";
   import {
@@ -18,11 +20,14 @@
   } from "$lib/types/user.js";
   import { AiRequestError, getCompletion } from "$lib/ai/index.js";
   import {
+    applyReferralToBilling,
     applyPromoToBilling,
     getFeatureLabel,
     markPaywallShown,
+    validateReferralCode,
     validatePromoCode,
   } from "$lib/billing/index.js";
+  import { trackEvent } from "$lib/analytics/index.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import { locale, t } from "$lib/i18n";
 
@@ -95,9 +100,16 @@
   let promoMessage = $state("");
   let promoHash = $state<string | null>(null);
   let promoSaving = $state(false);
+  let referralHash = $state<string | null>(null);
+  let referralDiscountPercent = $state(25);
+  let referralMessage = $state("");
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
+
+  onMount(() => {
+    void tryApplyReferralFromUrl();
+  });
 
   function getPlacementPrompt(): string {
     if (targetLanguage === "es") {
@@ -347,6 +359,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   async function handleApplyPromo() {
     if (!promoCode.trim() || promoSaving) return;
+    if (referralHash) {
+      promoStatus = "used";
+      promoMessage =
+        "Referral discount already active. Promo codes do not stack. / El descuento por referido ya está activo. Los códigos promo no se acumulan.";
+      return;
+    }
     if (promoHash) {
       promoStatus = "used";
       promoMessage = "You already have a code applied. / Ya tienes un código aplicado.";
@@ -372,14 +390,45 @@ Make sure the correctAnswer matches exactly one of the options.`;
     promoSaving = false;
   }
 
+  async function tryApplyReferralFromUrl() {
+    if (typeof window === "undefined") return;
+
+    const referralFromUrl = new URL(window.location.href).searchParams.get("ref");
+    if (!referralFromUrl) return;
+
+    const referralCode = referralFromUrl.trim().toUpperCase();
+    const result = await validateReferralCode(referralCode);
+    if (!result.valid || !result.codeHash) {
+      referralMessage =
+        "Referral code invalid. You can still use a promo code. / Código de referido inválido. Aún puedes usar un código promo.";
+      return;
+    }
+
+    referralHash = result.codeHash;
+    referralDiscountPercent = result.discountPercent ?? 25;
+    referralMessage = `Referral discount applied: ${referralDiscountPercent}% OFF / Descuento de referido aplicado: ${referralDiscountPercent}% OFF`;
+    promoHash = null;
+    promoCode = "";
+    promoStatus = "idle";
+    promoMessage = "";
+    void trackEvent("referral_applied", { source: "invite_link" });
+  }
+
   async function completeOnboarding() {
     const nativeLanguage: LanguageCode = targetLanguage === "en" ? "es" : "en";
     const normalizedEmail = userEmail.trim().toLowerCase();
     let billing = getDefaultBilling();
-    if (promoHash) {
+    if (referralHash) {
+      billing = await applyReferralToBilling(
+        billing,
+        referralHash,
+        referralDiscountPercent,
+      );
+    } else if (promoHash) {
       billing = await applyPromoToBilling(billing, promoHash);
     }
     const profile: UserProfile = {
+      schemaVersion: 2,
       name: userName || "Friend / Amigo",
       email: normalizedEmail || undefined,
       level: assessedLevel,
@@ -395,9 +444,15 @@ Make sure the correctAnswer matches exactly one of the options.`;
       weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
       achievements: [],
       skills: [],
+      speaking: getDefaultSpeaking(),
       billing,
     };
     await saveUserProfile(profile);
+    void trackEvent("onboarding_completed", {
+      level: assessedLevel,
+      targetLanguage,
+      hasEmail: Boolean(normalizedEmail),
+    });
 
     if (normalizedEmail) {
       updateSettings({
@@ -418,6 +473,8 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
       if (!subscribed) {
         alert("Email reminder couldn't be activated. You can try later in Settings. / No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuración.");
+      } else {
+        void trackEvent("reminder_enabled", { channel: "email" });
       }
     }
 
@@ -592,6 +649,9 @@ Make sure the correctAnswer matches exactly one of the options.`;
         <span class="lang-divider"> / </span>
         <span class="lang-es">Opcional. Úsalo para activar un descuento Pro.</span>
       </p>
+      {#if referralMessage}
+        <p class={`promo-message ${referralHash ? "valid" : "invalid"}`}>{referralMessage}</p>
+      {/if}
       <input
         type="text"
         bind:value={promoCode}
@@ -701,10 +761,23 @@ Make sure the correctAnswer matches exactly one of the options.`;
             </p>
           </div>
 
+          <div class="conversion-panel">
+            <p>
+              <span class="lang-en">✅ Your personalized path is now ready.</span>
+              <span class="lang-divider"> / </span>
+              <span class="lang-es">✅ Tu ruta personalizada ya está lista.</span>
+            </p>
+            <p>
+              <span class="lang-en">✅ Start free now and unlock Pro anytime for unlimited tutor access.</span>
+              <span class="lang-divider"> / </span>
+              <span class="lang-es">✅ Empieza gratis ahora y desbloquea Pro cuando quieras para tutor ilimitado.</span>
+            </p>
+          </div>
+
           <button class="btn primary" onclick={completeOnboarding}>
-            <span class="lang-en">Start Learning</span>
+            <span class="lang-en">Start Learning Now</span>
             <span class="lang-divider"> / </span>
-            <span class="lang-es">Comenzar a Aprender</span>
+            <span class="lang-es">Empezar a Aprender Ahora</span>
           </button>
         </div>
       {:else}
@@ -1118,5 +1191,19 @@ Make sure the correctAnswer matches exactly one of the options.`;
   .score-summary {
     margin-bottom: 1.5rem;
     color: var(--text-secondary);
+  }
+
+  .conversion-panel {
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    background: rgba(45, 212, 191, 0.06);
+    margin-bottom: 1rem;
+  }
+
+  .conversion-panel p {
+    margin: 0.35rem 0;
+    font-size: 0.9rem;
   }
 </style>

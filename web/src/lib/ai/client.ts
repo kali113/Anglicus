@@ -11,7 +11,7 @@ import type {
   ChatCompletionResponse,
   ApiError,
 } from "$lib/types/api.js";
-import { getToken } from "$lib/auth/index.js";
+import { getToken, refreshToken, setToken } from "$lib/auth/index.js";
 import { getSettings, getApiKey } from "$lib/storage/index.js";
 import { isBrowser } from "$lib/storage/base-store.js";
 
@@ -42,6 +42,20 @@ function shouldAbortFallback(error: unknown): boolean {
   );
 }
 
+function parseChatResponse(data: ChatCompletionResponse): Omit<AiResponse, "provider"> {
+  const content = data.choices[0]?.message?.content || "";
+  return {
+    content,
+    usage: data.usage
+      ? {
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+        }
+      : undefined,
+  };
+}
+
 export interface AiClientConfig {
   model?: string;
   temperature?: number;
@@ -64,7 +78,8 @@ export type AiFeature =
   | "quickChat"
   | "lessonChat"
   | "lessonExplanation"
-  | "tutorQuestion";
+  | "tutorQuestion"
+  | "speaking";
 
 export class AiRequestError extends Error {
   status: number;
@@ -86,8 +101,8 @@ async function tryBackend(
   request: ChatCompletionRequest,
   feature: AiFeature,
 ): Promise<AiResponse> {
-  const token = requireAuthToken();
-  const response = await fetch(`${BACKEND_URL}/v1/chat/completions`, {
+  let token = requireAuthToken();
+  let response = await fetch(`${BACKEND_URL}/v1/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -96,6 +111,26 @@ async function tryBackend(
     },
     body: JSON.stringify(request),
   });
+
+  if (response.status === 401) {
+    try {
+      const refreshed = await refreshToken();
+      setToken(refreshed);
+      token = refreshed;
+      response = await fetch(`${BACKEND_URL}/v1/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          [FEATURE_HEADER]: feature,
+        },
+        body: JSON.stringify(request),
+      });
+    } catch {
+      redirectToLogin();
+      throw new AiRequestError("auth_required", 401, "auth_required");
+    }
+  }
 
   if (!response.ok) {
     if (response.status === 401) {
@@ -113,19 +148,7 @@ async function tryBackend(
   }
 
   const data = (await response.json()) as ChatCompletionResponse;
-  const content = data.choices[0]?.message?.content || "";
-
-  return {
-    content,
-    usage: data.usage
-      ? {
-          promptTokens: data.usage.prompt_tokens,
-          completionTokens: data.usage.completion_tokens,
-          totalTokens: data.usage.total_tokens,
-        }
-      : undefined,
-    provider: "backend",
-  };
+  return { ...parseChatResponse(data), provider: "backend" };
 }
 
 // Default base URL for BYOK when none is specified (OpenAI-compatible)
@@ -159,19 +182,7 @@ async function tryByok(request: ChatCompletionRequest): Promise<AiResponse> {
   }
 
   const data = (await response.json()) as ChatCompletionResponse;
-  const content = data.choices[0]?.message?.content || "";
-
-  return {
-    content,
-    usage: data.usage
-      ? {
-          promptTokens: data.usage.prompt_tokens,
-          completionTokens: data.usage.completion_tokens,
-          totalTokens: data.usage.total_tokens,
-        }
-      : undefined,
-    provider: "byok",
-  };
+  return { ...parseChatResponse(data), provider: "byok" };
 }
 
 /**
@@ -201,19 +212,7 @@ async function tryPuter(
   }
 
   const data = (await response.json()) as ChatCompletionResponse;
-  const content = data.choices[0]?.message?.content || "";
-
-  return {
-    content,
-    usage: data.usage
-      ? {
-          promptTokens: data.usage.prompt_tokens,
-          completionTokens: data.usage.completion_tokens,
-          totalTokens: data.usage.total_tokens,
-        }
-      : undefined,
-    provider: "puter",
-  };
+  return { ...parseChatResponse(data), provider: "puter" };
 }
 
 /**
@@ -330,11 +329,27 @@ export async function streamCompletion(
   }
 
   try {
-    const response = await fetch(endpoint, {
+    let response = await fetch(endpoint, {
       method: "POST",
       headers,
       body: JSON.stringify(request),
     });
+
+    if (response.status === 401 && settings.apiConfig.tier !== "byok") {
+      try {
+        const refreshed = await refreshToken();
+        setToken(refreshed);
+        headers["Authorization"] = `Bearer ${refreshed}`;
+        response = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(request),
+        });
+      } catch {
+        redirectToLogin();
+        throw new AiRequestError("auth_required", 401, "auth_required");
+      }
+    }
 
     if (!response.ok) {
       if (response.status === 401) {

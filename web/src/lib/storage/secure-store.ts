@@ -4,6 +4,7 @@
  */
 
 import { isBrowser } from "./base-store.js";
+import { bytesToHex } from "$lib/utils/crypto.js";
 
 // Obfuscated storage keys
 const STORAGE_KEYS = {
@@ -12,9 +13,11 @@ const STORAGE_KEYS = {
   fingerprint: "_a1f_id",
   timestamp: "_a1t_last",
   checksum: "_a1c_hash",
+  schema: "_a1v_schema",
   session: "_a1m_sess",
   rateLimit: "_a1r_rate"
 };
+const STORAGE_SCHEMA_VERSION = "2";
 
 // Simple device fingerprint
 function getDeviceFingerprint(): string {
@@ -37,8 +40,7 @@ async function generateChecksum(data: string): Promise<string> {
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(data + STORAGE_KEYS.primary); // Add salt
   const hashBuffer = await crypto.subtle.digest("SHA-256", dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  return bytesToHex(new Uint8Array(hashBuffer)).slice(0, 16);
 }
 
 // Verify data integrity
@@ -172,6 +174,7 @@ export async function detectStorageClear(): Promise<boolean> {
   if (!storedFingerprint) {
     localStorage.setItem(STORAGE_KEYS.fingerprint, fingerprint);
     localStorage.setItem(STORAGE_KEYS.timestamp, Date.now().toString());
+    localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
     return false;
   }
 
@@ -207,6 +210,7 @@ export async function secureSet(key: "primary" | "backup", data: string): Promis
     localStorage.setItem(STORAGE_KEYS.checksum, checksum);
     localStorage.setItem(STORAGE_KEYS.fingerprint, fingerprint);
     localStorage.setItem(STORAGE_KEYS.timestamp, Date.now().toString());
+    localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
     
     // Also backup to IndexedDB (harder to clear)
     await indexedDBStore.set(STORAGE_KEYS.backup, data);
@@ -225,6 +229,9 @@ export async function secureGet(): Promise<string | null> {
   if (primaryData && storedChecksum) {
     const isValid = await verifyChecksum(primaryData, storedChecksum);
     if (isValid) {
+      if (localStorage.getItem(STORAGE_KEYS.schema) !== STORAGE_SCHEMA_VERSION) {
+        localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
+      }
       return primaryData;
     }
   }
@@ -236,6 +243,7 @@ export async function secureGet(): Promise<string | null> {
     const checksum = await generateChecksum(backupData);
     localStorage.setItem(STORAGE_KEYS.primary, backupData);
     localStorage.setItem(STORAGE_KEYS.checksum, checksum);
+    localStorage.setItem(STORAGE_KEYS.schema, STORAGE_SCHEMA_VERSION);
     return backupData;
   }
 

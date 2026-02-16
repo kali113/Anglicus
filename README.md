@@ -41,6 +41,25 @@ Works in your browser on phone, tablet, or desktop.
 
 Open an issue in this repository.
 
+### Developer documentation
+
+- `AGENTS.md` — quick repo map, coding rules, and workflows
+- `docs/CONTRIBUTING.md` — setup, commands, and contribution process
+- `docs/architecture.md` and `docs/security.md` — technical and security references
+
+### Investor demo runbook (live BTC flow)
+
+1. Validate backend + frontend health:
+   - `cd api && npm run test -- --run`
+   - `cd web && npm run check && npm run test && npm run build`
+2. Confirm billing env vars are set in Workers:
+   - `BTC_RECEIVING_ADDRESS`, `BTC_MIN_SATS`, `BTC_SUBSCRIPTION_DAYS`, `JWT_SECRET`
+3. Use a pre-funded wallet and broadcast a fresh transaction to the configured BTC address before the demo.
+4. Verify payment from the app and wait for status progression (`pending_unconfirmed` → `pending_confirming` → `confirmed`).
+5. If explorer data is delayed, retry verification; the backend now returns `verification_delayed`/`reorg_review` instead of hard-failing.
+6. Keep BYOK in advanced settings only during the pitch; run the default flow in Auto/Server mode.
+7. Open `/investor` to show live conversion funnel metrics (`signup`, `onboarding`, `activation`, `paywall`, `payment`, reactivation nudges).
+
 ---
 
 ## Español
@@ -93,6 +112,25 @@ Si te gusta Anglicus, puedes apoyar el proyecto con una donación en criptomoned
 ### ¿Tienes ideas o encontraste un error?
 
 ¡Cuéntanos! Puedes abrir un "issue" en este repositorio.
+
+### Documentación para desarrollo
+
+- `AGENTS.md` — guía rápida del repositorio, reglas y flujos
+- `docs/CONTRIBUTING.md` — setup, comandos y proceso de contribución
+- `docs/architecture.md` y `docs/security.md` — referencias técnicas y de seguridad
+
+### Runbook para demo con inversores (flujo BTC real)
+
+1. Validar salud backend + frontend:
+   - `cd api && npm run test -- --run`
+   - `cd web && npm run check && npm run test && npm run build`
+2. Confirmar variables de billing en Workers:
+   - `BTC_RECEIVING_ADDRESS`, `BTC_MIN_SATS`, `BTC_SUBSCRIPTION_DAYS`, `JWT_SECRET`
+3. Usar una wallet pre-fondeada y enviar una transacción nueva al address BTC configurado antes de la demo.
+4. Verificar el pago desde la app y esperar la progresión de estado (`pending_unconfirmed` → `pending_confirming` → `confirmed`).
+5. Si el explorador se retrasa, reintentar verificación; el backend ahora responde `verification_delayed`/`reorg_review` en lugar de fallar duro.
+6. Mantener BYOK en ajustes avanzados durante el pitch; ejecutar el flujo principal en modo Auto/Servidor.
+7. Abrir `/investor` para mostrar métricas reales de embudo (`signup`, `onboarding`, `activation`, `paywall`, `payment`, nudges de reactivación).
 
 ---
 

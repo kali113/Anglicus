@@ -3,6 +3,7 @@
  */
 
 import type { Env } from "../index.js";
+import { toHex } from "../lib/crypto.js";
 import { jsonError, jsonSuccess } from "../lib/response.js";
 
 type ReminderFrequency = "daily" | "weekly";
@@ -32,12 +33,6 @@ function requireReminderConfig(env: Env): string | null {
   if (!env.REMINDER_ENCRYPTION_KEY) return "Reminder encryption key missing";
   if (!env.RESEND_API_KEY) return "Email service not configured";
   return null;
-}
-
-function toHex(buffer: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 async function hashEmail(email: string, secret: string): Promise<string> {
@@ -245,7 +240,11 @@ export async function handleReminderSubscribe(
     }
 
     const timezoneOffsetMinutes = body.timezoneOffsetMinutes;
-    if (typeof timezoneOffsetMinutes !== "number") {
+    if (
+      typeof timezoneOffsetMinutes !== "number" ||
+      !Number.isFinite(timezoneOffsetMinutes) ||
+      !Number.isInteger(timezoneOffsetMinutes)
+    ) {
       return jsonError(
         "Timezone offset is invalid",
         "invalid_request_error",

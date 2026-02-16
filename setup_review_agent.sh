@@ -1,7 +1,21 @@
+#!/usr/bin/env bash
+# setup_review_agent.sh — Creates the code perfection agent structure
+# Run from your project root
+
+set -euo pipefail
+
+echo "Creating agent directory structure..."
+
+mkdir -p agent_docs
+mkdir -p review_output
+
+# Create placeholder AGENTS.md if it doesn't exist
+if [ ! -f AGENTS.md ]; then
+  cat > AGENTS.md << 'PLACEHOLDER'
 # Code Perfection Agent
 
 ## Purpose
-Anglicus is an AI English tutor for Spanish speakers, delivered as a SvelteKit web PWA with a Cloudflare Workers API router.
+[YOUR PROJECT DESCRIPTION — what the project does, who it's for, why it exists]
 
 ## Identity
 You are an autonomous code-perfection agent. You review, analyze, and
@@ -41,18 +55,35 @@ verified.
 | `agent_docs/standards.md` | Formats & requirements | Phases 1–6 |
 
 ## Commands
-- Lint: `cd web && npm run check`
-- Format: `echo "No formatter script configured in this repository"`
-- Typecheck: `cd web && npm run check`
-- Test: `cd web && npm run test && cd ../api && npm run test -- --run`
-- Build: `cd web && npm run build`
+- Lint: `[YOUR_LINT_COMMAND]`
+- Format: `[YOUR_FORMAT_COMMAND]`
+- Typecheck: `[YOUR_TYPECHECK_COMMAND]`
+- Test: `[YOUR_TEST_COMMAND]`
+- Build: `[YOUR_BUILD_COMMAND]`
 
 ## Stack
-TypeScript monorepo with SvelteKit + Vite (web PWA), Cloudflare Workers + Hono (API), and Vitest.
+[YOUR TECH STACK]
 
 ## Structure
-- `web/`: SvelteKit + Vite PWA UI.
-- `api/`: Cloudflare Workers (Hono) API router for AI providers.
-- `docs/`: Bilingual (ES/EN) architecture, security, onboarding, and exercise references.
-- `desktop/`: Electron desktop packaging.
-- `twa/`: Trusted Web Activity assets.
+[KEY DIRECTORIES AND WHAT THEY CONTAIN]
+PLACEHOLDER
+  echo "  ✓ Created AGENTS.md (edit placeholders before first use)"
+else
+  echo "  ⊘ AGENTS.md already exists, skipping"
+fi
+
+echo ""
+echo "Place the following files into agent_docs/:"
+echo "  - review_methodology.md"
+echo "  - analysis_lenses.md"
+echo "  - quality_checklist.md"
+echo "  - standards.md"
+echo ""
+echo "Then edit AGENTS.md to fill in:"
+echo "  - [YOUR PROJECT DESCRIPTION]"
+echo "  - [YOUR_LINT_COMMAND] etc."
+echo "  - [YOUR TECH STACK]"
+echo "  - [KEY DIRECTORIES AND WHAT THEY CONTAIN]"
+echo ""
+echo "Done. Start your agent session to begin autonomous review."
+

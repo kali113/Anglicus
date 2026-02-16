@@ -83,7 +83,12 @@
     "streak": "{days} días de racha",
     "dailyGoal": "Meta diaria",
     "dailyGoalUnit": "/{minutes} min",
-    "wordsLearned": "Palabras aprendidas"
+    "wordsLearned": "Palabras aprendidas",
+    "speakingScore": "Puntaje oral",
+    "speakingAttempts": "{count} sesiones",
+    "reactivationTitle": "¡Qué bueno verte de nuevo! Reactivemos tu impulso",
+    "reactivationBody": "Estuviste fuera {days} días. Activa recordatorios para mantener tu racha esta semana.",
+    "reactivationCta": "Configurar recordatorios"
   },
   "nextLesson": {
     "label": "Siguiente lección:",
@@ -170,7 +175,8 @@
       "lessonChat": "Tutor en Lecciones",
       "quickChat": "Chat rápido",
       "lessonExplanation": "Explicaciones",
-      "tutorQuestion": "Preguntar al tutor"
+      "tutorQuestion": "Preguntar al tutor",
+      "speaking": "Coach de conversación"
     }
   },
   "lessonChat": {
@@ -200,7 +206,26 @@
     "emptyPrompt": "Escribe algo para empezar a practicar.",
     "settingsLink": "Configuración",
     "placeholder": "Escribe tu mensaje...",
-    "send": "Enviar mensaje"
+    "send": "Enviar mensaje",
+    "voiceMode": "Coach de conversación",
+    "voiceReady": "Usa tu micrófono para practicar pronunciación.",
+    "voiceUnavailable": "El modo de voz no está disponible en este navegador.",
+    "voiceOffline": "El modo de voz se desactiva sin conexión. El chat de texto sigue disponible.",
+    "voicePermissionDenied": "Permiso de micrófono denegado. Actívalo en el navegador.",
+    "voiceMicLost": "El micrófono se desconectó durante la grabación.",
+    "voiceInterrupted": "La grabación se interrumpió. Intenta de nuevo.",
+    "voiceStart": "Iniciar grabación",
+    "voiceStop": "Detener grabación",
+    "voiceRecording": "Grabando...",
+    "voiceProcessing": "Procesando voz...",
+    "voiceSilenceStop": "Se detuvo automáticamente por silencio.",
+    "voiceLimitStop": "Se detuvo automáticamente por duración máxima.",
+    "voiceTooLarge": "La grabación es demasiado grande. Hazla más corta.",
+    "voiceNoTranscript": "No se generó transcripción. Intenta de nuevo o escribe tu mensaje.",
+    "voiceScore": "Puntaje oral: {score}/100",
+    "voiceFeedback": "Retroalimentación",
+    "voiceDrills": "Siguientes ejercicios",
+    "voiceRetry": "Reintentar grabación"
   },
   "exercises": {
     "connectionError": "Error de conexión. Ve a Configuración para elegir otra API o agregar tu propia clave.",
@@ -312,7 +337,9 @@
       "serverTitle": "Servidor",
       "serverDescription": "Usa claves del dueño",
       "byokTitle": "Mi clave",
-      "byokDescription": "Usa tu API key"
+      "byokDescription": "Usa tu API key",
+      "advancedBadge": "Avanzado",
+      "pitchTip": "Para demos con inversores, usa Automático o Servidor como ruta principal. BYOK es ideal para usuarios avanzados."
     },
     "apiKey": {
       "title": "Configurar API Key",

@@ -91,4 +91,21 @@ describe("reminder endpoints", () => {
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects non-integer timezone offsets", async () => {
+    const response = await handleReminderSubscribe(
+      createRequest({
+        email: "user@test.com",
+        reminderTime: "20:00",
+        timezoneOffsetMinutes: 90.5,
+        frequency: "daily",
+        language: "es",
+      }),
+      validEnv,
+    );
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as { error: { message: string } };
+    expect(payload.error.message).toBe("Timezone offset is invalid");
+  });
 });

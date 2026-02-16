@@ -4,6 +4,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
 const TOKEN_KEY = "anglicus_auth_token";
+let refreshTokenPromise: Promise<string> | null = null;
 
 let googleScriptPromise: Promise<void> | null = null;
 
@@ -156,27 +157,39 @@ export async function loginWithGoogleIdToken(idToken: string): Promise<string> {
 }
 
 export async function refreshToken(): Promise<string> {
-  const token = getToken();
-  if (!token) {
-    throw new Error("No auth token");
+  if (refreshTokenPromise) {
+    return refreshTokenPromise;
   }
 
-  const response = await fetch(`${BACKEND_URL}/auth/refresh`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  refreshTokenPromise = (async () => {
+    const token = getToken();
+    if (!token) {
+      throw new Error("No auth token");
+    }
 
-  if (!response.ok) {
-    const message = await parseErrorMessage(response, "Token refresh failed");
-    throw new Error(message);
+    const response = await fetch(`${BACKEND_URL}/auth/refresh`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const message = await parseErrorMessage(response, "Token refresh failed");
+      throw new Error(message);
+    }
+
+    const data = (await response.json()) as { token?: string };
+    if (!data.token) {
+      throw new Error("Invalid refresh response");
+    }
+
+    return data.token;
+  })();
+
+  try {
+    return await refreshTokenPromise;
+  } finally {
+    refreshTokenPromise = null;
   }
-
-  const data = (await response.json()) as { token?: string };
-  if (!data.token) {
-    throw new Error("Invalid refresh response");
-  }
-
-  return data.token;
 }
 
 export async function enableByok(

@@ -33,6 +33,15 @@ type GoogleTokenInfo = {
   email_verified?: string;
 };
 
+function constantTimeEqual(left: string, right: string): boolean {
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) {
+    diff |= left.charCodeAt(i) ^ right.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 function requireAuthDatabase(env: Env): D1Database | null {
   if (!env.DB) return null;
   return env.DB;
@@ -201,7 +210,7 @@ export async function handleAuthVerify(
       return jsonError("Verification code is invalid", "invalid_request_error", 400);
     }
 
-    if (code !== user.verification_code) {
+    if (!constantTimeEqual(code, user.verification_code)) {
       return jsonError("Verification code is invalid", "invalid_request_error", 400);
     }
 
@@ -212,7 +221,7 @@ export async function handleAuthVerify(
       env.EMAIL_PEPPER,
       bucket,
     );
-    if (code !== expectedNow) {
+    if (!constantTimeEqual(code, expectedNow)) {
       return jsonError("Verification code expired", "invalid_request_error", 400);
     }
 

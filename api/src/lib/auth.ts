@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import { sha256Hex } from "./crypto.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -106,15 +107,9 @@ export function extractBearerToken(request: Request): string | null {
   const header =
     request.headers.get("Authorization") || request.headers.get("authorization");
   if (!header) return null;
-  const [scheme, value] = header.split(" ");
+  const parts = header.trim().split(/\s+/);
+  if (parts.length !== 2) return null;
+  const [scheme, value] = parts;
   if (scheme !== "Bearer" || !value) return null;
-  return value.trim();
-}
-
-async function sha256Hex(value: string): Promise<string> {
-  const data = new TextEncoder().encode(value);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  return value;
 }

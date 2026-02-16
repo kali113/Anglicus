@@ -25,6 +25,7 @@
     type ReminderFrequency,
   } from "$lib/notifications/index.js";
   import { testConnection, type ConnectionTestResult } from "$lib/ai/index.js";
+  import { trackEvent } from "$lib/analytics/index.js";
   import type { ApiTier } from "$lib/types/api.js";
   import { t } from "$lib/i18n";
 
@@ -180,6 +181,7 @@
       reminderFrequency,
     });
     settings = getSettings();
+    void trackEvent("reminder_enabled", { channel: "email" });
   }
 
   async function disableEmailReminders(clearEmail: boolean) {
@@ -424,11 +426,15 @@
       >
         <div class="mode-icon">🔑</div>
         <div class="mode-info">
-          <div class="mode-name">{$t("settings.apiMode.byokTitle")}</div>
+          <div class="mode-name">
+            {$t("settings.apiMode.byokTitle")}
+            <span class="advanced-badge">{$t("settings.apiMode.advancedBadge")}</span>
+          </div>
           <div class="mode-desc">{$t("settings.apiMode.byokDescription")}</div>
         </div>
       </button>
     </div>
+    <p class="help small">{$t("settings.apiMode.pitchTip")}</p>
   </section>
 
 {#if settings.apiConfig.tier === "byok"}
@@ -675,6 +681,18 @@
 
   .mode-name {
     font-weight: 600;
+  }
+
+  .advanced-badge {
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 999px;
+    padding: 0.1rem 0.45rem;
+    vertical-align: middle;
   }
 
   .mode-desc {

@@ -3,7 +3,8 @@ export type UsageFeature =
   | "quickChat"
   | "lessonChat"
   | "lessonExplanation"
-  | "tutorQuestion";
+  | "tutorQuestion"
+  | "speaking";
 
 export const FREE_LIMITS: Record<UsageFeature, number> = {
   tutor: 14,
@@ -11,6 +12,7 @@ export const FREE_LIMITS: Record<UsageFeature, number> = {
   lessonChat: 14,
   lessonExplanation: 5,
   tutorQuestion: 3,
+  speaking: 6,
 };
 
 export const FEATURE_HEADER = "X-Anglicus-Feature";
@@ -24,7 +26,8 @@ export function parseUsageFeature(value: string | null): UsageFeature | null {
     trimmed === "quickChat" ||
     trimmed === "lessonChat" ||
     trimmed === "lessonExplanation" ||
-    trimmed === "tutorQuestion"
+    trimmed === "tutorQuestion" ||
+    trimmed === "speaking"
   ) {
     return trimmed;
   }

@@ -129,6 +129,18 @@ export async function setAuthProvider(
     .run();
 }
 
+export async function setUserPlan(
+  db: D1Database,
+  userId: string,
+  planType: PlanType,
+  planExpiresDay: number | null,
+): Promise<void> {
+  await db
+    .prepare("UPDATE users SET plan_type = ?, plan_expires_day = ? WHERE id = ?")
+    .bind(planType, planExpiresDay, userId)
+    .run();
+}
+
 export async function getUsageCount(
   db: D1Database,
   userId: string,
