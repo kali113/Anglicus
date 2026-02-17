@@ -25,6 +25,44 @@
     void loadGoogleIdentityScript();
   }
 
+  function waitForGoogleButtonIframeReady(container: HTMLDivElement): Promise<void> {
+    return new Promise((resolve) => {
+      const settle = () => {
+        resolve();
+      };
+
+      const attachLoad = (frame: HTMLIFrameElement) => {
+        let resolved = false;
+        const done = () => {
+          if (resolved) return;
+          resolved = true;
+          settle();
+        };
+        frame.addEventListener("load", done, { once: true });
+        setTimeout(done, 500);
+      };
+
+      const existingFrame = container.querySelector<HTMLIFrameElement>("iframe");
+      if (existingFrame) {
+        attachLoad(existingFrame);
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        const frame = container.querySelector<HTMLIFrameElement>("iframe");
+        if (!frame) return;
+        observer.disconnect();
+        attachLoad(frame);
+      });
+      observer.observe(container, { childList: true, subtree: true });
+
+      setTimeout(() => {
+        observer.disconnect();
+        settle();
+      }, 1200);
+    });
+  }
+
   async function handleGoogleCredential(credential: string) {
     isGoogleLoading = true;
     errorMessage = "";
@@ -77,6 +115,7 @@
         text: "continue_with",
         width: 360,
       });
+      await waitForGoogleButtonIframeReady(googleButtonContainer);
       isGoogleButtonReady = true;
     } catch {
       errorMessage = $t("auth.errors.googleUnavailable");
