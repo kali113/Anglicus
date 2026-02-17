@@ -30,8 +30,9 @@
     "canvas-confetti": "^1.9.4"
   },
   "overrides": {
+    "cookie": "1.1.1",
     "@sveltejs/kit": {
-      "cookie": "npm:cookie@1.1.1"
+      "cookie": "1.1.1"
     }
   }
 }

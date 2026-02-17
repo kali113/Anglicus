@@ -18,8 +18,9 @@
     "install:all": "npm install && cd web && npm install && cd ../api && npm install"
   },
   "overrides": {
+    "cookie": "1.1.1",
     "@sveltejs/kit": {
-      "cookie": "npm:cookie@1.1.1"
+      "cookie": "1.1.1"
     }
   },
   "engines": {

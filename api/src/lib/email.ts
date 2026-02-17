@@ -22,7 +22,41 @@ type Mailbox = {
   name?: string;
 };
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(input: string): boolean {
+  if (!input || input.length > 254) return false;
+
+  const atIndex = input.indexOf("@");
+  if (atIndex <= 0 || atIndex !== input.lastIndexOf("@")) return false;
+  if (atIndex === input.length - 1) return false;
+
+  const local = input.slice(0, atIndex);
+  const domain = input.slice(atIndex + 1);
+  if (!local || !domain) return false;
+  if (local.length > 64) return false;
+  if (domain.length > 253) return false;
+
+  for (const ch of input) {
+    const code = ch.charCodeAt(0);
+    if (code <= 32 || code === 127) return false;
+  }
+
+  if (domain.startsWith(".") || domain.endsWith(".")) return false;
+  const labels = domain.split(".");
+  if (labels.length < 2) return false;
+
+  for (const label of labels) {
+    if (!label) return false;
+    if (label.startsWith("-") || label.endsWith("-")) return false;
+    for (const ch of label) {
+      const isLower = ch >= "a" && ch <= "z";
+      const isUpper = ch >= "A" && ch <= "Z";
+      const isDigit = ch >= "0" && ch <= "9";
+      if (!isLower && !isUpper && !isDigit && ch !== "-") return false;
+    }
+  }
+
+  return true;
+}
 
 function normalizeProvider(value: string | undefined): EmailProvider | null {
   const normalized = (value || "").trim().toLowerCase();
@@ -40,11 +74,11 @@ function parseMailbox(value: string): Mailbox | null {
   if (angleMatch) {
     const name = angleMatch[1]?.trim();
     const email = angleMatch[2]?.trim().toLowerCase();
-    if (!email || !EMAIL_REGEX.test(email)) return null;
+    if (!email || !isValidEmail(email)) return null;
     return { email, name: name || undefined };
   }
 
-  if (!EMAIL_REGEX.test(trimmed.toLowerCase())) {
+  if (!isValidEmail(trimmed.toLowerCase())) {
     return null;
   }
   return { email: trimmed.toLowerCase() };
