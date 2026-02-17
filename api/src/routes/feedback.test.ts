@@ -4,7 +4,8 @@ import { handleFeedback } from "./feedback.js";
 
 const validEnv: Env = {
   OWNER_EMAIL: "owner@test.com",
-  RESEND_API_KEY: "test-key",
+  EMAIL_PROVIDER: "brevo",
+  BREVO_API_KEY: "test-key",
 };
 
 function createRequest(
@@ -76,11 +77,11 @@ describe("handleFeedback", () => {
     expect(data).toEqual({ success: true, message: "Feedback received" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.resend.com/emails",
+      "https://api.brevo.com/v3/smtp/email",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          Authorization: `Bearer ${validEnv.RESEND_API_KEY}`,
+          "api-key": validEnv.BREVO_API_KEY,
         }),
       }),
     );

@@ -2,6 +2,7 @@ import type { Env } from "../index.js";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { jsonError, jsonSuccess } from "../lib/response.js";
 import { sanitizePublicHttpsBaseUrl } from "../lib/security.js";
+import { getEmailConfigError, sendEmail } from "../lib/email.js";
 import {
   extractBearerToken,
   generateVerificationCode,
@@ -84,28 +85,20 @@ async function sendVerificationEmail(
   code: string,
 ): Promise<boolean> {
   const fromEmail = env.AUTH_FROM_EMAIL || "Anglicus <auth@anglicus.app>";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [email],
-      subject: "Anglicus verification code",
-      html: `
+  const result = await sendEmail(env, {
+    from: fromEmail,
+    to: [email],
+    subject: "Anglicus verification code",
+    html: `
         <h2>Verify your email</h2>
         <p>Your verification code is:</p>
         <p style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">${code}</p>
         <p>This code expires in 15 minutes.</p>
       `,
-    }),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Resend API error:", errorText);
+  if (!result.ok) {
+    console.error(`Email API error (${result.provider}):`, result.error || "unknown");
     return false;
   }
 
@@ -140,7 +133,7 @@ export async function handleAuthRegister(
   env: Env,
 ): Promise<Response> {
   const db = requireAuthDatabase(env);
-  if (!db || !env.EMAIL_PEPPER || !env.RESEND_API_KEY) {
+  if (!db || !env.EMAIL_PEPPER || getEmailConfigError(env)) {
     return jsonError("Auth service not configured", "server_error", 503);
   }
 

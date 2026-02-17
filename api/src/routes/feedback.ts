@@ -1,9 +1,10 @@
 /**
  * Feedback endpoint
- * Receives user feedback and sends email to owner via Resend
+ * Receives user feedback and sends email to owner via configured provider
  */
 
 import type { Env } from "../index.js";
+import { getEmailConfigError, sendEmail } from "../lib/email.js";
 import { jsonError, jsonSuccess } from "../lib/response.js";
 
 interface FeedbackRequest {
@@ -88,7 +89,7 @@ export async function handleFeedback(
     }
 
     // Validate environment variables
-    if (!env.OWNER_EMAIL || !env.RESEND_API_KEY) {
+    if (!env.OWNER_EMAIL || getEmailConfigError(env)) {
       return jsonError(
         "Feedback service not configured",
         "server_error",
@@ -102,7 +103,7 @@ export async function handleFeedback(
       to: string[];
       subject: string;
       html: string;
-      reply_to?: string;
+      replyTo?: string;
     } = {
       from: "Anglicus Feedback <feedback@anglicus.app>",
       to: [env.OWNER_EMAIL],
@@ -124,22 +125,12 @@ export async function handleFeedback(
     };
 
     if (email) {
-      emailContent.reply_to = email.replace(/[\r\n]+/g, "");
+      emailContent.replyTo = email.replace(/[\r\n]+/g, "");
     }
 
-    // Send email via Resend
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailContent),
-    });
-
-    if (!resendResponse.ok) {
-      const errorText = await resendResponse.text();
-      console.error("Resend API error:", errorText);
+    const result = await sendEmail(env, emailContent);
+    if (!result.ok) {
+      console.error(`Email API error (${result.provider}):`, result.error || "unknown");
       return jsonError("Failed to send feedback", "server_error", 502);
     }
 

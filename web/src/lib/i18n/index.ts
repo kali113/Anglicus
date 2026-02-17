@@ -10,7 +10,7 @@ type Vars = Record<string, string | number>;
 const translations: Record<Locale, Dictionary> = { en, es };
 const STORAGE_KEY = "anglicus_locale";
 
-const defaultLocale: Locale = "en";
+const defaultLocale: Locale = "es";
 
 export const locale = writable<Locale>(defaultLocale);
 

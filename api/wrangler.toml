@@ -6,7 +6,8 @@ compatibility_date = "2024-04-01"
 # Run: wrangler secret put OPENAI_API_KEY
 # Run: wrangler secret put GROQ_API_KEY
 # Run: wrangler secret put TOGETHER_API_KEY
-# Run: wrangler secret put RESEND_API_KEY
+# Run: wrangler secret put BREVO_API_KEY
+# Optional fallback: wrangler secret put RESEND_API_KEY
 # Run: wrangler secret put JWT_SECRET
 # Run: wrangler secret put EMAIL_PEPPER
 # Run: wrangler secret put OWNER_EMAIL
@@ -16,6 +17,7 @@ compatibility_date = "2024-04-01"
 [vars]
 RATE_LIMIT_PER_MINUTE = "20"
 ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.github.io"
+EMAIL_PROVIDER = "brevo"
 REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
 AUTH_FROM_EMAIL = "Anglicus <auth@anglicus.app>"
 

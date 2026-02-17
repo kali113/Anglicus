@@ -31,9 +31,10 @@ class MemoryKV {
 }
 
 const validEnv: Env = {
+  EMAIL_PROVIDER: "brevo",
   REMINDER_KV: new MemoryKV() as unknown as KVNamespace,
   REMINDER_ENCRYPTION_KEY: "test-secret",
-  RESEND_API_KEY: "test-key",
+  BREVO_API_KEY: "test-key",
 };
 
 function createRequest(body: Record<string, unknown>): Request {

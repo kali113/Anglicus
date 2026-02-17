@@ -4,6 +4,7 @@
 
 import type { Env } from "../index.js";
 import { toHex } from "../lib/crypto.js";
+import { getEmailConfigError, sendEmail } from "../lib/email.js";
 import { jsonError, jsonSuccess } from "../lib/response.js";
 
 type ReminderFrequency = "daily" | "weekly";
@@ -31,7 +32,7 @@ const SEND_WINDOW_MINUTES = 15;
 function requireReminderConfig(env: Env): string | null {
   if (!env.REMINDER_KV) return "Reminder storage not configured";
   if (!env.REMINDER_ENCRYPTION_KEY) return "Reminder encryption key missing";
-  if (!env.RESEND_API_KEY) return "Email service not configured";
+  if (getEmailConfigError(env)) return "Email service not configured";
   return null;
 }
 
@@ -181,23 +182,15 @@ async function sendReminderEmail(
   const { subject, html } = buildReminderEmail(subscription, isTest);
   const fromEmail = env.REMINDER_FROM_EMAIL || "Anglicus <reminders@anglicus.app>";
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: [subscription.email],
-      subject,
-      html,
-    }),
+  const result = await sendEmail(env, {
+    from: fromEmail,
+    to: [subscription.email],
+    subject,
+    html,
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Resend API error:", errorText);
+  if (!result.ok) {
+    console.error(`Email API error (${result.provider}):`, result.error || "unknown");
     return false;
   }
 
@@ -409,7 +402,7 @@ export async function handleReminderCron(
   scheduledTime: Date,
   env: Env,
 ): Promise<void> {
-  if (!env.REMINDER_KV || !env.REMINDER_ENCRYPTION_KEY || !env.RESEND_API_KEY) {
+  if (!env.REMINDER_KV || !env.REMINDER_ENCRYPTION_KEY || getEmailConfigError(env)) {
     return;
   }
 

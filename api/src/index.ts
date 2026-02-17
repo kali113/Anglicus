@@ -69,9 +69,15 @@ export interface Env {
   CEREBRAS_API_KEY?: string;
   CLOUDFLARE_ACCOUNT_ID?: string;
 
-  // Feedback email service (set via wrangler secret)
+  // Email delivery configuration (set via wrangler secret/vars)
   OWNER_EMAIL?: string;
+  EMAIL_PROVIDER?: string;
+  BREVO_API_KEY?: string;
   RESEND_API_KEY?: string;
+  AWS_REGION?: string;
+  AWS_ACCESS_KEY_ID?: string;
+  AWS_SECRET_ACCESS_KEY?: string;
+  AWS_SES_FROM_EMAIL?: string;
   AUTH_FROM_EMAIL?: string;
   JWT_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;

@@ -50,11 +50,13 @@
   const languageOptions = $derived([
     {
       value: "en" as LanguageCode,
-      label: $t("placement.languageOptions.en"),
+      label: "español",
+      subtitle: "para hablantes de español",
     },
     {
       value: "es" as LanguageCode,
-      label: $t("placement.languageOptions.es"),
+      label: "English",
+      subtitle: "for English speakers",
     },
   ]);
 
@@ -469,14 +471,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       hasEmail: Boolean(normalizedEmail),
     });
 
-    if (normalizedEmail) {
-      updateSettings({
-        emailRemindersEnabled: wantsEmailReminders,
-        dailyReminderTime: DEFAULT_REMINDER_TIME,
-        reminderFrequency: DEFAULT_REMINDER_FREQUENCY,
-      });
-    }
-
+    let emailRemindersEnabled = false;
     if (wantsEmailReminders && normalizedEmail) {
       const subscribed = await subscribeReminders({
         email: normalizedEmail,
@@ -489,8 +484,17 @@ Make sure the correctAnswer matches exactly one of the options.`;
       if (!subscribed) {
         alert($t("placement.reminderError"));
       } else {
+        emailRemindersEnabled = true;
         void trackEvent("reminder_enabled", { channel: "email" });
       }
+    }
+
+    if (normalizedEmail) {
+      updateSettings({
+        emailRemindersEnabled,
+        dailyReminderTime: DEFAULT_REMINDER_TIME,
+        reminderFrequency: DEFAULT_REMINDER_FREQUENCY,
+      });
     }
 
     goto(`${base}/`);
@@ -533,6 +537,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
             step = 1;
           }}>
             <span class="language-name">{option.label}</span>
+            <span class="language-subtitle">{option.subtitle}</span>
           </button>
         {/each}
       </div>
@@ -626,7 +631,11 @@ Make sure the correctAnswer matches exactly one of the options.`;
         <span class="lang-divider"> / </span>
         <span class="lang-es">Opcional. Puedes darte de baja en Configuración. Consulta la <a href="{base}/legal#privacy">Política de privacidad</a>.</span>
       </p>
-      <div class="actions">
+      <div class="actions identity-actions">
+        <a class="google-shortcut" href="{base}/login">
+          <img class="google-icon" src="{base}/google-logo.svg" alt="" />
+          <span>{$t("auth.googleButton")}</span>
+        </a>
         <button
           class="btn primary"
           onclick={() => (step = 3)}
@@ -842,12 +851,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
     padding: 1.5rem;
   }
 
-  .placement-test.locale-es .lang-en,
-  .placement-test.locale-es .lang-divider,
-  .placement-test.locale-en .lang-es,
-  .placement-test.locale-en .lang-divider {
-    display: none;
-  }
+
 
   .step {
     max-width: 500px;
@@ -946,6 +950,43 @@ Make sure the correctAnswer matches exactly one of the options.`;
 
   :global(.consent-note a) {
     color: var(--primary-light);
+  }
+
+  .google-shortcut {
+    width: 100%;
+    max-width: 360px;
+    min-height: 42px;
+    border-radius: 999px;
+    border: 1px solid #dadce0;
+    background: #fff;
+    color: #3c4043;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .google-shortcut:hover {
+    background: #f8f9fa;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .google-shortcut:active {
+    background: #f1f3f4;
+  }
+
+  .google-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 
   .language-options {
@@ -1077,6 +1118,11 @@ Make sure the correctAnswer matches exactly one of the options.`;
     gap: 1rem;
     justify-content: center;
     margin-top: 1rem;
+  }
+
+  .identity-actions {
+    flex-direction: column;
+    align-items: center;
   }
 
   .promo-message {
