@@ -16,10 +16,14 @@
   let errorMessage = $state("");
   let isLoading = $state(false);
   let isGoogleLoading = $state(false);
+  let isGoogleButtonReady = $state(false);
 
   const googleClientId = getGoogleClientId();
   const hasGoogleAuthConfigured = googleClientId.trim().length > 0;
   let googleButtonContainer = $state<HTMLDivElement | null>(null);
+  if (hasGoogleAuthConfigured) {
+    void loadGoogleIdentityScript();
+  }
 
   async function handleGoogleCredential(credential: string) {
     isGoogleLoading = true;
@@ -49,6 +53,7 @@
     }
 
     try {
+      isGoogleButtonReady = false;
       await loadGoogleIdentityScript();
       if (!window.google?.accounts?.id) {
         throw new Error("Google Identity not available");
@@ -72,6 +77,7 @@
         text: "continue_with",
         width: 360,
       });
+      isGoogleButtonReady = true;
     } catch {
       errorMessage = $t("auth.errors.googleUnavailable");
     }
@@ -110,7 +116,16 @@
 
     <div class="google-login">
       {#if hasGoogleAuthConfigured}
-        <div bind:this={googleButtonContainer}></div>
+        <div class="google-button-wrap">
+          <div
+            bind:this={googleButtonContainer}
+            class="google-button-host"
+            class:google-button-hidden={!isGoogleButtonReady}
+          ></div>
+        </div>
+        {#if !isGoogleButtonReady}
+          <p class="helper">{$t("common.loading")}</p>
+        {/if}
       {:else}
         <button class="google-fallback" type="button" onclick={handleUnavailableGoogleSignIn}>
           <img class="google-icon" src="{base}/google-logo.svg" alt="" />
@@ -189,6 +204,21 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .google-button-wrap {
+    width: 100%;
+    max-width: 360px;
+    min-height: 40px;
+  }
+
+  .google-button-host {
+    display: flex;
+    justify-content: center;
+  }
+
+  .google-button-hidden {
+    visibility: hidden;
   }
 
   .google-fallback {

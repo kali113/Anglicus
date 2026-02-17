@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - "**"
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+      - "package.json"
+      - "package-lock.json"
   release:
     types: [published]
   workflow_dispatch:
@@ -18,6 +23,7 @@ concurrency:
 jobs:
   build-desktop:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
