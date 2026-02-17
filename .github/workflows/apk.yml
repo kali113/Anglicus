@@ -3,11 +3,6 @@ name: Build APK
 on:
   push:
     branches: [main, master]
-    paths:
-      - "twa/**"
-      - ".github/workflows/apk.yml"
-      - "package.json"
-      - "package-lock.json"
   release:
     types: [published]
   workflow_dispatch:

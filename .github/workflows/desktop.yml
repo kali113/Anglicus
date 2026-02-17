@@ -4,11 +4,6 @@ on:
   push:
     branches:
       - "**"
-    paths:
-      - "desktop/**"
-      - ".github/workflows/desktop.yml"
-      - "package.json"
-      - "package-lock.json"
   release:
     types: [published]
   workflow_dispatch:
