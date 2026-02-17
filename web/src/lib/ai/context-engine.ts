@@ -18,6 +18,8 @@ export class ContextEngine {
     const pedagogicalStrategy = this.getPedagogicalStrategy();
     const targetLanguage = this.getLanguageName(this.user.targetLanguage);
     const nativeLanguage = this.getLanguageName(this.user.nativeLanguage);
+    const userName = this.user.name?.trim() || "";
+    const hasPersonalName = userName.length > 0 && userName.toLowerCase() !== "learner";
     const responseLanguage =
       this.user.level === "A1"
         ? nativeLanguage
@@ -37,6 +39,7 @@ IMPORTANT:
 - Always be encouraging and patient.
 - Correct mistakes gently.
 - If the user switches to ${nativeLanguage}, respond in ${responseLanguage}.
+- ${hasPersonalName ? `Address the user by name (${userName}) naturally in greetings and encouragement.` : "Use a warm neutral tone even if no name is available."}
 - Output should be structured and easy to read.
 `.trim();
   }

@@ -1,7 +1,9 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
+import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { base } from "$app/paths";
   import {
+    getUserProfile,
     saveUserProfile,
     getDefaultBilling,
     getDefaultSpeaking,
@@ -107,6 +109,21 @@ import { goto } from "$app/navigation";
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
+
+  onMount(async () => {
+    const existingProfile = await getUserProfile();
+    if (existingProfile) {
+      const existingName = existingProfile.name?.trim() || "";
+      userName = existingName.toLowerCase() === "learner" ? "" : existingName;
+      userEmail = existingProfile.email || "";
+      targetLanguage = existingProfile.targetLanguage || targetLanguage;
+    }
+
+    const params = new URL(window.location.href).searchParams;
+    if (params.get("step") === "name") {
+      step = 2;
+    }
+  });
 
   function localized(en: string, es: string): string {
     return uiLanguage === "es" ? es : en;

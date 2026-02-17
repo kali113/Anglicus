@@ -9,7 +9,11 @@
     registerUser,
     setToken,
   } from "$lib/auth/index.js";
-  import { ensureUserProfileInitialized } from "$lib/storage/user-store.js";
+  import {
+    ensureUserProfileInitialized,
+    getUserProfile,
+    needsProfileNameSetup,
+  } from "$lib/storage/user-store.js";
   import { trackEvent } from "$lib/analytics/index.js";
   import { t } from "$lib/i18n";
 
@@ -75,7 +79,11 @@
       const token = await loginWithGoogleIdToken(credential);
       setToken(token);
       await ensureUserProfileInitialized();
-      goto(`${base}/`);
+      const profile = await getUserProfile();
+      const redirectPath = needsProfileNameSetup(profile)
+        ? `${base}/onboarding?step=name`
+        : `${base}/`;
+      goto(redirectPath);
     } catch (error) {
       errorMessage =
         error instanceof Error

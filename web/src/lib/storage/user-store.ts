@@ -268,6 +268,13 @@ export async function hasCompletedOnboarding(): Promise<boolean> {
   return (await getUserProfile()) !== null;
 }
 
+export function needsProfileNameSetup(profile: UserProfile | null): boolean {
+  if (!profile) return true;
+  const name = profile.name?.trim() || "";
+  if (!name) return true;
+  return name.toLowerCase() === "learner";
+}
+
 export async function ensureUserProfileInitialized(
   seed?: Partial<Pick<UserProfile, "name" | "email" | "level" | "nativeLanguage" | "targetLanguage">>,
 ): Promise<void> {

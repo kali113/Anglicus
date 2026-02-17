@@ -209,6 +209,7 @@
     "title": "AI Tutor",
     "subtitle": "Practice {language} with me",
     "emptyGreeting": "Hi! I'm your {language} tutor.",
+    "emptyGreetingNamed": "Hi {name}! I'm your {language} tutor.",
     "emptyPrompt": "Type something to start practicing.",
     "settingsLink": "Settings",
     "placeholder": "Type your message...",

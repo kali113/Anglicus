@@ -215,9 +215,16 @@
           /></svg
         >
         <p>
-          {$t("tutor.emptyGreeting", {
-            language: uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
-          })}
+          {#if profile?.name?.trim() && profile.name.trim().toLowerCase() !== "learner"}
+            {$t("tutor.emptyGreetingNamed", {
+              name: profile.name.trim(),
+              language: uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+            })}
+          {:else}
+            {$t("tutor.emptyGreeting", {
+              language: uiLanguage === "es" ? targetLabel.toLowerCase() : targetLabel,
+            })}
+          {/if}
         </p>
         <p>
           {$t("tutor.emptyPrompt")}

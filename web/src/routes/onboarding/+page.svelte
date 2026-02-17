@@ -5,8 +5,9 @@
 	import { t } from '$lib/i18n';
 
 	onMount(() => {
-		// Redirect to the new placement test
-		goto(`${base}/placement-test`);
+		// Redirect to the placement test preserving onboarding query params.
+		const search = typeof window !== "undefined" ? window.location.search : "";
+		goto(`${base}/placement-test${search}`);
 	});
 </script>
 

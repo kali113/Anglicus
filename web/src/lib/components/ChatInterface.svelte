@@ -37,13 +37,15 @@
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("lessonChat"));
   let targetLanguage = $state<LanguageCode>("en");
+  let learnerName = $state("");
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
   onMount(async () => {
     const profile = await getUserProfile();
     targetLanguage = profile?.targetLanguage ?? "en";
-    const welcomeMsg = getWelcomeMessage(lessonId, targetLanguage);
+    learnerName = profile?.name?.trim() || "";
+    const welcomeMsg = getWelcomeMessage(lessonId, targetLanguage, learnerName);
     messages = [{ role: "assistant", content: welcomeMsg }];
   });
 
@@ -76,7 +78,7 @@
     isLoading = true;
 
     try {
-      const systemPrompt = getSystemPrompt(lessonId, targetLanguage);
+      const systemPrompt = getSystemPrompt(lessonId, targetLanguage, learnerName);
       const apiMessages = [
         { role: "system", content: systemPrompt },
         ...messages,
