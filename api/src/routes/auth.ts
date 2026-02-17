@@ -109,23 +109,30 @@ async function verifyGoogleIdToken(
   idToken: string,
   clientId: string,
 ): Promise<GoogleTokenInfo | null> {
-  try {
-    const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
-      audience: clientId,
-      issuer: GOOGLE_ISSUERS,
-    });
-    return {
-      aud: typeof payload.aud === "string" ? payload.aud : undefined,
-      email: typeof payload.email === "string" ? payload.email : undefined,
-      email_verified:
-        typeof payload.email_verified === "string" ||
-        typeof payload.email_verified === "boolean"
-          ? String(payload.email_verified)
-          : undefined,
-    };
-  } catch {
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { payload } = await jwtVerify(idToken, GOOGLE_JWKS, {
+        audience: clientId,
+        issuer: GOOGLE_ISSUERS,
+      });
+      return {
+        aud: typeof payload.aud === "string" ? payload.aud : undefined,
+        email: typeof payload.email === "string" ? payload.email : undefined,
+        email_verified:
+          typeof payload.email_verified === "string" ||
+          typeof payload.email_verified === "boolean"
+            ? String(payload.email_verified)
+            : undefined,
+      };
+    } catch {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        continue;
+      }
+      return null;
+    }
   }
+  return null;
 }
 
 export async function handleAuthRegister(
@@ -391,14 +398,9 @@ export async function handleAuthGoogle(
       await createGoogleUser(db, userId, emailHash);
     }
 
-    const user = existing ?? (await getUserById(db, userId));
-    if (!user) {
-      return jsonError("Unable to create account", "server_error", 500);
-    }
-
     const token = await issueJwt(env.JWT_SECRET, {
-      user_id: user.id,
-      plan_type: user.plan_type,
+      user_id: userId,
+      plan_type: existing?.plan_type ?? "free",
       auth_provider: "google",
     });
 
