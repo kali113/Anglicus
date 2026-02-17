@@ -9,6 +9,7 @@
     loginWithGoogleIdToken,
     setToken,
   } from "$lib/auth/index.js";
+  import { ensureUserProfileInitialized } from "$lib/storage/user-store.js";
   import { t } from "$lib/i18n";
 
   let email = $state("");
@@ -70,6 +71,7 @@
     try {
       const token = await loginWithGoogleIdToken(credential);
       setToken(token);
+      await ensureUserProfileInitialized();
       goto(`${base}/`);
     } catch (error) {
       errorMessage =

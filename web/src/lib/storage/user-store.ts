@@ -268,6 +268,40 @@ export async function hasCompletedOnboarding(): Promise<boolean> {
   return (await getUserProfile()) !== null;
 }
 
+export async function ensureUserProfileInitialized(
+  seed?: Partial<Pick<UserProfile, "name" | "email" | "level" | "nativeLanguage" | "targetLanguage">>,
+): Promise<void> {
+  const existing = await getUserProfile();
+  if (existing) return;
+
+  const targetLanguage = seed?.targetLanguage ?? "en";
+  const nativeLanguage = seed?.nativeLanguage ?? (targetLanguage === "en" ? "es" : "en");
+  const nowIso = new Date().toISOString();
+
+  const profile: UserProfile = {
+    schemaVersion: CURRENT_PROFILE_SCHEMA_VERSION,
+    name: seed?.name?.trim() || "Learner",
+    email: seed?.email?.trim().toLowerCase() || undefined,
+    level: seed?.level ?? "A1",
+    nativeLanguage,
+    targetLanguage,
+    goals: ["general"],
+    weakAreas: [],
+    createdAt: nowIso,
+    lastActiveAt: nowIso,
+    streakDays: 0,
+    totalXP: 0,
+    wordsLearned: 0,
+    weeklyActivity: [0, 0, 0, 0, 0, 0, 0],
+    achievements: [],
+    skills: [],
+    speaking: getDefaultSpeaking(),
+    billing: getDefaultBilling(),
+  };
+
+  await saveUserProfile(profile);
+}
+
 export async function updateStreakDays(): Promise<void> {
   await enqueueProfileMutation((profile) => {
     const now = new Date();
