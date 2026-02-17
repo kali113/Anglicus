@@ -3,6 +3,7 @@
   import { getUserProfile } from "$lib/storage/user-store.js";
   import {
     getPaymentConfig,
+    refreshPaymentStatus,
     verifyPayment,
     type BillingPaymentConfig,
   } from "$lib/billing/index.js";
@@ -35,6 +36,7 @@
   let txId = $state("");
   let statusMessage = $state("");
   let isVerifying = $state(false);
+  let isCheckingStatus = $state(false);
   let billing = $state<any>(undefined);
 
   $effect(() => {
@@ -81,6 +83,37 @@
     }
   }
 
+  async function handleCheckPaymentStatus() {
+    if (isCheckingStatus) return;
+    isCheckingStatus = true;
+    statusMessage = "";
+    errorMessage = "";
+
+    try {
+      await refreshPaymentStatus();
+      const profile = await getUserProfile();
+      billing = profile?.billing;
+
+      if (billing?.status === "active" && billing?.plan === "pro") {
+        statusMessage = $t("paywall.confirmed");
+        onpaid?.({ paidUntil: billing?.paidUntil });
+      } else if (billing?.status === "pending") {
+        statusMessage = $t("paywall.pending");
+      } else if (billing?.lastPaymentTxId) {
+        statusMessage = $t("paywall.noPendingPayment");
+      } else {
+        statusMessage = $t("paywall.noPaymentToCheck");
+      }
+    } catch (err) {
+      errorMessage =
+        err instanceof Error
+          ? err.message
+          : $t("paywall.verifyError");
+    } finally {
+      isCheckingStatus = false;
+    }
+  }
+
   function closeModal() {
     onclose?.();
   }
@@ -106,7 +139,12 @@
   >
     <div class="paywall-card" role="dialog" aria-modal="true">
       <header>
-        <h2>{$t("paywall.title")}</h2>
+        <div class="header-row">
+          <h2>{$t("paywall.title")}</h2>
+          <button class="close-icon" type="button" onclick={closeModal} aria-label={$t("common.close")}>
+            ×
+          </button>
+        </div>
         <p class="subtitle">
           {mode === "nag"
             ? $t("paywall.subtitleNag", { feature: resolvedFeatureLabel })
@@ -135,9 +173,13 @@
           {#if config.priceUsd}
             <div class="usd">≈ ${config.priceUsd} USD</div>
           {/if}
-          {#if billing?.discountPercent}
+          {#if billing?.discountPercent && billing?.discountSource === "promo"}
             <div class="discount">
-              {$t("paywall.discountApplied", { percent: billing.discountPercent })}
+              {$t("paywall.discountPromoApplied", { percent: billing.discountPercent })}
+            </div>
+          {:else if billing?.discountPercent && billing?.discountSource === "referral"}
+            <div class="discount">
+              {$t("paywall.discountReferralApplied", { percent: billing.discountPercent })}
             </div>
           {/if}
         {/if}
@@ -169,6 +211,16 @@
             />
             <button onclick={handleVerify} disabled={isVerifying || !txId.trim()}>
               {isVerifying ? $t("paywall.verifying") : $t("paywall.verify")}
+            </button>
+          </div>
+          <div class="tx-check-row">
+            <button
+              class="secondary check-btn"
+              type="button"
+              onclick={handleCheckPaymentStatus}
+              disabled={isCheckingStatus}
+            >
+              {isCheckingStatus ? $t("paywall.checkingStatus") : $t("paywall.checkStatus")}
             </button>
           </div>
         {/if}
@@ -206,18 +258,21 @@
     inset: 0;
     background: rgba(15, 23, 42, 0.75);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 1200;
     padding: 1.5rem;
+    overflow-y: auto;
   }
 
   .paywall-card {
     max-width: 520px;
     width: 100%;
+    max-height: min(92vh, 820px);
+    overflow: auto;
     background: #0f172a;
     border: 1px solid rgba(148, 163, 184, 0.2);
-    border-radius: 18px;
+    border-radius: 24px;
     padding: 1.5rem;
     color: #f8fafc;
     display: flex;
@@ -229,6 +284,29 @@
   h2 {
     margin: 0 0 0.25rem;
     font-size: 1.5rem;
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .close-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(148, 163, 184, 0.12);
+    color: #e2e8f0;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
   }
 
   .subtitle {
@@ -336,6 +414,16 @@
     cursor: not-allowed;
   }
 
+  .tx-check-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .check-btn {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+  }
+
   .error {
     background: rgba(248, 113, 113, 0.15);
     color: #fca5a5;
@@ -387,5 +475,11 @@
     border-radius: 10px;
     font-weight: 600;
     cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    .paywall-backdrop {
+      padding: 0.75rem;
+    }
   }
 </style>

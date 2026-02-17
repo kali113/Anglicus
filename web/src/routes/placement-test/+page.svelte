@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+import { goto } from "$app/navigation";
   import { base } from "$app/paths";
   import {
     saveUserProfile,
@@ -108,10 +107,6 @@
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
-
-  onMount(() => {
-    void tryApplyReferralFromUrl();
-  });
 
   function localized(en: string, es: string): string {
     return uiLanguage === "es" ? es : en;
@@ -399,36 +394,6 @@ Make sure the correctAnswer matches exactly one of the options.`;
     }
 
     promoSaving = false;
-  }
-
-  async function tryApplyReferralFromUrl() {
-    if (typeof window === "undefined") return;
-
-    const referralFromUrl = new URL(window.location.href).searchParams.get("ref");
-    if (!referralFromUrl) return;
-
-    const referralCode = referralFromUrl.trim().toUpperCase();
-    const result = await validateReferralCode(referralCode);
-    if (!result.valid || !result.codeHash) {
-      referralMessage =
-        localized(
-          "Referral code invalid. You can still use a promo code.",
-          "Código de referido inválido. Aún puedes usar un código promo.",
-        );
-      return;
-    }
-
-    referralHash = result.codeHash;
-    referralDiscountPercent = result.discountPercent ?? 25;
-    referralMessage = localized(
-      `Referral discount applied: ${referralDiscountPercent}% OFF`,
-      `Descuento de referido aplicado: ${referralDiscountPercent}% OFF`,
-    );
-    promoHash = null;
-    promoCode = "";
-    promoStatus = "idle";
-    promoMessage = "";
-    void trackEvent("referral_applied", { source: "invite_link" });
   }
 
   async function completeOnboarding() {
