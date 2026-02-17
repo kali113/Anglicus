@@ -33,9 +33,12 @@
 
   let settings = $state(getSettings());
   let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
+  let profileName = $state("");
+  let profileNameBusy = $state(false);
 
   onMount(async () => {
     profile = await getUserProfile();
+    profileName = profile?.name || "";
   });
 
   let showApiDetails = $state(false);
@@ -239,6 +242,34 @@
 
   async function handleDeleteReminderData() {
     await disableEmailReminders(true);
+  }
+
+  async function handleSaveProfileName() {
+    if (!profile) return;
+
+    const name = profileName.trim();
+    if (!name) {
+      alert($t("settings.alerts.nameRequired"));
+      return;
+    }
+    if (name.length > 40) {
+      alert($t("settings.alerts.nameTooLong"));
+      return;
+    }
+    if (name === profile.name) return;
+
+    profileNameBusy = true;
+    try {
+      await updateUserProfile({ name });
+      profile = await getUserProfile();
+      profileName = profile?.name || name;
+      alert($t("settings.alerts.nameSaved"));
+    } catch (error) {
+      console.error("Name update failed:", error);
+      alert($t("settings.alerts.nameSaveFailed"));
+    } finally {
+      profileNameBusy = false;
+    }
   }
 
   async function handleTestNotification() {
@@ -536,7 +567,27 @@
     <section class="section">
       <h2>{$t("settings.profile.title")}</h2>
       <div class="profile-info">
-        <p><strong>{$t("settings.profile.name")}:</strong> {profile.name}</p>
+        <div class="input-group">
+          <label>
+            {$t("settings.profile.name")}
+            <input
+              class="input"
+              type="text"
+              bind:value={profileName}
+              maxlength="40"
+              placeholder={$t("settings.profile.name")}
+            />
+          </label>
+          <div class="reminder-actions">
+            <button
+              class="btn secondary"
+              onclick={handleSaveProfileName}
+              disabled={profileNameBusy || !profileName.trim()}
+            >
+              {$t("settings.save")}
+            </button>
+          </div>
+        </div>
         <p><strong>{$t("settings.profile.level")}:</strong> {profile.level}</p>
         <p>
           <strong>{$t("settings.profile.streak")}:</strong>
