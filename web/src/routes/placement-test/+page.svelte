@@ -50,12 +50,12 @@
   const languageOptions = $derived([
     {
       value: "en" as LanguageCode,
-      label: "español",
+      label: "English",
       subtitle: "para hablantes de español",
     },
     {
       value: "es" as LanguageCode,
-      label: "English",
+      label: "Español",
       subtitle: "for English speakers",
     },
   ]);
