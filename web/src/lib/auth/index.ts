@@ -170,23 +170,45 @@ export async function loginUser(email: string, password: string): Promise<string
 }
 
 export async function loginWithGoogleIdToken(idToken: string): Promise<string> {
-  const response = await fetch(`${BACKEND_URL}/auth/google`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken }),
-  });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
 
-  if (!response.ok) {
-    const message = await parseErrorMessage(response, "Google sign in failed");
-    throw new Error(message);
+      if (!response.ok) {
+        const message = await parseErrorMessage(response, "Google sign in failed");
+        const isRetryable =
+          response.status >= 500 ||
+          response.status === 408 ||
+          response.status === 429 ||
+          (response.status === 401 && message.toLowerCase().includes("invalid google token"));
+
+        if (attempt === 0 && isRetryable) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          continue;
+        }
+
+        throw new Error(message);
+      }
+
+      const data = (await response.json()) as { token?: string };
+      if (!data.token) {
+        throw new Error("Invalid Google login response");
+      }
+
+      return data.token;
+    } catch (error) {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        continue;
+      }
+      throw error;
+    }
   }
-
-  const data = (await response.json()) as { token?: string };
-  if (!data.token) {
-    throw new Error("Invalid Google login response");
-  }
-
-  return data.token;
+  throw new Error("Google sign in failed");
 }
 
 export async function refreshToken(): Promise<string> {
