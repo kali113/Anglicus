@@ -45,6 +45,7 @@ const GOOGLE_JWKS = createRemoteJWKSet(
   new URL("https://www.googleapis.com/oauth2/v3/certs"),
 );
 const GOOGLE_ISSUERS = ["https://accounts.google.com", "accounts.google.com"];
+let authSchemaReadyPromise: Promise<void> | null = null;
 
 type GoogleTokenInfo = {
   aud?: string;
@@ -64,6 +65,49 @@ function constantTimeEqual(left: string, right: string): boolean {
 function requireAuthDatabase(env: Env): D1Database | null {
   if (!env.DB) return null;
   return env.DB;
+}
+
+async function ensureAuthSchema(db: D1Database): Promise<void> {
+  if (authSchemaReadyPromise) {
+    return authSchemaReadyPromise;
+  }
+
+  authSchemaReadyPromise = (async () => {
+    await db
+      .prepare(
+        "CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email_hash TEXT UNIQUE NOT NULL, password_hash TEXT, verification_code TEXT, is_verified BOOLEAN DEFAULT FALSE, auth_provider TEXT DEFAULT 'email', plan_type TEXT DEFAULT 'free', plan_expires_day INTEGER)",
+      )
+      .run();
+    await db
+      .prepare(
+        "CREATE TABLE IF NOT EXISTS usage (user_id TEXT NOT NULL, day_number INTEGER NOT NULL, feature TEXT NOT NULL, count INTEGER DEFAULT 0, PRIMARY KEY (user_id, day_number, feature))",
+      )
+      .run();
+
+    const addColumnIfMissing = async (sql: string): Promise<void> => {
+      try {
+        await db.prepare(sql).run();
+      } catch (error) {
+        const message = error instanceof Error ? error.message.toLowerCase() : "";
+        if (!message.includes("duplicate column")) {
+          throw error;
+        }
+      }
+    };
+
+    await addColumnIfMissing(
+      "ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT 'email'",
+    );
+    await addColumnIfMissing(
+      "ALTER TABLE users ADD COLUMN plan_type TEXT DEFAULT 'free'",
+    );
+    await addColumnIfMissing("ALTER TABLE users ADD COLUMN plan_expires_day INTEGER");
+  })().catch((error) => {
+    authSchemaReadyPromise = null;
+    throw error;
+  });
+
+  return authSchemaReadyPromise;
 }
 
 function getAllowedByokHosts(env: Env): Set<string> {
@@ -126,7 +170,7 @@ async function verifyGoogleIdToken(
       };
     } catch {
       if (attempt === 0) {
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        await Promise.resolve();
         continue;
       }
       return null;
@@ -154,6 +198,7 @@ export async function handleAuthRegister(
   }
 
   try {
+    await ensureAuthSchema(db);
     const body = (await request.json()) as {
       email?: string;
       password?: string;
@@ -228,6 +273,7 @@ export async function handleAuthVerify(
   }
 
   try {
+    await ensureAuthSchema(db);
     const body = (await request.json()) as { email?: string; code?: string };
     if (!body.email || typeof body.email !== "string") {
       return jsonError("Email is required", "invalid_request_error", 400);
@@ -300,6 +346,7 @@ export async function handleAuthLogin(
   }
 
   try {
+    await ensureAuthSchema(db);
     const body = (await request.json()) as {
       email?: string;
       password?: string;
@@ -363,6 +410,7 @@ export async function handleAuthGoogle(
   }
 
   try {
+    await ensureAuthSchema(db);
     const body = (await request.json()) as { idToken?: string };
     if (!body.idToken || typeof body.idToken !== "string") {
       return jsonError("Google ID token is required", "invalid_request_error", 400);
