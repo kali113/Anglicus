@@ -51,17 +51,28 @@ function isPrivateIpv4(hostname: string): boolean {
   return ranges.some(([min, max]) => value >= min && value <= max);
 }
 
+function unwrapIpv6Literal(hostname: string): string {
+  if (hostname.startsWith("[") && hostname.endsWith("]")) {
+    return hostname.slice(1, -1);
+  }
+  return hostname;
+}
+
 function isPrivateIpv6(hostname: string): boolean {
-  const normalized = hostname.toLowerCase();
+  const normalized = unwrapIpv6Literal(hostname.toLowerCase());
   if (normalized === "::1" || normalized === "::") return true;
   if (normalized.startsWith("fe8") || normalized.startsWith("fe9")) return true;
   if (normalized.startsWith("fea") || normalized.startsWith("feb")) return true;
   if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  if (normalized.startsWith("::ffff:")) {
+    const mapped = normalized.slice("::ffff:".length);
+    if (isIpv4Address(mapped)) return isPrivateIpv4(mapped);
+  }
   return false;
 }
 
 function isBlockedHostname(hostname: string): boolean {
-  const normalized = hostname.trim().toLowerCase();
+  const normalized = unwrapIpv6Literal(hostname.trim().toLowerCase());
   if (!normalized) return true;
   if (BLOCKED_HOSTNAMES.has(normalized)) return true;
   if (BLOCKED_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix))) return true;
