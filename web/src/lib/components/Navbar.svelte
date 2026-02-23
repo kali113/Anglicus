@@ -57,13 +57,6 @@
         {$t("nav.profile")}
       </a
       >
-      <a
-        href="{base}/investor"
-        class:active={$page.url.pathname.startsWith(`${base}/investor`)}
-      >
-        Investor
-      </a
-      >
     </div>
 
     <div class="user-menu">

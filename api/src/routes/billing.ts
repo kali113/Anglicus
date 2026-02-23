@@ -47,6 +47,39 @@ type BillingStatusResult = {
   paidUntil?: string;
 };
 
+type BillingCheckoutStatus =
+  | "awaiting_payment"
+  | "pending_confirming"
+  | "confirmed"
+  | "underpaid"
+  | "expired"
+  | "verification_delayed"
+  | "reorg_review";
+
+type BillingCheckoutCreateResult = {
+  sessionId: string;
+  address: string;
+  network: "mainnet" | "testnet";
+  requiredSats: number;
+  subscriptionDays: number;
+  status: BillingCheckoutStatus;
+  expiresAt: string;
+  disclaimer: {
+    en: string;
+    es: string;
+  };
+};
+
+type BillingCheckoutStatusResult = {
+  sessionId: string;
+  status: BillingCheckoutStatus;
+  requiredSats: number;
+  paidSats?: number;
+  confirmations?: number;
+  paidUntil?: string;
+  reason?: string;
+};
+
 type PromoValidationResult = {
   valid: boolean;
   reason?: "invalid";
@@ -78,7 +111,16 @@ const MIN_SUBSCRIPTION_DAYS = 1;
 const MAX_SUBSCRIPTION_DAYS = 365;
 const MIN_PRICE_USD = 0.01;
 const MAX_PRICE_USD = 100_000;
+const DEFAULT_CHECKOUT_SESSION_TTL_MINUTES = 60;
+const MIN_CHECKOUT_SESSION_TTL_MINUTES = 5;
+const MAX_CHECKOUT_SESSION_TTL_MINUTES = 24 * 60;
+const DEFAULT_CONFIRMATIONS_REQUIRED = 1;
+const MIN_CONFIRMATIONS_REQUIRED = 0;
+const MAX_CONFIRMATIONS_REQUIRED = 6;
+const BILLING_CHECKOUT_BATCH_SIZE = 200;
+const CHECKOUT_SESSION_ID_REGEX = /^[a-zA-Z0-9-]{10,100}$/;
 let billingClaimsTableReady = false;
+let billingCheckoutTablesReady = false;
 
 type TxSource = "blockstream" | "mempool";
 
@@ -91,6 +133,52 @@ type TxLookupResult =
   | { kind: "success"; source: TxSource; tx: TxPayload }
   | { kind: "not_found"; source: TxSource }
   | { kind: "unavailable"; source: TxSource; error: string };
+
+type AddressTxPayload = {
+  txid?: string;
+  vout?: Array<{ value?: number; scriptpubkey_address?: string }>;
+  status?: { confirmed?: boolean; block_height?: number };
+};
+
+type AddressLookupResult =
+  | { kind: "success"; source: TxSource; txs: AddressTxPayload[] }
+  | { kind: "unavailable"; source: TxSource; error: string };
+
+type CheckoutCandidate = {
+  txId: string;
+  paidSats: number;
+  confirmed: boolean;
+  confirmations: number;
+};
+
+type CheckoutResolution =
+  | {
+      kind: "success";
+      source: TxSource;
+      candidate: CheckoutCandidate;
+      requiresReorgReview: boolean;
+    }
+  | { kind: "not_found" }
+  | { kind: "verification_delayed"; reason: string };
+
+type BillingCheckoutSessionRow = {
+  id: string;
+  user_id: string;
+  address: string;
+  address_index: number;
+  required_sats: number;
+  subscription_days: number;
+  status: BillingCheckoutStatus;
+  paid_sats: number | null;
+  tx_id: string | null;
+  confirmations: number | null;
+  discount_source: "promo" | "referral" | null;
+  expires_at: string;
+  last_checked_at: string | null;
+  confirmed_at: string | null;
+  paid_until: string | null;
+  reason: string | null;
+};
 
 type BillingAuthContext = {
   db: D1Database;
@@ -402,6 +490,181 @@ export async function handleBillingStatus(
   };
 
   return jsonSuccess(response);
+}
+
+export async function handleBillingCheckoutSessionCreate(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const auth = await requireBillingAuth(request, env);
+  if (auth.error) {
+    return auth.error;
+  }
+  if (!env.DB) {
+    return jsonError("Billing database is not configured", "server_error", 503);
+  }
+
+  const checkoutAddressPool = parseCheckoutAddressPool(env.BTC_CHECKOUT_ADDRESS_POOL);
+  if (checkoutAddressPool.length === 0) {
+    return jsonError(
+      "Checkout address pool is not configured",
+      "server_error",
+      503,
+    );
+  }
+
+  let body: { promoToken?: string; referralToken?: string } = {};
+  try {
+    body = (await request.json()) as { promoToken?: string; referralToken?: string };
+  } catch {
+    // body is optional for this endpoint
+  }
+
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const ttlMinutes = parseBillingIntegerEnv(
+    env.BTC_CHECKOUT_SESSION_TTL_MINUTES,
+    DEFAULT_CHECKOUT_SESSION_TTL_MINUTES,
+    MIN_CHECKOUT_SESSION_TTL_MINUTES,
+    MAX_CHECKOUT_SESSION_TTL_MINUTES,
+  );
+  const expiresAt = new Date(now.getTime() + ttlMinutes * 60_000).toISOString();
+  const minSats = parseBillingIntegerEnv(
+    env.BTC_MIN_SATS,
+    DEFAULT_MIN_SATS,
+    MIN_SATS,
+    MAX_SATS,
+  );
+  const subscriptionDays = parseBillingIntegerEnv(
+    env.BTC_SUBSCRIPTION_DAYS,
+    DEFAULT_SUBSCRIPTION_DAYS,
+    MIN_SUBSCRIPTION_DAYS,
+    MAX_SUBSCRIPTION_DAYS,
+  );
+  const promoToken = body.promoToken?.trim() || getPromoToken(request);
+  const referralToken = body.referralToken?.trim() || getReferralToken(request);
+  const discount = await resolveDiscount(minSats, promoToken, referralToken, env);
+  const network = normalizeNetwork(env.BTC_NETWORK);
+
+  await ensureBillingCheckoutTables(env.DB);
+  const existing = await getLatestOpenCheckoutSession(env.DB, auth.context.user.id, nowIso);
+  if (existing) {
+    const existingPayload = buildCheckoutCreateResult(
+      existing,
+      network,
+      getCheckoutDisclaimer(),
+    );
+    return jsonSuccess(existingPayload);
+  }
+
+  const addressIndex = await allocateCheckoutAddressIndex(env.DB);
+  const address = checkoutAddressPool[addressIndex];
+  if (!address) {
+    return jsonError(
+      "Checkout address pool exhausted. Add more addresses.",
+      "server_error",
+      503,
+    );
+  }
+
+  const sessionId = crypto.randomUUID();
+  await env.DB
+    .prepare(
+      "INSERT INTO billing_checkout_sessions (id, user_id, address, address_index, required_sats, subscription_days, status, discount_source, created_day, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(
+      sessionId,
+      auth.context.user.id,
+      address,
+      addressIndex,
+      discount.requiredSats,
+      subscriptionDays,
+      "awaiting_payment",
+      discount.discountSource ?? null,
+      getCurrentDayNumber(),
+      expiresAt,
+    )
+    .run();
+
+  const created = await getCheckoutSessionById(env.DB, sessionId);
+  if (!created) {
+    return jsonError("Failed to create checkout session", "server_error", 500);
+  }
+
+  return jsonSuccess(
+    buildCheckoutCreateResult(created, network, getCheckoutDisclaimer()),
+  );
+}
+
+export async function handleBillingCheckoutSessionStatus(
+  request: Request,
+  env: Env,
+  sessionId: string,
+): Promise<Response> {
+  const normalizedSessionId = sessionId.trim();
+  if (!CHECKOUT_SESSION_ID_REGEX.test(normalizedSessionId)) {
+    return jsonError("sessionId is invalid", "invalid_request_error", 400);
+  }
+
+  const auth = await requireBillingAuth(request, env);
+  if (auth.error) {
+    return auth.error;
+  }
+  if (!env.DB) {
+    return jsonError("Billing database is not configured", "server_error", 503);
+  }
+
+  await ensureBillingCheckoutTables(env.DB);
+  const session = await getCheckoutSessionByIdForUser(
+    env.DB,
+    normalizedSessionId,
+    auth.context.user.id,
+  );
+  if (!session) {
+    return jsonError("Checkout session not found", "invalid_request_error", 404);
+  }
+
+  const reconciled = await reconcileCheckoutSession(
+    env.DB,
+    env,
+    session,
+    auth.context.user.id,
+    new Date(),
+  );
+  return jsonSuccess(buildCheckoutStatusResult(reconciled));
+}
+
+export async function handleBillingCheckoutCron(
+  scheduledTime: Date,
+  env: Env,
+): Promise<void> {
+  if (!env.DB) return;
+  const checkoutAddressPool = parseCheckoutAddressPool(env.BTC_CHECKOUT_ADDRESS_POOL);
+  if (checkoutAddressPool.length === 0) return;
+
+  const now = scheduledTime || new Date();
+  const nowIso = now.toISOString();
+
+  try {
+    await ensureBillingCheckoutTables(env.DB);
+    const sessions = await env.DB
+      .prepare(
+        "SELECT id, user_id, address, address_index, required_sats, subscription_days, status, paid_sats, tx_id, confirmations, discount_source, expires_at, last_checked_at, confirmed_at, paid_until, reason FROM billing_checkout_sessions WHERE status IN ('awaiting_payment', 'pending_confirming', 'underpaid', 'verification_delayed', 'reorg_review') AND expires_at > ? ORDER BY created_at ASC LIMIT ?",
+      )
+      .bind(nowIso, BILLING_CHECKOUT_BATCH_SIZE)
+      .all<BillingCheckoutSessionRow>();
+
+    const rows = Array.isArray(sessions.results) ? sessions.results : [];
+    for (const row of rows) {
+      try {
+        await reconcileCheckoutSession(env.DB, env, row, row.user_id, now);
+      } catch (error) {
+        console.error("Checkout session cron reconcile error:", error);
+      }
+    }
+  } catch (error) {
+    console.error("Checkout session cron failed:", error);
+  }
 }
 
 function normalizeNetwork(value?: string): "mainnet" | "testnet" {

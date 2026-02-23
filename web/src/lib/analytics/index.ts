@@ -19,16 +19,6 @@ export type AnalyticsEvent =
   | "referral_applied"
   | "reactivation_nudge_shown";
 
-export type FunnelMetrics = {
-  windowDays: number;
-  totals: Record<AnalyticsEvent, number>;
-  conversion: {
-    onboardingFromSignup: number;
-    activationFromOnboarding: number;
-    paymentFromPaywall: number;
-  };
-};
-
 export async function trackEvent(
   event: AnalyticsEvent,
   metadata: Record<string, unknown> = {},
@@ -51,20 +41,6 @@ export async function trackEvent(
   }).catch((error) => {
     console.warn("Event tracking failed:", error);
   });
-}
-
-export async function getFunnelMetrics(
-  days: number = 30,
-): Promise<FunnelMetrics | null> {
-  if (!isBrowser()) return null;
-  if (!getToken()) return null;
-
-  const response = await fetchWithAuthRetry(
-    `${BACKEND_URL}/api/analytics/funnel?days=${days}`,
-    { method: "GET" },
-  );
-  if (!response.ok) return null;
-  return (await response.json()) as FunnelMetrics;
 }
 
 async function fetchWithAuthRetry(

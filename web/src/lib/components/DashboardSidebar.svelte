@@ -104,10 +104,11 @@
   }
 
   .xp-info .value {
+    display: block;
     font-size: 1.75rem;
+    line-height: 1;
     font-weight: 700;
     color: white;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .stats-grid {

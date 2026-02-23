@@ -350,7 +350,7 @@
       "byokTitle": "My Key",
       "byokDescription": "Use your API key",
       "advancedBadge": "Advanced",
-      "pitchTip": "For investor demos, keep Automatic or Server mode as the primary path. BYOK is best for advanced users."
+      "pitchTip": "For demos, keep Automatic or Server mode as the primary path. BYOK is best for advanced users."
     },
     "apiKey": {
       "title": "Configure API Key",

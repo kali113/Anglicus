@@ -33,6 +33,16 @@ describe("getPaymentConfig", () => {
     await expect(getPaymentConfig()).rejects.toThrow("Payment config request timed out");
   });
 
+  it("normalizes abort-like errors while reading the response body", async () => {
+    const getPaymentConfig = await loadGetPaymentConfig();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockRejectedValueOnce({ name: "AbortError" }),
+    });
+
+    await expect(getPaymentConfig()).rejects.toThrow("Payment config request timed out");
+  });
+
   it("rethrows non-abort errors", async () => {
     const getPaymentConfig = await loadGetPaymentConfig();
     fetchMock.mockRejectedValueOnce(new Error("Network down"));

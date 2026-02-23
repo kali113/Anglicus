@@ -23,16 +23,6 @@ type AnalyticsAuthContext = {
   user: UserRecord;
 };
 
-type FunnelResponse = {
-  windowDays: number;
-  totals: Record<TrackedEventName, number>;
-  conversion: {
-    onboardingFromSignup: number;
-    activationFromOnboarding: number;
-    paymentFromPaywall: number;
-  };
-};
-
 export async function handleAnalyticsTrack(
   request: Request,
   env: Env,
@@ -100,64 +90,6 @@ export async function handleAnalyticsTrack(
   });
 }
 
-export async function handleAnalyticsFunnel(
-  request: Request,
-  env: Env,
-): Promise<Response> {
-  const auth = await requireAnalyticsAuth(request, env);
-  if (auth.error) {
-    return auth.error;
-  }
-
-  const url = new URL(request.url);
-  const days = parseWindowDays(url.searchParams.get("days"));
-  if (!days) {
-    return jsonError("days is invalid", "invalid_request_error", 400);
-  }
-
-  const rows = await auth.context.db
-    .prepare(
-      "SELECT event_name, COUNT(*) as count FROM analytics_events WHERE user_id = ? AND datetime(created_at) >= datetime('now', ?) GROUP BY event_name",
-    )
-    .bind(auth.context.user.id, `-${days} days`)
-    .all<{ event_name: TrackedEventName; count: number }>();
-
-  const totals = TRACKED_EVENTS.reduce(
-    (acc, event) => {
-      acc[event] = 0;
-      return acc;
-    },
-    {} as Record<TrackedEventName, number>,
-  );
-
-  for (const row of rows.results || []) {
-    if (row.event_name in totals) {
-      totals[row.event_name] = row.count;
-    }
-  }
-
-  const response: FunnelResponse = {
-    windowDays: days,
-    totals,
-    conversion: {
-      onboardingFromSignup: safeRatio(
-        totals.onboarding_completed,
-        totals.signup_completed,
-      ),
-      activationFromOnboarding: safeRatio(
-        totals.activation_first_action,
-        totals.onboarding_completed,
-      ),
-      paymentFromPaywall: safeRatio(
-        totals.payment_confirmed,
-        totals.paywall_shown,
-      ),
-    },
-  };
-
-  return jsonSuccess(response);
-}
-
 function normalizeTrackedEvent(raw?: string): TrackedEventName | null {
   if (!raw) return null;
   const normalized = raw.trim() as TrackedEventName;
@@ -168,18 +100,6 @@ function normalizeIdempotencyKey(raw?: string): string | null {
   const key = raw?.trim() || crypto.randomUUID();
   if (key.length < 8 || key.length > 120) return null;
   return key;
-}
-
-function parseWindowDays(raw: string | null): number | null {
-  if (!raw) return 30;
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 90) return null;
-  return parsed;
-}
-
-function safeRatio(numerator: number, denominator: number): number {
-  if (denominator <= 0) return 0;
-  return Number(((numerator / denominator) * 100).toFixed(1));
 }
 
 async function requireAnalyticsAuth(

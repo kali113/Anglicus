@@ -493,11 +493,17 @@ function isAbortLikeError(error: unknown): boolean {
 export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), BILLING_CONFIG_TIMEOUT_MS);
-  let response: Response;
+
   try {
-    response = await fetch(`${BACKEND_URL}/api/billing/config`, {
+    const response = await fetch(`${BACKEND_URL}/api/billing/config`, {
       signal: controller.signal,
     });
+
+    if (!response.ok) {
+      throw new Error("No se pudo obtener la configuración de pago");
+    }
+
+    return (await response.json()) as BillingPaymentConfig;
   } catch (error) {
     if (isAbortLikeError(error)) {
       throw new Error("Payment config request timed out");
@@ -506,11 +512,6 @@ export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
   } finally {
     clearTimeout(timeoutId);
   }
-
-  if (!response.ok) {
-    throw new Error("No se pudo obtener la configuración de pago");
-  }
-  return (await response.json()) as BillingPaymentConfig;
 }
 
 async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Response> {

@@ -28,7 +28,6 @@ import {
   handleAuthVerify,
 } from "./routes/auth.js";
 import {
-  handleAnalyticsFunnel,
   handleAnalyticsTrack,
 } from "./routes/analytics.js";
 import { handleFeedback } from "./routes/feedback.js";
@@ -442,16 +441,6 @@ app.post("/api/analytics/event", async (c) => {
   return c.newResponse(
     response.body,
     response.status as 200 | 400 | 401 | 415 | 503 | 500,
-    headers,
-  );
-});
-
-app.get("/api/analytics/funnel", async (c) => {
-  const response = await handleAnalyticsFunnel(c.req.raw, c.env);
-  const headers = Object.fromEntries(response.headers.entries());
-  return c.newResponse(
-    response.body,
-    response.status as 200 | 400 | 401 | 503 | 500,
     headers,
   );
 });
