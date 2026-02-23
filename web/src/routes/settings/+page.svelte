@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { base } from "$app/paths";
   import { enableByok } from "$lib/auth/index.js";
   import {
     getSettings,
@@ -299,9 +300,9 @@
       localStorage.clear();
       // Wait for DB clear to complete before navigating
       await clearAllMistakes().catch(console.error);
-      await goto("/onboarding");
+      await goto(`${base}/onboarding`);
     } catch (e) {
-      await goto("/onboarding");
+      await goto(`${base}/onboarding`);
     }
   }
 </script>

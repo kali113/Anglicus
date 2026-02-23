@@ -20,6 +20,7 @@ const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
 const PROMO_COOKIE_NAME = "anglicus_promo";
+const BILLING_CONFIG_TIMEOUT_MS = 12_000;
 
 export type BillingFeature =
   | "tutor"
@@ -480,7 +481,22 @@ export function getPromoToken(): string | null {
 }
 
 export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
-  const response = await fetch(`${BACKEND_URL}/api/billing/config`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), BILLING_CONFIG_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(`${BACKEND_URL}/api/billing/config`, {
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Payment config request timed out");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!response.ok) {
     throw new Error("No se pudo obtener la configuración de pago");
   }
@@ -626,4 +642,3 @@ function normalizeReferralCode(rawCode: string): string | null {
   if (!/^[A-Z0-9]{6,16}$/.test(cleaned)) return null;
   return cleaned;
 }
-
