@@ -291,17 +291,31 @@
     const reminderEmail = profile?.email;
     try {
       if (reminderEmail) {
-        const success = await unsubscribeReminders(reminderEmail);
-        if (!success) {
-          alert($t("settings.alerts.remindersDeleteFailed"));
+        try {
+          const success = await unsubscribeReminders(reminderEmail);
+          if (!success) {
+            alert($t("settings.alerts.remindersDeleteFailed"));
+          }
+        } catch (error) {
+          console.error("Reminder unsubscription failed during delete:", error);
         }
       }
-      stopBrowserReminder();
-      localStorage.clear();
-      // Wait for DB clear to complete before navigating
+
+      try {
+        stopBrowserReminder();
+      } catch (error) {
+        console.error("Stopping browser reminder failed during delete:", error);
+      }
+
+      try {
+        localStorage.clear();
+      } catch (error) {
+        console.error("localStorage clear failed during delete:", error);
+      }
+
+      // Wait for DB clear to complete before navigating.
       await clearAllMistakes().catch(console.error);
-      await goto(`${base}/onboarding`);
-    } catch (e) {
+    } finally {
       await goto(`${base}/onboarding`);
     }
   }

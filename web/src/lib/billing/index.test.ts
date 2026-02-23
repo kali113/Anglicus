@@ -26,6 +26,43 @@ afterEach(() => {
 });
 
 describe("getPaymentConfig", () => {
+  it("calls billing config endpoint with an abort signal and returns payload", async () => {
+    const getPaymentConfig = await loadGetPaymentConfig();
+    const payload = {
+      address: "bc1qexample",
+      network: "mainnet",
+      minSats: 1000,
+      subscriptionDays: 30,
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce(payload),
+    });
+
+    await expect(getPaymentConfig()).resolves.toEqual(payload);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/billing/config"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("throws a clear error when the config endpoint returns a non-ok response", async () => {
+    const getPaymentConfig = await loadGetPaymentConfig();
+    fetchMock.mockResolvedValueOnce({ ok: false });
+
+    await expect(getPaymentConfig()).rejects.toThrow(
+      "No se pudo obtener la configuración de pago",
+    );
+  });
+
+  it("normalizes DOMException abort errors", async () => {
+    const getPaymentConfig = await loadGetPaymentConfig();
+    fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
+
+    await expect(getPaymentConfig()).rejects.toThrow("Payment config request timed out");
+  });
+
   it("normalizes abort-like errors that are not DOMException instances", async () => {
     const getPaymentConfig = await loadGetPaymentConfig();
     fetchMock.mockRejectedValueOnce({ name: "AbortError" });

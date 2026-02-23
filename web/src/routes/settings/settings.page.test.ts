@@ -23,6 +23,8 @@ const defaultSettings = {
   reminderFrequency: "daily",
 };
 
+let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
 vi.mock("$app/navigation", () => ({
   goto: mocks.goto,
 }));
@@ -85,6 +87,7 @@ async function openDeleteModal() {
 
 beforeEach(() => {
   const storage = new Map<string, string>();
+  consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   mocks.goto.mockReset();
   mocks.clearAllMistakes.mockReset();
   mocks.clearAllMistakes.mockResolvedValue(undefined);
@@ -111,6 +114,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  consoleErrorSpy.mockRestore();
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -128,7 +132,7 @@ describe("settings delete flow", () => {
     expect(mocks.clearAllMistakes).toHaveBeenCalledTimes(1);
   });
 
-  it("redirects to base-prefixed onboarding path when delete flow throws", async () => {
+  it("still clears local data when browser reminder stop throws", async () => {
     mocks.stopBrowserReminder.mockImplementationOnce(() => {
       throw new Error("stop failed");
     });
@@ -141,6 +145,30 @@ describe("settings delete flow", () => {
     await waitFor(() => {
       expect(mocks.goto).toHaveBeenCalledWith("/app/onboarding");
     });
-    expect(mocks.clearAllMistakes).not.toHaveBeenCalled();
+    expect(localStorage.clear).toHaveBeenCalledTimes(1);
+    expect(mocks.clearAllMistakes).toHaveBeenCalledTimes(1);
+  });
+
+  it("still clears local data when reminder unsubscription throws", async () => {
+    mocks.getUserProfile.mockResolvedValueOnce({
+      name: "Alex",
+      email: "alex@example.com",
+      level: "A2",
+      streakDays: 4,
+      nativeLanguage: "es",
+    });
+    mocks.unsubscribeReminders.mockRejectedValueOnce(new Error("unsubscribe failed"));
+
+    await renderPage();
+    const confirmButton = await openDeleteModal();
+
+    await fireEvent.click(confirmButton);
+
+    await waitFor(() => {
+      expect(mocks.goto).toHaveBeenCalledWith("/app/onboarding");
+    });
+    expect(mocks.stopBrowserReminder).toHaveBeenCalledTimes(1);
+    expect(localStorage.clear).toHaveBeenCalledTimes(1);
+    expect(mocks.clearAllMistakes).toHaveBeenCalledTimes(1);
   });
 });

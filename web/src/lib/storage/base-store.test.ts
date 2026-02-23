@@ -90,6 +90,36 @@ describe("LocalStore", () => {
     expect(store.get()).toEqual({ count: 2, label: "default" });
   });
 
+  it("returns raw stored values without merging defaults", () => {
+    localStorage.setItem("test-key", JSON.stringify({ count: 5 }));
+    const store = new LocalStore<{ count: number; label?: string }>(
+      "test-key",
+      { count: 0, label: "default" },
+    );
+
+    expect(store.getRaw()).toEqual({ count: 5 });
+  });
+
+  it("falls back to defaults for malformed JSON", () => {
+    localStorage.setItem("test-key", "{bad json");
+    const store = new LocalStore("test-key", { count: 1 });
+
+    expect(store.get()).toEqual({ count: 1 });
+    expect(store.getRaw()).toBeNull();
+  });
+
+  it("updates values from current state", () => {
+    const store = new LocalStore<{ count: number; label?: string }>(
+      "test-key",
+      { count: 0, label: "default" },
+    );
+    store.set({ count: 2 });
+
+    store.update((current) => ({ ...current, count: current.count + 1 }));
+
+    expect(store.get()).toEqual({ count: 3, label: "default" });
+  });
+
   it("clears stored values", () => {
     const store = new LocalStore("test-key", { count: 0 });
     store.set({ count: 3 });
