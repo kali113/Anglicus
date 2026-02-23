@@ -21,6 +21,7 @@ const BACKEND_URL =
 
 const PROMO_COOKIE_NAME = "anglicus_promo";
 const BILLING_CONFIG_TIMEOUT_MS = 12_000;
+const ACTIVE_CHECKOUT_SESSION_KEY = "anglicus_active_checkout_session_id_v1";
 
 export type BillingFeature =
   | "tutor"
@@ -83,6 +84,7 @@ export type BillingPaymentConfig = {
   priceUsd?: number;
   discountPercent?: number;
   discountSource?: "promo" | "referral";
+  checkoutRails?: BillingCheckoutRailOption[];
 };
 
 export type BillingPaymentResult = {
@@ -105,6 +107,71 @@ export type BillingServerStatus = {
   isActive: boolean;
   effectivePlanType: "free" | "pro";
   paidUntil?: string;
+};
+
+export type BillingCheckoutStatus =
+  | "awaiting_payment"
+  | "pending_confirming"
+  | "confirmed"
+  | "underpaid"
+  | "expired"
+  | "verification_delayed"
+  | "reorg_review";
+
+export type CheckoutAsset = "btc" | "bnb" | "eth" | "sol" | "usdt";
+export type CheckoutNetwork =
+  | "bitcoin"
+  | "bsc"
+  | "ethereum"
+  | "polygon"
+  | "arbitrum"
+  | "solana";
+
+export type BillingCheckoutRailOption = {
+  asset: CheckoutAsset;
+  network: CheckoutNetwork;
+  symbol: string;
+  label: string;
+};
+
+export type BillingCheckoutSession = {
+  sessionId: string;
+  address: string;
+  asset: CheckoutAsset;
+  network: CheckoutNetwork;
+  symbol: string;
+  requiredAmount: string;
+  requiredAmountAtomic: string;
+  subscriptionDays: number;
+  confirmationsRequired: number;
+  tokenContract?: string;
+  status: BillingCheckoutStatus;
+  expiresAt: string;
+  disclaimer: {
+    en: string;
+    es: string;
+  };
+};
+
+export type BillingCheckoutStatusResult = {
+  sessionId: string;
+  status: BillingCheckoutStatus;
+  asset: CheckoutAsset;
+  network: CheckoutNetwork;
+  symbol: string;
+  requiredAmount: string;
+  requiredAmountAtomic: string;
+  paidAmount?: string;
+  paidAmountAtomic?: string;
+  confirmations?: number;
+  txHash?: string;
+  paidUntil?: string;
+  reason?: string;
+};
+
+export type CheckoutSelection = {
+  asset?: CheckoutAsset;
+  network?: CheckoutNetwork;
 };
 
 export function getFeatureLabel(feature: BillingFeature): string {
@@ -480,6 +547,20 @@ export function getPromoToken(): string | null {
   return cookie.split("=")[1] || null;
 }
 
+function getActiveCheckoutSessionId(): string | null {
+  if (!isBrowser()) return null;
+  return localStorage.getItem(ACTIVE_CHECKOUT_SESSION_KEY);
+}
+
+function setActiveCheckoutSessionId(sessionId: string | null): void {
+  if (!isBrowser()) return;
+  if (!sessionId) {
+    localStorage.removeItem(ACTIVE_CHECKOUT_SESSION_KEY);
+    return;
+  }
+  localStorage.setItem(ACTIVE_CHECKOUT_SESSION_KEY, sessionId);
+}
+
 function isAbortLikeError(error: unknown): boolean {
   if (error instanceof DOMException) {
     return error.name === "AbortError";
@@ -539,6 +620,332 @@ async function fetchWithAuthRetry(url: string, init: RequestInit): Promise<Respo
   return fetch(url, {
     ...init,
     headers: retryHeaders,
+  });
+}
+
+function isPendingCheckoutStatus(status: BillingCheckoutStatus): boolean {
+  return (
+    status === "awaiting_payment" ||
+    status === "pending_confirming" ||
+    status === "underpaid" ||
+    status === "verification_delayed" ||
+    status === "reorg_review"
+  );
+}
+
+async function applyCheckoutStatusToProfile(
+  result: BillingCheckoutStatusResult,
+): Promise<void> {
+  const snapshot = await getBillingSnapshot();
+  if (!snapshot) return;
+
+  const now = new Date().toISOString();
+  const billing: BillingInfo = {
+    ...snapshot.billing,
+    lastPaymentCheckedAt: now,
+  };
+
+  if (result.status === "confirmed") {
+    billing.plan = "pro";
+    billing.status = "active";
+    billing.paidUntil = result.paidUntil;
+    void trackEvent("payment_confirmed", {
+      asset: result.asset,
+      network: result.network,
+      symbol: result.symbol,
+      requiredAmountAtomic: result.requiredAmountAtomic,
+      paidAmountAtomic: result.paidAmountAtomic ?? "0",
+      source: "auto_checkout",
+    });
+  } else if (isPendingCheckoutStatus(result.status)) {
+    billing.status = "pending";
+  } else if (result.status === "expired" && billing.status !== "active") {
+    billing.plan = "free";
+    billing.status = "none";
+    billing.paidUntil = undefined;
+    void trackEvent("payment_expired", {
+      asset: result.asset,
+      network: result.network,
+      requiredAmountAtomic: result.requiredAmountAtomic,
+    });
+  }
+
+  await updateUserProfile({ billing });
+}
+
+function normalizeCheckoutAsset(value: unknown): CheckoutAsset {
+  if (
+    value === "btc" ||
+    value === "bnb" ||
+    value === "eth" ||
+    value === "sol" ||
+    value === "usdt"
+  ) {
+    return value;
+  }
+  return "btc";
+}
+
+function normalizeCheckoutNetwork(value: unknown): CheckoutNetwork {
+  if (
+    value === "bitcoin" ||
+    value === "bsc" ||
+    value === "ethereum" ||
+    value === "polygon" ||
+    value === "arbitrum" ||
+    value === "solana"
+  ) {
+    return value;
+  }
+  if (value === "mainnet" || value === "testnet") return "bitcoin";
+  return "bitcoin";
+}
+
+function normalizeAtomicString(value: unknown): string {
+  if (typeof value === "string" && /^[0-9]+$/.test(value.trim())) {
+    return value.trim();
+  }
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+    return String(Math.floor(value));
+  }
+  return "0";
+}
+
+function normalizeCheckoutSessionPayload(payload: unknown): BillingCheckoutSession {
+  const raw = (payload ?? {}) as Record<string, unknown>;
+  const asset = normalizeCheckoutAsset(raw.asset);
+  const symbol =
+    typeof raw.symbol === "string" && raw.symbol.trim().length > 0
+      ? raw.symbol.trim()
+      : asset === "btc"
+        ? "sats"
+        : asset === "eth"
+          ? "ETH"
+          : asset === "sol"
+            ? "SOL"
+        : asset === "usdt"
+          ? "USDT"
+          : "BNB";
+  const requiredAmountAtomic = normalizeAtomicString(
+    raw.requiredAmountAtomic ?? raw.requiredSats,
+  );
+  const requiredAmount =
+    typeof raw.requiredAmount === "string" && raw.requiredAmount.trim().length > 0
+      ? raw.requiredAmount.trim()
+      : requiredAmountAtomic;
+  return {
+    sessionId: String(raw.sessionId ?? ""),
+    address: String(raw.address ?? ""),
+    asset,
+    network: normalizeCheckoutNetwork(raw.network),
+    symbol,
+    requiredAmount,
+    requiredAmountAtomic,
+    subscriptionDays: Number(raw.subscriptionDays ?? 30),
+    confirmationsRequired: Number(raw.confirmationsRequired ?? 1),
+    tokenContract:
+      typeof raw.tokenContract === "string" && raw.tokenContract.trim().length > 0
+        ? raw.tokenContract.trim()
+        : undefined,
+    status: (raw.status as BillingCheckoutStatus) ?? "awaiting_payment",
+    expiresAt: String(raw.expiresAt ?? new Date().toISOString()),
+    disclaimer:
+      typeof raw.disclaimer === "object" && raw.disclaimer !== null
+        ? (raw.disclaimer as { en: string; es: string })
+        : {
+            en: "Crypto payments are irreversible.",
+            es: "Los pagos en crypto son irreversibles.",
+          },
+  };
+}
+
+function normalizeCheckoutStatusPayload(payload: unknown): BillingCheckoutStatusResult {
+  const raw = (payload ?? {}) as Record<string, unknown>;
+  const asset = normalizeCheckoutAsset(raw.asset);
+  const symbol =
+    typeof raw.symbol === "string" && raw.symbol.trim().length > 0
+      ? raw.symbol.trim()
+      : asset === "btc"
+        ? "sats"
+        : asset === "eth"
+          ? "ETH"
+          : asset === "sol"
+            ? "SOL"
+        : asset === "usdt"
+          ? "USDT"
+          : "BNB";
+  const requiredAmountAtomic = normalizeAtomicString(
+    raw.requiredAmountAtomic ?? raw.requiredSats,
+  );
+  const paidAmountAtomic = normalizeAtomicString(raw.paidAmountAtomic ?? raw.paidSats);
+  return {
+    sessionId: String(raw.sessionId ?? ""),
+    status: (raw.status as BillingCheckoutStatus) ?? "awaiting_payment",
+    asset,
+    network: normalizeCheckoutNetwork(raw.network),
+    symbol,
+    requiredAmount:
+      typeof raw.requiredAmount === "string" && raw.requiredAmount.trim().length > 0
+        ? raw.requiredAmount.trim()
+        : requiredAmountAtomic,
+    requiredAmountAtomic,
+    paidAmount:
+      typeof raw.paidAmount === "string" && raw.paidAmount.trim().length > 0
+        ? raw.paidAmount.trim()
+        : raw.paidAmountAtomic !== undefined || raw.paidSats !== undefined
+          ? paidAmountAtomic
+          : undefined,
+    paidAmountAtomic:
+      raw.paidAmountAtomic !== undefined || raw.paidSats !== undefined
+        ? paidAmountAtomic
+        : undefined,
+    confirmations:
+      typeof raw.confirmations === "number" && Number.isFinite(raw.confirmations)
+        ? raw.confirmations
+        : undefined,
+    txHash:
+      typeof raw.txHash === "string" && raw.txHash.trim().length > 0
+        ? raw.txHash.trim()
+        : undefined,
+    paidUntil:
+      typeof raw.paidUntil === "string" && raw.paidUntil.trim().length > 0
+        ? raw.paidUntil.trim()
+        : undefined,
+    reason:
+      typeof raw.reason === "string" && raw.reason.trim().length > 0
+        ? raw.reason.trim()
+        : undefined,
+  };
+}
+
+function toCheckoutStatusResultFromSession(
+  session: BillingCheckoutSession,
+): BillingCheckoutStatusResult {
+  return {
+    sessionId: session.sessionId,
+    status: session.status,
+    asset: session.asset,
+    network: session.network,
+    symbol: session.symbol,
+    requiredAmount: session.requiredAmount,
+    requiredAmountAtomic: session.requiredAmountAtomic,
+  };
+}
+
+function getCheckoutStatusErrorMessage(
+  response: Response,
+  payload: { error?: { message?: string } } | null,
+): string {
+  if (payload?.error?.message) return payload.error.message;
+  if (response.status === 404) return "Checkout session not found";
+  if (response.status === 401) return "Authentication required";
+  return "Could not fetch checkout status";
+}
+
+export async function createCheckoutSession(
+  selection: CheckoutSelection = {},
+): Promise<BillingCheckoutSession> {
+  const snapshot = await getBillingSnapshot();
+  const promoToken = snapshot?.billing.promoCodeHash;
+  const referralToken = snapshot?.billing.referralCodeHash;
+  const body: Record<string, string> = {};
+  if (promoToken) body.promoToken = promoToken;
+  if (referralToken) body.referralToken = referralToken;
+  if (selection.asset) body.asset = selection.asset;
+  if (selection.network) body.network = selection.network;
+
+  const response = await fetchWithAuthRetry(`${BACKEND_URL}/api/billing/checkout/session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(error?.error?.message || "Could not create checkout session");
+  }
+
+  const payload = await response.json();
+  const result = normalizeCheckoutSessionPayload(payload);
+  setActiveCheckoutSessionId(result.sessionId);
+  void trackEvent("payment_session_created", {
+    sessionIdPrefix: result.sessionId.slice(0, 12),
+    asset: result.asset,
+    network: result.network,
+    symbol: result.symbol,
+    requiredAmountAtomic: result.requiredAmountAtomic,
+  });
+  if (isPendingCheckoutStatus(result.status)) {
+    await applyCheckoutStatusToProfile(toCheckoutStatusResultFromSession(result));
+  }
+  return result;
+}
+
+export async function getCheckoutSessionStatus(
+  sessionId: string,
+): Promise<BillingCheckoutStatusResult> {
+  const normalizedSessionId = sessionId.trim();
+  if (!normalizedSessionId) {
+    throw new Error("sessionId is required");
+  }
+
+  const response = await fetchWithAuthRetry(
+    `${BACKEND_URL}/api/billing/checkout/session/${encodeURIComponent(normalizedSessionId)}/status`,
+    {
+      method: "GET",
+    },
+  );
+
+  if (!response.ok) {
+    const error = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+    } | null;
+    throw new Error(getCheckoutStatusErrorMessage(response, error));
+  }
+
+  const payload = await response.json();
+  const result = normalizeCheckoutStatusPayload(payload);
+  await applyCheckoutStatusToProfile(result);
+
+  if (result.status === "pending_confirming") {
+    void trackEvent("payment_detected", {
+      asset: result.asset,
+      network: result.network,
+      symbol: result.symbol,
+      requiredAmountAtomic: result.requiredAmountAtomic,
+      paidAmountAtomic: result.paidAmountAtomic ?? "0",
+    });
+  }
+  if (result.status === "underpaid") {
+    void trackEvent("payment_underpaid", {
+      asset: result.asset,
+      network: result.network,
+      symbol: result.symbol,
+      requiredAmountAtomic: result.requiredAmountAtomic,
+      paidAmountAtomic: result.paidAmountAtomic ?? "0",
+    });
+  }
+
+  if (result.status === "confirmed" || result.status === "expired") {
+    setActiveCheckoutSessionId(null);
+  } else {
+    setActiveCheckoutSessionId(normalizedSessionId);
+  }
+
+  if (result.status === "confirmed") {
+    await syncBillingFromServer().catch((error) => {
+      console.error("Billing server sync failed:", error);
+    });
+  }
+
+  return result;
+}
+
+export async function refreshActiveCheckoutSessionStatus(): Promise<void> {
+  const sessionId = getActiveCheckoutSessionId();
+  if (!sessionId) return;
+  await getCheckoutSessionStatus(sessionId).catch((error) => {
+    console.error("Checkout status sync failed:", error);
   });
 }
 

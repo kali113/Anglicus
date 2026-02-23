@@ -11,7 +11,10 @@
   import type { UserProfile } from "$lib/types/user";
   import Navbar from "$lib/components/Navbar.svelte";
   import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
-  import { refreshPaymentStatus } from "$lib/billing/index.js";
+  import {
+    refreshActiveCheckoutSessionStatus,
+    refreshPaymentStatus,
+  } from "$lib/billing/index.js";
   import {
     AuthRequestError,
     clearToken,
@@ -45,6 +48,7 @@
     const runPaymentSync = () => {
       refreshAuthSession()
         .then(() => refreshPaymentStatus())
+        .then(() => refreshActiveCheckoutSessionStatus())
         .catch((error) => {
           console.error("Payment check failed:", error);
         });

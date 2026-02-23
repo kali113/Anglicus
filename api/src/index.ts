@@ -33,6 +33,9 @@ import {
 import { handleFeedback } from "./routes/feedback.js";
 import {
   handleBillingConfig,
+  handleBillingCheckoutCron,
+  handleBillingCheckoutSessionCreate,
+  handleBillingCheckoutSessionStatus,
   handleBillingPromo,
   handleBillingReferral,
   handleBillingStatus,
@@ -98,6 +101,44 @@ export interface Env {
   BTC_SUBSCRIPTION_DAYS?: string;
   BTC_NETWORK?: string;
   BTC_PRICE_USD?: string;
+  BTC_CHECKOUT_ADDRESS_POOL?: string;
+  BTC_CHECKOUT_SESSION_TTL_MINUTES?: string;
+  BTC_CONFIRMATIONS_REQUIRED?: string;
+  BILLING_MONTHLY_USD?: string;
+  BNB_BSC_CHECKOUT_ADDRESS_POOL?: string;
+  BNB_BSC_CONFIRMATIONS_REQUIRED?: string;
+  ETH_ETHEREUM_CHECKOUT_ADDRESS_POOL?: string;
+  ETH_ETHEREUM_CONFIRMATIONS_REQUIRED?: string;
+  SOL_SOLANA_CHECKOUT_ADDRESS_POOL?: string;
+  SOL_SOLANA_CONFIRMATIONS_REQUIRED?: string;
+  SOLANA_CONFIRMATIONS_REQUIRED?: string;
+  SOLANA_RPC_URL?: string;
+  EVM_CONFIRMATIONS_REQUIRED?: string;
+  USDT_ENABLED_NETWORKS?: string;
+  USDT_BSC_CONTRACT?: string;
+  USDT_BSC_CHECKOUT_ADDRESS_POOL?: string;
+  USDT_BSC_DECIMALS?: string;
+  USDT_BSC_CONFIRMATIONS_REQUIRED?: string;
+  USDT_ETHEREUM_CONTRACT?: string;
+  USDT_ETHEREUM_CHECKOUT_ADDRESS_POOL?: string;
+  USDT_ETHEREUM_DECIMALS?: string;
+  USDT_ETHEREUM_CONFIRMATIONS_REQUIRED?: string;
+  USDT_POLYGON_CONTRACT?: string;
+  USDT_POLYGON_CHECKOUT_ADDRESS_POOL?: string;
+  USDT_POLYGON_DECIMALS?: string;
+  USDT_POLYGON_CONFIRMATIONS_REQUIRED?: string;
+  USDT_ARBITRUM_CONTRACT?: string;
+  USDT_ARBITRUM_CHECKOUT_ADDRESS_POOL?: string;
+  USDT_ARBITRUM_DECIMALS?: string;
+  USDT_ARBITRUM_CONFIRMATIONS_REQUIRED?: string;
+  BSC_SCAN_API_BASE?: string;
+  ETHEREUM_SCAN_API_BASE?: string;
+  POLYGON_SCAN_API_BASE?: string;
+  ARBITRUM_SCAN_API_BASE?: string;
+  BSCSCAN_API_KEY?: string;
+  ETHERSCAN_API_KEY?: string;
+  POLYGONSCAN_API_KEY?: string;
+  ARBISCAN_API_KEY?: string;
   PROMO_CODE_PEPPER?: string;
   REFERRAL_CODE_PEPPER?: string;
   REFERRAL_CODE_HASHES?: string;
@@ -415,6 +456,30 @@ app.post("/api/billing/referral", async (c) => {
   );
 });
 
+app.post("/api/billing/checkout/session", async (c) => {
+  const response = await handleBillingCheckoutSessionCreate(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 401 | 503 | 500,
+    headers,
+  );
+});
+
+app.get("/api/billing/checkout/session/:sessionId/status", async (c) => {
+  const response = await handleBillingCheckoutSessionStatus(
+    c.req.raw,
+    c.env,
+    c.req.param("sessionId"),
+  );
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 401 | 404 | 503 | 500,
+    headers,
+  );
+});
+
 app.post("/api/billing/verify", async (c) => {
   const response = await handleBillingVerify(c.req.raw, c.env);
   const headers = Object.fromEntries(response.headers.entries());
@@ -491,6 +556,8 @@ app.onError((err, c) => {
 export default {
   fetch: app.fetch,
   scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(handleReminderCron(new Date(event.scheduledTime), env));
+    const scheduledAt = new Date(event.scheduledTime);
+    ctx.waitUntil(handleReminderCron(scheduledAt, env));
+    ctx.waitUntil(handleBillingCheckoutCron(scheduledAt, env));
   },
 };

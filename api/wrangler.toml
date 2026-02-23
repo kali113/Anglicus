@@ -20,6 +20,15 @@ ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.g
 EMAIL_PROVIDER = "brevo"
 REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
 AUTH_FROM_EMAIL = "Anglicus <auth@anglicus.app>"
+# Optional billing auto-check defaults
+# BTC_CHECKOUT_ADDRESS_POOL = "bc1...,bc1...,bc1..."
+# BTC_CHECKOUT_SESSION_TTL_MINUTES = "60"
+# BTC_CONFIRMATIONS_REQUIRED = "1"
+# BILLING_MONTHLY_USD = "12"
+# BNB_BSC_CHECKOUT_ADDRESS_POOL = "0x...,0x..."
+# ETH_ETHEREUM_CHECKOUT_ADDRESS_POOL = "0x...,0x..."
+# SOL_SOLANA_CHECKOUT_ADDRESS_POOL = "So1...,So2..."
+# SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
 [[d1_databases]]
 binding = "DB"

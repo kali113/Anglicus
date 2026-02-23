@@ -15,6 +15,10 @@ export type AnalyticsEvent =
   | "paywall_shown"
   | "payment_initiated"
   | "payment_confirmed"
+  | "payment_session_created"
+  | "payment_detected"
+  | "payment_underpaid"
+  | "payment_expired"
   | "reminder_enabled"
   | "referral_applied"
   | "reactivation_nudge_shown";

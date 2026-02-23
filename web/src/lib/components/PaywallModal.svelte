@@ -2,10 +2,15 @@
   import { base } from "$app/paths";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import {
+    type BillingCheckoutRailOption,
+    createCheckoutSession,
+    getCheckoutSessionStatus,
     getPaymentConfig,
     refreshPaymentStatus,
-    verifyPayment,
+    type BillingCheckoutSession,
     type BillingPaymentConfig,
+    type CheckoutAsset,
+    type CheckoutNetwork,
   } from "$lib/billing/index.js";
   import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import { t } from "$lib/i18n";
@@ -30,99 +35,255 @@
     featureLabel ?? $t("paywall.featureDefault"),
   );
 
+  const CHECKOUT_POLL_MS = 15_000;
+
   let config = $state<BillingPaymentConfig | null>(null);
+  let checkoutSession = $state<BillingCheckoutSession | null>(null);
   let isLoading = $state(false);
+  let isCreatingSession = $state(false);
   let errorMessage = $state("");
-  let txId = $state("");
   let statusMessage = $state("");
-  let isVerifying = $state(false);
   let isCheckingStatus = $state(false);
+  let hasNotifiedPaid = $state(false);
   let billing = $state<any>(undefined);
+  let selectedAsset = $state<CheckoutAsset | null>(null);
+  let selectedNetwork = $state<CheckoutNetwork | null>(null);
+  let checkoutInterval: ReturnType<typeof window.setInterval> | null = null;
 
   $effect(() => {
-    if (open) {
-      getUserProfile().then((p) => { billing = p?.billing; });
-      loadConfig();
+    if (!open) {
+      stopCheckoutPolling();
+      checkoutSession = null;
+      hasNotifiedPaid = false;
+      return;
     }
+
+    void initializeCheckoutFlow();
+
+    return () => {
+      stopCheckoutPolling();
+    };
   });
 
-  async function loadConfig() {
-    if (config || isLoading) return;
+  async function initializeCheckoutFlow() {
+    const profile = await getUserProfile();
+    billing = profile?.billing;
+
+    const loadedConfig = await loadConfig();
+    if (!loadedConfig) return;
+    ensureRailSelection(loadedConfig);
+    await loadCheckoutSession();
+  }
+
+  function getFallbackBtcRail(): BillingCheckoutRailOption {
+    return {
+      asset: "btc",
+      network: "bitcoin",
+      symbol: "sats",
+      label: "Bitcoin (BTC)",
+    };
+  }
+
+  function getCheckoutRails(cfg: BillingPaymentConfig | null = config): BillingCheckoutRailOption[] {
+    if (cfg?.checkoutRails?.length) return cfg.checkoutRails;
+    if (cfg) return [getFallbackBtcRail()];
+    return [];
+  }
+
+  function getAssetOptions(): CheckoutAsset[] {
+    return [...new Set(getCheckoutRails().map((rail) => rail.asset))];
+  }
+
+  function getNetworkOptions(asset: CheckoutAsset | null): CheckoutNetwork[] {
+    if (!asset) return [];
+    return getCheckoutRails()
+      .filter((rail) => rail.asset === asset)
+      .map((rail) => rail.network);
+  }
+
+  function ensureRailSelection(cfg: BillingPaymentConfig): void {
+    const rails = getCheckoutRails(cfg);
+    if (rails.length === 0) {
+      selectedAsset = null;
+      selectedNetwork = null;
+      return;
+    }
+    const assets = [...new Set(rails.map((rail) => rail.asset))];
+    if (!selectedAsset || !assets.includes(selectedAsset)) {
+      selectedAsset = assets[0] ?? null;
+    }
+    const networks = getNetworkOptions(selectedAsset);
+    if (!selectedNetwork || !networks.includes(selectedNetwork)) {
+      selectedNetwork = networks[0] ?? null;
+    }
+  }
+
+  async function loadConfig(): Promise<BillingPaymentConfig | null> {
+    if (config) return config;
+    if (isLoading) return null;
     isLoading = true;
     errorMessage = "";
     try {
       config = await getPaymentConfig();
+      return config;
     } catch (err) {
       errorMessage = $t("paywall.loadError");
+      return null;
     } finally {
       isLoading = false;
     }
   }
 
-  async function handleVerify() {
-    if (!txId.trim() || isVerifying) return;
-    isVerifying = true;
-    statusMessage = "";
-    errorMessage = "";
+  async function loadCheckoutSession() {
+    if (checkoutSession || isCreatingSession) return;
+    if (!selectedAsset || !selectedNetwork) {
+      if (config) ensureRailSelection(config);
+      if (!selectedAsset || !selectedNetwork) return;
+    }
 
+    isCreatingSession = true;
+    errorMessage = "";
+    statusMessage = "";
     try {
-      const result = await verifyPayment(txId.trim());
-      if (result.status === "confirmed") {
-        statusMessage = $t("paywall.confirmed");
-        onpaid?.({ paidUntil: result.paidUntil });
-      } else {
-        statusMessage = $t("paywall.pending");
-      }
+      checkoutSession = await createCheckoutSession({
+        asset: selectedAsset,
+        network: selectedNetwork,
+      });
+      selectedAsset = checkoutSession.asset;
+      selectedNetwork = checkoutSession.network;
+      await checkCheckoutSessionStatus(true);
+      startCheckoutPolling();
     } catch (err) {
       errorMessage =
         err instanceof Error
           ? err.message
           : $t("paywall.verifyError");
     } finally {
-      isVerifying = false;
+      isCreatingSession = false;
     }
   }
 
-  async function handleCheckPaymentStatus() {
-    if (isCheckingStatus) return;
-    isCheckingStatus = true;
+  async function reloadCheckoutSessionForSelection() {
+    stopCheckoutPolling();
+    checkoutSession = null;
     statusMessage = "";
     errorMessage = "";
+    await loadCheckoutSession();
+  }
+
+  async function handleAssetChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value as CheckoutAsset;
+    selectedAsset = value;
+    const networks = getNetworkOptions(selectedAsset);
+    if (!selectedNetwork || !networks.includes(selectedNetwork)) {
+      selectedNetwork = networks[0] ?? null;
+    }
+    await reloadCheckoutSessionForSelection();
+  }
+
+  async function handleNetworkChange(event: Event) {
+    const value = (event.currentTarget as HTMLSelectElement).value as CheckoutNetwork;
+    selectedNetwork = value;
+    await reloadCheckoutSessionForSelection();
+  }
+
+  function startCheckoutPolling() {
+    if (!open || !checkoutSession) return;
+    stopCheckoutPolling();
+    checkoutInterval = window.setInterval(() => {
+      void checkCheckoutSessionStatus(true);
+    }, CHECKOUT_POLL_MS);
+  }
+
+  function stopCheckoutPolling() {
+    if (checkoutInterval) {
+      clearInterval(checkoutInterval);
+      checkoutInterval = null;
+    }
+  }
+
+  function notifyPaid(paidUntil?: string) {
+    if (hasNotifiedPaid) return;
+    hasNotifiedPaid = true;
+    onpaid?.({ paidUntil });
+  }
+
+  async function checkCheckoutSessionStatus(isBackground = false) {
+    if (!checkoutSession || isCheckingStatus) return;
+    isCheckingStatus = true;
+    if (!isBackground) {
+      statusMessage = "";
+      errorMessage = "";
+    }
 
     try {
-      await refreshPaymentStatus();
+      const result = await getCheckoutSessionStatus(checkoutSession.sessionId);
       const profile = await getUserProfile();
       billing = profile?.billing;
 
-      if (billing?.status === "active" && billing?.plan === "pro") {
+      if (result.status === "confirmed") {
         statusMessage = $t("paywall.confirmed");
-        onpaid?.({ paidUntil: billing?.paidUntil });
-      } else if (billing?.status === "pending") {
+        notifyPaid(result.paidUntil);
+        stopCheckoutPolling();
+      } else if (result.status === "pending_confirming") {
         statusMessage = $t("paywall.pending");
-      } else if (billing?.lastPaymentTxId) {
-        statusMessage = $t("paywall.noPendingPayment");
+      } else if (result.status === "awaiting_payment") {
+        statusMessage = $t("paywall.awaitingPayment");
+      } else if (result.status === "underpaid") {
+        statusMessage = $t("paywall.underpaid", {
+          paid: result.paidAmount ?? "0",
+          required: result.requiredAmount,
+          symbol: result.symbol,
+        });
+      } else if (result.status === "expired") {
+        statusMessage = $t("paywall.sessionExpired");
+        stopCheckoutPolling();
+      } else if (result.status === "verification_delayed") {
+        statusMessage = $t("paywall.verificationDelayed");
+      } else if (result.status === "reorg_review") {
+        statusMessage = $t("paywall.reorgReview");
       } else {
-        statusMessage = $t("paywall.noPaymentToCheck");
+        statusMessage = $t("paywall.pending");
       }
     } catch (err) {
-      errorMessage =
-        err instanceof Error
-          ? err.message
-          : $t("paywall.verifyError");
+      if (!isBackground) {
+        errorMessage =
+          err instanceof Error
+            ? err.message
+            : $t("paywall.verifyError");
+      }
     } finally {
       isCheckingStatus = false;
     }
   }
 
+  async function handleCheckPaymentStatus() {
+    await checkCheckoutSessionStatus(false);
+    await refreshPaymentStatus();
+  }
+
   function closeModal() {
+    stopCheckoutPolling();
     onclose?.();
   }
 
-  function getRequiredSats(): number | null {
+  function getRequiredAmountText(): string | null {
+    if (checkoutSession) {
+      return `${checkoutSession.requiredAmount} ${checkoutSession.symbol}`;
+    }
     if (!config) return null;
+    if (selectedAsset && selectedAsset !== "btc") return null;
     const discount = billing?.discountPercent ?? 0;
-    if (!discount) return config.minSats;
-    return Math.max(1, Math.round(config.minSats * (1 - discount / 100)));
+    const requiredSats = !discount
+      ? config.minSats
+      : Math.max(1, Math.round(config.minSats * (1 - discount / 100)));
+    return `${requiredSats.toLocaleString()} sats`;
+  }
+
+  function getSubscriptionDays(): number | null {
+    if (checkoutSession) return checkoutSession.subscriptionDays;
+    if (!config) return null;
+    return config.subscriptionDays;
   }
 </script>
 
@@ -159,18 +320,22 @@
       </div>
 
       <div class="pricing">
-        {#if isLoading}
+        {#if isLoading || isCreatingSession}
           <span>{$t("paywall.loadingPrice")}</span>
-        {:else if config}
+        {:else if config || checkoutSession}
           <div class="price-row">
-            <span class="price">
-              {getRequiredSats()?.toLocaleString()} sats
-            </span>
-            <span class="period">
-              {$t("paywall.period", { days: config.subscriptionDays })}
-            </span>
+            {#if getRequiredAmountText()}
+              <span class="price">{getRequiredAmountText()}</span>
+            {:else}
+              <span>{$t("paywall.loadingPrice")}</span>
+            {/if}
+            {#if getSubscriptionDays()}
+              <span class="period">
+                {$t("paywall.period", { days: getSubscriptionDays() ?? 0 })}
+              </span>
+            {/if}
           </div>
-          {#if config.priceUsd}
+          {#if config?.priceUsd}
             <div class="usd">≈ ${config.priceUsd} USD</div>
           {/if}
           {#if billing?.discountPercent && billing?.discountSource === "promo"}
@@ -193,25 +358,50 @@
           <div class="status">{statusMessage}</div>
         {/if}
 
-        {#if config}
+        {#if getCheckoutRails().length > 0}
+          <div class="selectors">
+            <label class="selector">
+              <span>{$t("paywall.assetLabel")}</span>
+              <select
+                value={selectedAsset ?? ""}
+                onchange={handleAssetChange}
+                disabled={isCreatingSession || isCheckingStatus}
+              >
+                {#each getAssetOptions() as asset}
+                  <option value={asset}>{$t(`paywall.asset.${asset}`)}</option>
+                {/each}
+              </select>
+            </label>
+            <label class="selector">
+              <span>{$t("paywall.networkLabel")}</span>
+              <select
+                value={selectedNetwork ?? ""}
+                onchange={handleNetworkChange}
+                disabled={isCreatingSession || isCheckingStatus || getNetworkOptions(selectedAsset).length <= 1}
+              >
+                {#each getNetworkOptions(selectedAsset) as network}
+                  <option value={network}>{$t(`paywall.network.${network}`)}</option>
+                {/each}
+              </select>
+            </label>
+          </div>
+        {/if}
+
+        {#if checkoutSession}
           <div class="address-block">
             <div class="label">
-              {$t("paywall.sendBtc", {
-                network: $t(`paywall.network.${config.network}`),
+              {$t("paywall.sendCrypto", {
+                symbol: checkoutSession.symbol,
+                network: $t(`paywall.network.${checkoutSession.network}`),
               })}
             </div>
-            <div class="address">{config.address}</div>
+            <div class="address">{checkoutSession.address}</div>
           </div>
-
-          <div class="tx-input">
-            <input
-              type="text"
-              placeholder={$t("paywall.txPlaceholder")}
-              bind:value={txId}
-            />
-            <button onclick={handleVerify} disabled={isVerifying || !txId.trim()}>
-              {isVerifying ? $t("paywall.verifying") : $t("paywall.verify")}
-            </button>
+          <div class="session-meta">
+            {$t("paywall.sessionExpires", { at: new Date(checkoutSession.expiresAt).toLocaleString() })}
+          </div>
+          <div class="session-meta disclaimer">
+            {$t("paywall.checkoutDisclaimer")}
           </div>
           <div class="tx-check-row">
             <button
@@ -223,6 +413,10 @@
               {isCheckingStatus ? $t("paywall.checkingStatus") : $t("paywall.checkStatus")}
             </button>
           </div>
+        {:else if isCreatingSession}
+          <div class="session-meta">{$t("paywall.loadingCheckoutSession")}</div>
+        {:else}
+          <div class="session-meta">{$t("paywall.checkoutUnavailable")}</div>
         {/if}
 
       </div>
@@ -360,6 +554,35 @@
     gap: 0.75rem;
   }
 
+  .selectors {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .selector select {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    color: #f8fafc;
+    border-radius: 9px;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.88rem;
+  }
+
+  .selector select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .address-block {
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid rgba(148, 163, 184, 0.2);
@@ -383,35 +606,15 @@
     margin-bottom: 0.35rem;
   }
 
-  .tx-input {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+  .session-meta {
+    font-size: 0.8rem;
+    color: rgba(226, 232, 240, 0.75);
+    line-height: 1.4;
   }
 
-  .tx-input input {
-    flex: 1;
-    min-width: 200px;
-    padding: 0.6rem 0.8rem;
-    border-radius: 10px;
-    border: 1px solid rgba(148, 163, 184, 0.3);
-    background: rgba(15, 23, 42, 0.7);
-    color: #f8fafc;
-  }
-
-  .tx-input button {
-    padding: 0.6rem 1rem;
-    border-radius: 10px;
-    border: none;
-    background: #2dd4bf;
-    color: #0f172a;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .tx-input button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .session-meta.disclaimer {
+    border-left: 2px solid rgba(250, 204, 21, 0.6);
+    padding-left: 0.6rem;
   }
 
   .tx-check-row {
@@ -480,6 +683,10 @@
   @media (max-width: 640px) {
     .paywall-backdrop {
       padding: 0.75rem;
+    }
+
+    .selectors {
+      grid-template-columns: 1fr;
     }
   }
 </style>
