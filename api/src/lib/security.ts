@@ -51,6 +51,32 @@ function isPrivateIpv4(hostname: string): boolean {
   return ranges.some(([min, max]) => value >= min && value <= max);
 }
 
+function parseMappedIpv6TailToIpv4(tail: string): string | null {
+  const segments = tail.split(":");
+  if (segments.length !== 2) return null;
+
+  const high = Number.parseInt(segments[0], 16);
+  const low = Number.parseInt(segments[1], 16);
+  if (
+    !Number.isInteger(high) ||
+    !Number.isInteger(low) ||
+    high < 0 ||
+    low < 0 ||
+    high > 0xffff ||
+    low > 0xffff
+  ) {
+    return null;
+  }
+
+  const octets = [
+    (high >> 8) & 0xff,
+    high & 0xff,
+    (low >> 8) & 0xff,
+    low & 0xff,
+  ];
+  return octets.join(".");
+}
+
 function unwrapIpv6Literal(hostname: string): string {
   if (hostname.startsWith("[") && hostname.endsWith("]")) {
     return hostname.slice(1, -1);
@@ -67,6 +93,9 @@ function isPrivateIpv6(hostname: string): boolean {
   if (normalized.startsWith("::ffff:")) {
     const mapped = normalized.slice("::ffff:".length);
     if (isIpv4Address(mapped)) return isPrivateIpv4(mapped);
+    const mappedHex = parseMappedIpv6TailToIpv4(mapped);
+    if (mappedHex) return isPrivateIpv4(mappedHex);
+    return true;
   }
   return false;
 }

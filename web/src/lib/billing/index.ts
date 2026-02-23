@@ -480,6 +480,16 @@ export function getPromoToken(): string | null {
   return cookie.split("=")[1] || null;
 }
 
+function isAbortLikeError(error: unknown): boolean {
+  if (error instanceof DOMException) {
+    return error.name === "AbortError";
+  }
+  if (typeof error === "object" && error !== null && "name" in error) {
+    return (error as { name?: unknown }).name === "AbortError";
+  }
+  return false;
+}
+
 export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), BILLING_CONFIG_TIMEOUT_MS);
@@ -489,7 +499,7 @@ export async function getPaymentConfig(): Promise<BillingPaymentConfig> {
       signal: controller.signal,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    if (isAbortLikeError(error)) {
       throw new Error("Payment config request timed out");
     }
     throw error;

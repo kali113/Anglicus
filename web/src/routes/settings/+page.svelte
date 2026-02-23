@@ -559,7 +559,7 @@
   <section class="section danger">
     <h2>{$t("settings.dangerZone.title")}</h2>
 
-    <button class="btn danger" onclick={handleClearData}>
+    <button class="btn danger" data-testid="clear-data-trigger" onclick={handleClearData}>
       {$t("settings.dangerZone.clearData")}
     </button>
   </section>
@@ -606,11 +606,12 @@
         <div class="modal-actions">
           <button
             class="btn secondary"
+            data-testid="clear-data-cancel"
             onclick={() => (showDeleteConfirm = false)}
           >
             {$t("common.cancel")}
           </button>
-          <button class="btn danger" onclick={performDelete}>
+          <button class="btn danger" data-testid="clear-data-confirm" onclick={performDelete}>
             {$t("settings.deleteModal.confirm")}
           </button>
         </div>

@@ -18,6 +18,12 @@ describe("sanitizePublicHttpsBaseUrl", () => {
     expect(sanitizePublicHttpsBaseUrl("https://172.16.1.20")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://192.168.1.10")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://[::1]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[::ffff:127.0.0.1]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[::ffff:10.0.0.5]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[::ffff:192.168.1.10]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[fc00::1]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[fd12::abcd]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[fe80::1]")).toBeNull();
   });
 
   it("rejects credentialed URLs and URL suffix payloads", () => {
