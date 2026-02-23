@@ -17,6 +17,10 @@ dist/
 build/
 .next/
 out/
+api/.wrangler/
+web/.svelte-kit/
+web/.vercel/
+web/.netlify/
 
 # Android
 *.apk
@@ -47,3 +51,5 @@ coverage/
 *.tmp
 *.temp
 nul
+**/nul
+local-environments-settings-page-*.js
