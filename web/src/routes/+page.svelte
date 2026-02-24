@@ -7,17 +7,10 @@
   } from "$lib/storage/user-store";
   import { t } from "$lib/i18n";
 
-  const REDIRECT_SECONDS = 5;
-
   let destination = $state<"onboarding" | "app">("onboarding");
 
   const redirectHref = $derived(
     destination === "app" ? `${base}/app` : `${base}/onboarding`,
-  );
-  const redirectLabel = $derived(
-    destination === "app"
-      ? $t("intro.destinations.app")
-      : $t("intro.destinations.onboarding"),
   );
   const ctaLabel = $derived(
     destination === "app" ? $t("intro.ctaApp") : $t("intro.ctaStart"),
@@ -72,7 +65,6 @@
   ]);
 
   onMount(() => {
-    let redirectTimer: number | null = null;
     let cancelled = false;
 
     const run = async () => {
@@ -84,22 +76,12 @@
       const nextDestination: "onboarding" | "app" =
         completed && profile ? "app" : "onboarding";
       destination = nextDestination;
-
-      const nextHref =
-        nextDestination === "app" ? `${base}/app` : `${base}/onboarding`;
-
-      redirectTimer = window.setTimeout(() => {
-        window.location.replace(nextHref);
-      }, REDIRECT_SECONDS * 1000);
     };
 
     void run();
 
     return () => {
       cancelled = true;
-      if (redirectTimer !== null) {
-        clearTimeout(redirectTimer);
-      }
     };
   });
 
@@ -123,14 +105,6 @@
           {ctaLabel}
         </button>
         <a class="secondary" href="#how-it-works">{$t("intro.secondaryAction")}</a>
-      </div>
-
-      <div class="redirect-card" aria-live="polite">
-        <p>
-          {$t("intro.redirecting", {
-            destination: redirectLabel,
-          })}
-        </p>
       </div>
 
       <div class="highlights">
@@ -314,22 +288,8 @@
     color: #eff9ff;
   }
 
-  .redirect-card {
-    margin-top: 1rem;
-    padding: 0.75rem 0.9rem;
-    border: 1px solid rgba(125, 211, 252, 0.22);
-    border-radius: 14px;
-    background: rgba(7, 21, 34, 0.55);
-  }
-
-  .redirect-card p {
-    margin: 0;
-    color: #d2e7f6;
-    font-size: 0.9rem;
-  }
-
   .highlights {
-    margin-top: 1rem;
+    margin-top: 1.3rem;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
