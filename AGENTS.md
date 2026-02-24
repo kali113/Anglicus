@@ -18,6 +18,7 @@ TypeScript monorepo:
 3. Make the smallest safe change that solves the task and preserves existing intent.
 4. Validate with the project commands below.
 5. Report exactly what changed, what was validated, and any remaining risk.
+6. Always commit and push completed changes.
 
 ## Verification Commands
 - Lint/typecheck (`web`): `cd web && npm run check`

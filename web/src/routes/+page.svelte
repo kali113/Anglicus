@@ -41,10 +41,15 @@
 
   onMount(async () => {
     if (!(await hasCompletedOnboarding())) {
-      window.location.href = `${base}/onboarding`;
+      window.location.replace(`${base}/onboarding`);
       return;
     }
-    user = await getUserProfile();
+    const profile = await getUserProfile();
+    if (!profile) {
+      window.location.replace(`${base}/onboarding`);
+      return;
+    }
+    user = profile;
     isLoading = false;
 
     if (user) {
