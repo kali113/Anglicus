@@ -8,7 +8,7 @@ const config = {
 	kit: {
 		adapter: isGitHubPages
 			? adapterStatic({
-					fallback: 'index.html'
+					fallback: '404.html'
 				})
 			: cloudflare({
 					// See below for an explanation of these options
