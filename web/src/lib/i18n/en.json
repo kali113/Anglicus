@@ -418,12 +418,54 @@
   "intro": {
     "badge": "AI English Tutor",
     "title": "Anglicus is an AI English tutor built for Spanish speakers.",
-    "subtitle": "Practice every day with personalized guidance, adaptive exercises, and speaking support.",
-    "features": {
-      "tutor": "Chat with an AI tutor and get instant corrections.",
-      "exercises": "Train with exercises adapted to your level.",
-      "mistakes": "Track mistakes to focus your next sessions.",
-      "speaking": "Use speaking mode to improve pronunciation and fluency."
+    "subtitle": "Practice every day with personalized guidance, adaptive exercises, and speaking support that adapts to your pace.",
+    "highlights": {
+      "placement": {
+        "title": "Quick start",
+        "detail": "Begin with a short placement flow and get a tailored level."
+      },
+      "locale": {
+        "title": "Auto language",
+        "detail": "Anglicus detects browser language and keeps your chosen UI language."
+      },
+      "privacy": {
+        "title": "Private by default",
+        "detail": "Your progress is stored locally on your device."
+      }
+    },
+    "journeyTitle": "How your first session works",
+    "steps": {
+      "one": {
+        "title": "Pick your target language",
+        "body": "Choose English or Spanish depending on what you want to practice."
+      },
+      "two": {
+        "title": "Complete the placement test",
+        "body": "Answer 5 adaptive questions so Anglicus can calibrate your starting point."
+      },
+      "three": {
+        "title": "Train with the AI tutor",
+        "body": "Practice writing and speaking with corrections, feedback, and next-step drills."
+      }
+    },
+    "journeyNote": "No credit card required to start. Upgrade only when you want unlimited sessions.",
+    "featuresLabel": "What Anglicus gives you",
+    "cards": {
+      "chat": {
+        "tag": "Tutor",
+        "title": "Explanations, not just corrections",
+        "body": "Ask follow-up questions and get concise guidance focused on your mistakes."
+      },
+      "path": {
+        "tag": "Path",
+        "title": "Personalized progression",
+        "body": "Lessons and practice adapt to your current level and weak areas."
+      },
+      "speaking": {
+        "tag": "Speaking",
+        "title": "Voice practice with scoring",
+        "body": "Train pronunciation and fluency with speaking feedback and drills."
+      }
     },
     "destinations": {
       "onboarding": "onboarding setup",
@@ -431,7 +473,8 @@
     },
     "ctaStart": "Start now",
     "ctaApp": "Open dashboard",
-    "redirecting": "Redirecting to {destination} in {seconds}s..."
+    "secondaryAction": "See how it works",
+    "redirecting": "Taking you to {destination}..."
   },
   "legal": {
     "headTitle": "Legal | Anglicus",

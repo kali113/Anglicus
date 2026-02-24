@@ -418,12 +418,54 @@
   "intro": {
     "badge": "Tutor de inglés con IA",
     "title": "Anglicus es un tutor de inglés con IA creado para hispanohablantes.",
-    "subtitle": "Practica cada día con guía personalizada, ejercicios adaptativos y apoyo para speaking.",
-    "features": {
-      "tutor": "Chatea con un tutor IA y recibe correcciones al instante.",
-      "exercises": "Entrena con ejercicios adaptados a tu nivel.",
-      "mistakes": "Sigue tus errores para enfocar las próximas sesiones.",
-      "speaking": "Usa el modo de voz para mejorar pronunciación y fluidez."
+    "subtitle": "Practica cada día con guía personalizada, ejercicios adaptativos y soporte de speaking ajustado a tu ritmo.",
+    "highlights": {
+      "placement": {
+        "title": "Inicio rápido",
+        "detail": "Empieza con un test breve y obtén un nivel inicial adaptado."
+      },
+      "locale": {
+        "title": "Idioma automático",
+        "detail": "Anglicus detecta el idioma del navegador y respeta tu preferencia de interfaz."
+      },
+      "privacy": {
+        "title": "Privacidad por defecto",
+        "detail": "Tu progreso se guarda localmente en tu dispositivo."
+      }
+    },
+    "journeyTitle": "Cómo funciona tu primera sesión",
+    "steps": {
+      "one": {
+        "title": "Elige el idioma objetivo",
+        "body": "Selecciona inglés o español según lo que quieras practicar."
+      },
+      "two": {
+        "title": "Completa el test de nivel",
+        "body": "Responde 5 preguntas adaptativas para calibrar tu punto de partida."
+      },
+      "three": {
+        "title": "Practica con el tutor IA",
+        "body": "Entrena escritura y speaking con correcciones, feedback y ejercicios siguientes."
+      }
+    },
+    "journeyNote": "No necesitas tarjeta para empezar. Mejora solo cuando quieras sesiones ilimitadas.",
+    "featuresLabel": "Qué te da Anglicus",
+    "cards": {
+      "chat": {
+        "tag": "Tutor",
+        "title": "Explicaciones, no solo correcciones",
+        "body": "Haz preguntas de seguimiento y recibe guía clara basada en tus errores."
+      },
+      "path": {
+        "tag": "Ruta",
+        "title": "Progreso personalizado",
+        "body": "Lecciones y práctica se adaptan a tu nivel actual y áreas débiles."
+      },
+      "speaking": {
+        "tag": "Speaking",
+        "title": "Práctica de voz con puntuación",
+        "body": "Mejora pronunciación y fluidez con feedback y ejercicios de speaking."
+      }
     },
     "destinations": {
       "onboarding": "la configuración inicial",
@@ -431,7 +473,8 @@
     },
     "ctaStart": "Empezar ahora",
     "ctaApp": "Abrir panel",
-    "redirecting": "Redirigiendo a {destination} en {seconds}s..."
+    "secondaryAction": "Ver cómo funciona",
+    "redirecting": "Te llevamos a {destination}..."
   },
   "legal": {
     "headTitle": "Legal | Anglicus",
