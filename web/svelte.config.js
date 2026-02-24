@@ -19,6 +19,9 @@ const config = {
 				}),
 		paths: {
 			base: isGitHubPages ? '/Anglicus' : ''
+		},
+		prerender: {
+			entries: ['/', '/legal', '/en', '/es', '/en/legal', '/es/legal']
 		}
 	}
 };

@@ -527,6 +527,25 @@
       "outro": "You can request access, correction, deletion, or reminder opt-out through Settings and in-app feedback. If local data remains, clear the site's browser storage for a full device-side wipe."
     }
   },
+  "seo": {
+    "home": {
+      "title": "Anglicus | AI English Tutor for Spanish Speakers",
+      "description": "Practice English with an AI tutor built for Spanish speakers. Get adaptive lessons, speaking practice, and personalized feedback."
+    },
+    "legal": {
+      "title": "Legal, Privacy and Data Protection | Anglicus",
+      "description": "Read Anglicus terms, privacy, cookies, and data protection practices."
+    },
+    "gateway": {
+      "title": "Anglicus Language Selector | English and Spanish",
+      "description": "Choose English or Spanish to explore Anglicus, an AI English tutor for Spanish speakers.",
+      "titleLine": "Choose your language",
+      "subtitle": "Select your language to continue.",
+      "english": "Continue in English",
+      "spanish": "Continuar en Espanol",
+      "autoRedirect": "Auto redirecting to {language}..."
+    }
+  },
   "placement": {
     "languageOptions": {
       "en": "English (for Spanish speakers)",

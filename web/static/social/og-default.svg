@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Anglicus</title>
+  <desc id="desc">AI English tutor for Spanish speakers</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1324" />
+      <stop offset="55%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#0f766e" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1040" cy="110" r="180" fill="#38bdf8" opacity="0.18" />
+  <circle cx="140" cy="560" r="220" fill="#2dd4bf" opacity="0.15" />
+  <rect x="90" y="88" width="12" height="454" rx="6" fill="url(#accent)" />
+  <text x="130" y="230" fill="#e5f3ff" font-size="88" font-family="'Trebuchet MS', Verdana, sans-serif" font-weight="700">
+    Anglicus
+  </text>
+  <text x="130" y="312" fill="#c7deee" font-size="42" font-family="'Trebuchet MS', Verdana, sans-serif" font-weight="500">
+    AI English tutor for Spanish speakers
+  </text>
+  <text x="130" y="392" fill="#99c5dd" font-size="30" font-family="'Trebuchet MS', Verdana, sans-serif">
+    Adaptive lessons • Speaking practice • Personalized feedback
+  </text>
+</svg>

@@ -527,6 +527,25 @@
       "outro": "Puedes solicitar acceso, rectificación, eliminación o baja de recordatorios desde Configuración y feedback en la app. Si quedan datos locales, borra el almacenamiento del sitio en tu navegador para una limpieza completa en el dispositivo."
     }
   },
+  "seo": {
+    "home": {
+      "title": "Anglicus | Tutor de ingles con IA para hispanohablantes",
+      "description": "Practica ingles con un tutor de IA creado para hispanohablantes. Obten lecciones adaptativas, speaking y feedback personalizado."
+    },
+    "legal": {
+      "title": "Legal, privacidad y proteccion de datos | Anglicus",
+      "description": "Consulta los terminos, privacidad, cookies y practicas de proteccion de datos de Anglicus."
+    },
+    "gateway": {
+      "title": "Selector de idioma de Anglicus | Ingles y Espanol",
+      "description": "Elige ingles o espanol para explorar Anglicus, un tutor de ingles con IA para hispanohablantes.",
+      "titleLine": "Elige tu idioma",
+      "subtitle": "Selecciona tu idioma para continuar.",
+      "english": "Continue in English",
+      "spanish": "Continuar en Espanol",
+      "autoRedirect": "Redirigiendo automaticamente a {language}..."
+    }
+  },
   "placement": {
     "languageOptions": {
       "en": "Inglés (para hispanohablantes)",

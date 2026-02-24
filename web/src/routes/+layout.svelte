@@ -22,13 +22,53 @@
     refreshToken,
     setToken,
   } from "$lib/auth/index.js";
-  import { t } from "$lib/i18n";
+  import { locale, t } from "$lib/i18n";
+  import { normalizePath } from "$lib/seo/meta";
 
   let { children } = $props();
   let showNav = $state(true);
   let showFooter = $state(true);
   let onboardingComplete = $state(false);
   let user = $state<UserProfile | null>(null);
+
+  const pathWithoutBase = $derived.by(() => {
+    const pathname = $page.url.pathname || "/";
+    if (base && pathname.startsWith(base)) {
+      const trimmed = pathname.slice(base.length);
+      return trimmed || "/";
+    }
+    return pathname;
+  });
+
+  const normalizedRoutePath = $derived.by(() => normalizePath(pathWithoutBase));
+  const routeId = $derived($page.route.id ?? "");
+
+  const robotsDirective = $derived.by(() =>
+    routeId === "/en" ||
+    routeId === "/es" ||
+    routeId === "/en/legal" ||
+    routeId === "/es/legal"
+      ? "index,follow,max-image-preview:large"
+      : "noindex,follow",
+  );
+
+  const legalLocale = $derived.by(() => {
+    if (routeId.startsWith("/en")) {
+      return "en";
+    }
+    if (routeId.startsWith("/es")) {
+      return "es";
+    }
+    if (normalizedRoutePath === "/en" || normalizedRoutePath.startsWith("/en/")) {
+      return "en";
+    }
+    if (normalizedRoutePath === "/es" || normalizedRoutePath.startsWith("/es/")) {
+      return "es";
+    }
+    return $locale;
+  });
+
+  const legalBaseHref = $derived(`${base}/${legalLocale}/legal`);
 
   onMount(() => {
     const refreshAuthSession = async () => {
@@ -107,6 +147,7 @@
   <link rel="manifest" href="{base}/manifest.json" />
   <meta name="theme-color" content="#1e293b" />
   <meta name="application-name" content={$t("app.name")} />
+  <meta name="robots" content={robotsDirective} />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content={$t("app.name")} />
@@ -135,10 +176,10 @@
   {#if showFooter}
     <footer class="footer">
       <div class="footer-links">
-        <a href="{base}/legal#terms">{$t("footer.terms")}</a>
-        <a href="{base}/legal#privacy">{$t("footer.privacy")}</a>
-        <a href="{base}/legal#cookies">{$t("footer.cookies")}</a>
-        <a href="{base}/legal#data-protection">{$t("footer.dataProtection")}</a>
+        <a href="{legalBaseHref}#terms">{$t("footer.terms")}</a>
+        <a href="{legalBaseHref}#privacy">{$t("footer.privacy")}</a>
+        <a href="{legalBaseHref}#cookies">{$t("footer.cookies")}</a>
+        <a href="{legalBaseHref}#data-protection">{$t("footer.dataProtection")}</a>
       </div>
       <div class="footer-crypto">
         <SupportCryptoCard variant="compact" />

@@ -9,9 +9,15 @@
         try {
           const STORAGE_KEY = "anglicus_locale";
           const stored = localStorage.getItem(STORAGE_KEY);
+          const pathMatch = (location.pathname || "").match(/\/(en|es)(?:\/|$)/);
+          const pathLocale = pathMatch?.[1] === "en" || pathMatch?.[1] === "es"
+            ? pathMatch[1]
+            : null;
           const inferred =
             stored === "en" || stored === "es"
               ? stored
+              : pathLocale
+                ? pathLocale
               : (navigator.language || "").toLowerCase().startsWith("es")
                 ? "es"
                 : "en";

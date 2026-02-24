@@ -4,22 +4,33 @@
 
 ## English
 
-Anglicus is an AI English tutor designed for Spanish speakers.
+Anglicus is an **AI English tutor for Spanish speakers** focused on daily practice, adaptive lessons, and speaking feedback.
 
-### What you can do
+### Live demo
 
-- **Chat with an AI tutor** — Practice English with corrections and explanations
-- **Personalized exercises** — Activities adapted to your level and common mistakes
-- **Learn from your errors** — Mistake tracking to focus future practice
-- **Paywall for premium features** — Optional upgrades for advanced content
-- **Crypto support** — Crypto-friendly payment options for upgrades
-- **i18n UI** — Interface localized for ES/EN
+Use the production web app: **https://kali113.github.io/Anglicus/**
 
-### How to use it
+### Who it's for
+
+- Spanish speakers who want to improve English conversation and grammar
+- Learners who want fast daily practice from phone or desktop
+- Students who prefer bilingual (EN/ES) learning support
+
+### Key features
+
+- **AI tutor chat** — Practice English with corrections and explanations
+- **Adaptive exercises** — Activities tailored to your level and mistakes
+- **Speaking coach** — Voice practice with scoring and follow-up drills
+- **Learning memory** — Mistake tracking to focus future practice
+- **Premium upgrades** — Optional Pro access for advanced usage
+- **Crypto options** — Crypto-friendly support for upgrades
+- **Bilingual UI** — Interface localized for English and Spanish
+
+### Install / use
 
 #### Web version
-Just visit: **https://kali113.github.io/Anglicus/**  
-Works in your browser on phone, tablet, or desktop.
+Open: **https://kali113.github.io/Anglicus/**
+Works in browser on mobile, tablet, and desktop.
 
 #### Install on your phone (as an app)
 
@@ -47,6 +58,13 @@ Open an issue in this repository.
 - `docs/CONTRIBUTING.md` — setup, commands, and contribution process
 - `docs/architecture.md` and `docs/security.md` — technical and security references
 
+### GitHub repository SEO checklist
+
+- Set repository description to: `AI English tutor for Spanish speakers`
+- Set website URL to: `https://kali113.github.io/Anglicus/`
+- Add repository topics: `ai-tutor`, `english-learning`, `spanish-speakers`, `sveltekit`, `pwa`, `education`
+- Upload a social preview image in repository settings
+
 ### Investor demo runbook (live BTC flow)
 
 1. Validate backend + frontend health:
@@ -64,21 +82,32 @@ Open an issue in this repository.
 
 ## Español
 
-Anglicus es un tutor de inglés con IA diseñado para hispanohablantes.
+Anglicus es un **tutor de inglés con IA para hispanohablantes** centrado en práctica diaria, lecciones adaptativas y feedback de speaking.
 
-### Qué puedes hacer
+### Demo en vivo
 
-- **Chatear con un tutor IA** — Practica inglés con correcciones y explicaciones
-- **Ejercicios personalizados** — Actividades adaptadas a tu nivel y errores comunes
-- **Aprender de tus errores** — Seguimiento de errores para enfocar la práctica
-- **Paywall (muro de pago) para funciones premium** — Actualizaciones opcionales
-- **Soporte cripto** — Opciones de pago en cripto para upgrades
-- **Interfaz i18n** — UI localizada para ES/EN
+Abre la app web: **https://kali113.github.io/Anglicus/**
 
-### Cómo usarla
+### Para quién es
+
+- Hispanohablantes que quieren mejorar conversación y gramática en inglés
+- Personas que prefieren práctica corta y constante desde móvil o desktop
+- Estudiantes que valoran soporte bilingüe (ES/EN)
+
+### Funciones clave
+
+- **Chat con tutor IA** — Practica inglés con correcciones y explicaciones
+- **Ejercicios adaptativos** — Actividades ajustadas a tu nivel y errores
+- **Coach de speaking** — Práctica de voz con puntuación y ejercicios siguientes
+- **Memoria de aprendizaje** — Seguimiento de errores para enfocar práctica
+- **Mejoras Pro opcionales** — Acceso premium para uso avanzado
+- **Soporte cripto** — Opciones de pago/soporte en cripto
+- **Interfaz bilingüe** — UI en español e inglés
+
+### Instalar / usar
 
 #### Versión web
-Solo entra aquí: **https://kali113.github.io/Anglicus/**  
+Entra aquí: **https://kali113.github.io/Anglicus/**
 Funciona en tu navegador en celular, tablet o computadora.
 
 #### Instalar en tu celular (como app)
@@ -118,6 +147,13 @@ Si te gusta Anglicus, puedes apoyar el proyecto con una donación en criptomoned
 - `AGENTS.md` — guía rápida del repositorio, reglas y flujos
 - `docs/CONTRIBUTING.md` — setup, comandos y proceso de contribución
 - `docs/architecture.md` y `docs/security.md` — referencias técnicas y de seguridad
+
+### Checklist SEO del repositorio en GitHub
+
+- Descripción del repositorio: `Tutor de inglés con IA para hispanohablantes`
+- Website URL: `https://kali113.github.io/Anglicus/`
+- Topics sugeridos: `ai-tutor`, `english-learning`, `spanish-speakers`, `sveltekit`, `pwa`, `education`
+- Subir imagen de social preview en la configuración del repositorio
 
 ### Runbook para demo con inversores (flujo BTC real)
 

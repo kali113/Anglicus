@@ -1,156 +1,70 @@
 <script lang="ts">
-  import { t } from "$lib/i18n";
+  import { onMount } from "svelte";
+  import { base } from "$app/paths";
+  import type { Locale } from "$lib/i18n";
 
-  type LegalSection = {
-    id: string;
-    titleKey: string;
-    introKey: string;
-    points: string[];
-    outroKey?: string;
+  const STORAGE_KEY = "anglicus_locale";
+  let targetLocale = $state<Locale>("es");
+
+  const englishHref = `${base}/en/legal`;
+  const spanishHref = `${base}/es/legal`;
+  const targetHref = $derived(
+    targetLocale === "es" ? spanishHref : englishHref,
+  );
+
+  const detectLocale = (): Locale => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "en" || stored === "es") return stored;
+    } catch {
+      // Keep fallback locale if storage is not accessible.
+    }
+
+    const language = navigator.language?.toLowerCase() ?? "";
+    return language.startsWith("es") ? "es" : "en";
   };
 
-  const sections: LegalSection[] = [
-    {
-      id: "terms",
-      titleKey: "legal.terms.title",
-      introKey: "legal.terms.intro",
-      points: [
-        "legal.terms.point1",
-        "legal.terms.point2",
-        "legal.terms.point3",
-        "legal.terms.point4",
-        "legal.terms.point5",
-        "legal.terms.point6",
-      ],
-      outroKey: "legal.terms.outro",
-    },
-    {
-      id: "privacy",
-      titleKey: "legal.privacy.title",
-      introKey: "legal.privacy.intro",
-      points: [
-        "legal.privacy.point1",
-        "legal.privacy.point2",
-        "legal.privacy.point3",
-        "legal.privacy.point4",
-        "legal.privacy.point5",
-        "legal.privacy.point6",
-      ],
-      outroKey: "legal.privacy.outro",
-    },
-    {
-      id: "cookies",
-      titleKey: "legal.cookies.title",
-      introKey: "legal.cookies.intro",
-      points: [
-        "legal.cookies.point1",
-        "legal.cookies.point2",
-        "legal.cookies.point3",
-        "legal.cookies.point4",
-        "legal.cookies.point5",
-        "legal.cookies.point6",
-      ],
-      outroKey: "legal.cookies.outro",
-    },
-    {
-      id: "data-protection",
-      titleKey: "legal.dataProtection.title",
-      introKey: "legal.dataProtection.intro",
-      points: [
-        "legal.dataProtection.point1",
-        "legal.dataProtection.point2",
-        "legal.dataProtection.point3",
-        "legal.dataProtection.point4",
-        "legal.dataProtection.point5",
-        "legal.dataProtection.point6",
-      ],
-      outroKey: "legal.dataProtection.outro",
-    },
-  ];
+  onMount(() => {
+    const nextLocale = detectLocale();
+    targetLocale = nextLocale;
+
+    const suffix = window.location.hash || "";
+    window.location.replace(`${base}/${nextLocale}/legal${suffix}`);
+  });
 </script>
 
-<svelte:head>
-  <title>{$t("legal.headTitle")}</title>
-</svelte:head>
-
-<div class="legal-page">
-  <header class="legal-header">
-    <h1>{$t("legal.title")}</h1>
-    <p>{$t("legal.lastUpdated", { date: "2026-02-24" })}</p>
-    <p>{$t("legal.disclaimer")}</p>
-    <p class="legal-overview">{$t("legal.overview")}</p>
-  </header>
-
-  {#each sections as section}
-    <section id={section.id} class="legal-section">
-      <h2>{$t(section.titleKey)}</h2>
-      <p>{$t(section.introKey)}</p>
-      <ul class="legal-list">
-        {#each section.points as point}
-          <li>{$t(point)}</li>
-        {/each}
-      </ul>
-      {#if section.outroKey}
-        <p>{$t(section.outroKey)}</p>
-      {/if}
-    </section>
-  {/each}
-</div>
+<section class="legacy-legal" aria-label="Legal redirection">
+  <h1>Legal</h1>
+  <p>Redirecting to the localized legal policy.</p>
+  <p>
+    <a href={targetHref}>Continue</a>
+    <span aria-hidden="true"> · </span>
+    <a href={englishHref}>English</a>
+    <span aria-hidden="true"> · </span>
+    <a href={spanishHref}>Español</a>
+  </p>
+</section>
 
 <style>
-  .legal-page {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  .legacy-legal {
+    max-width: 760px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
   }
 
-  .legal-header h1 {
-    margin: 0 0 0.5rem;
+  .legacy-legal h1 {
+    margin: 0;
   }
 
-  .legal-header p {
-    margin: 0.25rem 0;
+  .legacy-legal p {
     color: var(--text-muted);
   }
 
-  .legal-overview {
-    margin-top: 0.75rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  .legal-section {
-    padding: 1.5rem;
-    border-radius: 16px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .legal-section h2 {
-    margin: 0;
-  }
-
-  .legal-section p {
-    margin: 0;
-    color: var(--text-secondary);
-    line-height: 1.55;
-  }
-
-  .legal-list {
-    margin: 0;
-    padding-left: 1.25rem;
-    color: var(--text-secondary);
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-  }
-
-  .legal-list li {
-    line-height: 1.5;
+  .legacy-legal a {
+    color: var(--primary-light);
+    text-decoration: none;
   }
 </style>
