@@ -82,7 +82,7 @@
       const profile = await getUserProfile();
       const redirectPath = needsProfileNameSetup(profile)
         ? `${base}/onboarding?step=name`
-        : `${base}/`;
+        : `${base}/app`;
       goto(redirectPath);
     } catch (error) {
       errorMessage =
@@ -218,9 +218,7 @@
     </button>
 
     <p class="trust-copy">
-      <span class="lang-en">No credit card required to start. Upgrade to Pro only when you want unlimited tutor sessions.</span>
-      <span class="lang-divider"> / </span>
-      <span class="lang-es">No necesitas tarjeta para empezar. Mejora a Pro solo cuando quieras sesiones ilimitadas con el tutor.</span>
+      {$t("auth.trustCopyRegister")}
     </p>
 
     <div class="links">

@@ -41,6 +41,7 @@ if (browser) {
   locale.set(detectLocale());
   locale.subscribe((value) => {
     localStorage.setItem(STORAGE_KEY, value);
+    document.documentElement.lang = value;
   });
 }
 

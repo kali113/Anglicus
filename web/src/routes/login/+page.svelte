@@ -79,7 +79,7 @@
       const profile = await getUserProfile();
       const redirectPath = needsProfileNameSetup(profile)
         ? `${base}/onboarding?step=name`
-        : `${base}/`;
+        : `${base}/app`;
       goto(redirectPath);
     } catch (error) {
       errorMessage =
@@ -144,7 +144,7 @@
     try {
       const token = await loginUser(email.trim(), password);
       setToken(token);
-      goto(`${base}/`);
+      goto(`${base}/app`);
     } catch (error) {
       errorMessage =
         error instanceof Error ? error.message : $t("auth.errors.loginFailed");

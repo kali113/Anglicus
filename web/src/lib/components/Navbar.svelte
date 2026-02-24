@@ -14,7 +14,7 @@
 
 <nav class="navbar">
   <div class="nav-content">
-    <a href="{base}/" class="logo">
+    <a href="{base}/app" class="logo">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="28"
@@ -33,7 +33,7 @@
     </a>
 
     <div class="nav-links">
-      <a href="{base}/" class:active={$page.url.pathname === `${base}/`}>
+      <a href="{base}/app" class:active={$page.url.pathname === `${base}/app`}>
         {$t("nav.home")}
       </a>
       <a

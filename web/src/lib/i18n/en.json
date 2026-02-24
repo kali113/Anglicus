@@ -61,7 +61,9 @@
     },
     "or": "or",
     "googleButton": "Sign in with Google",
-    "googleConfigHint": "Google sign-in needs app configuration. Ask support to enable it."
+    "googleConfigHint": "Google sign-in needs app configuration. Ask support to enable it.",
+    "trustCopyRegister": "No credit card required to start. Upgrade to Pro only when you want unlimited tutor sessions.",
+    "trustCopyVerify": "After verification, you can start learning immediately and upgrade to Pro anytime."
   },
   "units": {
     "words": "words"
@@ -413,6 +415,24 @@
   "onboarding": {
     "redirecting": "Redirecting to the placement test..."
   },
+  "intro": {
+    "badge": "AI English Tutor",
+    "title": "Anglicus is an AI English tutor built for Spanish speakers.",
+    "subtitle": "Practice every day with personalized guidance, adaptive exercises, and speaking support.",
+    "features": {
+      "tutor": "Chat with an AI tutor and get instant corrections.",
+      "exercises": "Train with exercises adapted to your level.",
+      "mistakes": "Track mistakes to focus your next sessions.",
+      "speaking": "Use speaking mode to improve pronunciation and fluency."
+    },
+    "destinations": {
+      "onboarding": "onboarding setup",
+      "app": "your dashboard"
+    },
+    "ctaStart": "Start now",
+    "ctaApp": "Open dashboard",
+    "redirecting": "Redirecting to {destination} in {seconds}s..."
+  },
   "legal": {
     "headTitle": "Legal | Anglicus",
     "title": "Legal",
@@ -451,7 +471,8 @@
       "alreadyApplied": "You already have a code applied.",
       "applied": "Code applied: {percent}% OFF",
       "used": "This code has already been used.",
-      "invalid": "Invalid code. Check and try again."
+      "invalid": "Invalid code. Check and try again.",
+      "referralAlreadyApplied": "Referral discount already active. Promo codes do not stack."
     },
     "defaultName": "Friend",
     "reminderError": "Email reminder couldn't be activated. You can try later in Settings.",
@@ -504,6 +525,8 @@
       "title": "Test completed!",
       "levelLabel": "Your {language} level is:",
       "correctAnswers": "Correct answers: {correct} / {total}",
+      "pathReady": "✅ Your personalized path is now ready.",
+      "proHint": "✅ Start free now and unlock Pro anytime for unlimited tutor access.",
       "startLearning": "Start Learning"
     }
   },

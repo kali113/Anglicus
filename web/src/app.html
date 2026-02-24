@@ -1,9 +1,26 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+    <script>
+      (function () {
+        try {
+          const STORAGE_KEY = "anglicus_locale";
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const inferred =
+            stored === "en" || stored === "es"
+              ? stored
+              : (navigator.language || "").toLowerCase().startsWith("es")
+                ? "es"
+                : "en";
+          document.documentElement.lang = inferred;
+        } catch {
+          // Ignore bootstrap locale failures and keep default lang.
+        }
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

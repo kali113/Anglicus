@@ -23,7 +23,7 @@
     await completeLesson(lessonId);
 
     setTimeout(() => {
-      goto(`${base}/`);
+      goto(`${base}/app`);
     }, 2500);
   }
 </script>
@@ -31,7 +31,7 @@
 <div class="lesson-page" in:fade>
   <div class="lesson-container">
     <header class="lesson-header">
-      <button class="back-btn" onclick={() => goto(`${base}/`)}>
+      <button class="back-btn" onclick={() => goto(`${base}/app`)}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

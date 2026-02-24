@@ -61,7 +61,9 @@
     },
     "or": "o",
     "googleButton": "Iniciar sesión con Google",
-    "googleConfigHint": "El acceso con Google requiere configuración de la app. Pide a soporte que lo habilite."
+    "googleConfigHint": "El acceso con Google requiere configuración de la app. Pide a soporte que lo habilite.",
+    "trustCopyRegister": "No necesitas tarjeta para empezar. Mejora a Pro solo cuando quieras sesiones ilimitadas con el tutor.",
+    "trustCopyVerify": "Tras verificarte, puedes empezar a aprender de inmediato y mejorar a Pro en cualquier momento."
   },
   "units": {
     "words": "palabras"
@@ -413,6 +415,24 @@
   "onboarding": {
     "redirecting": "Redirigiendo al test de nivel..."
   },
+  "intro": {
+    "badge": "Tutor de inglés con IA",
+    "title": "Anglicus es un tutor de inglés con IA creado para hispanohablantes.",
+    "subtitle": "Practica cada día con guía personalizada, ejercicios adaptativos y apoyo para speaking.",
+    "features": {
+      "tutor": "Chatea con un tutor IA y recibe correcciones al instante.",
+      "exercises": "Entrena con ejercicios adaptados a tu nivel.",
+      "mistakes": "Sigue tus errores para enfocar las próximas sesiones.",
+      "speaking": "Usa el modo de voz para mejorar pronunciación y fluidez."
+    },
+    "destinations": {
+      "onboarding": "la configuración inicial",
+      "app": "tu panel"
+    },
+    "ctaStart": "Empezar ahora",
+    "ctaApp": "Abrir panel",
+    "redirecting": "Redirigiendo a {destination} en {seconds}s..."
+  },
   "legal": {
     "headTitle": "Legal | Anglicus",
     "title": "Legal",
@@ -451,7 +471,8 @@
       "alreadyApplied": "Ya tienes un código aplicado.",
       "applied": "Código aplicado: {percent}% OFF",
       "used": "Este código ya fue utilizado.",
-      "invalid": "Código inválido. Revisa e intenta otra vez."
+      "invalid": "Código inválido. Revisa e intenta otra vez.",
+      "referralAlreadyApplied": "El descuento por referido ya está activo. Los códigos promo no se acumulan."
     },
     "defaultName": "Amigo",
     "reminderError": "No se pudo activar el recordatorio por email. Puedes intentarlo luego en Configuración.",
@@ -504,6 +525,8 @@
       "title": "¡Test completado!",
       "levelLabel": "Tu nivel de {language} es:",
       "correctAnswers": "Respuestas correctas: {correct} / {total}",
+      "pathReady": "✅ Tu ruta personalizada ya está lista.",
+      "proHint": "✅ Empieza gratis ahora y desbloquea Pro cuando quieras para tutor ilimitado.",
       "startLearning": "Comenzar a Aprender"
     }
   },

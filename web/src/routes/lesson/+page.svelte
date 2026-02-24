@@ -345,7 +345,7 @@ Student's question: "${tutorQuestion}"`,
   }
 
   function finishLesson() {
-    goto(`${base}/`);
+    goto(`${base}/app`);
   }
 
   async function openPaywall(mode: "nag" | "block", feature: string) {
@@ -361,7 +361,7 @@ Student's question: "${tutorQuestion}"`,
   <header class="header">
     <button
       class="back-btn"
-      onclick={() => goto(`${base}/`)}
+      onclick={() => goto(`${base}/app`)}
       aria-label={$t("lesson.back")}
     >
       <svg

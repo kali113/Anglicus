@@ -23,7 +23,7 @@
       const token = await verifyUser(email.trim(), code.trim());
       setToken(token);
       void trackEvent("signup_completed");
-      goto(`${base}/`);
+      goto(`${base}/app`);
     } catch (error) {
       errorMessage =
         error instanceof Error ? error.message : $t("auth.errors.verifyFailed");
@@ -69,9 +69,7 @@
     </button>
 
     <p class="trust-copy">
-      <span class="lang-en">After verification, you can start learning immediately and upgrade to Pro anytime.</span>
-      <span class="lang-divider"> / </span>
-      <span class="lang-es">Tras verificarte, puedes empezar a aprender de inmediato y mejorar a Pro en cualquier momento.</span>
+      {$t("auth.trustCopyVerify")}
     </p>
 
     <div class="links">
