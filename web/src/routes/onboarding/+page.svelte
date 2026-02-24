@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { t } from '$lib/i18n';
 
 	onMount(() => {
-		// Redirect to the placement test preserving onboarding query params.
+		// Use a full-page navigation so onboarding works even when client routing fails.
 		const search = typeof window !== "undefined" ? window.location.search : "";
-		goto(`${base}/placement-test${search}`);
+		window.location.replace(`${base}/placement-test${search}`);
 	});
 </script>
 
