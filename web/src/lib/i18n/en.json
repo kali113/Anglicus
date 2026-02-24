@@ -478,24 +478,53 @@
   },
   "legal": {
     "headTitle": "Legal | Anglicus",
-    "title": "Legal",
+    "title": "Legal, Privacy and Data Protection",
     "lastUpdated": "Last updated: {date}",
-    "disclaimer": "This summary is not legal advice. For legal questions, consult a professional.",
+    "disclaimer": "This page describes how Anglicus currently works and is not legal advice.",
+    "overview": "We update this policy when product behavior changes, so you can see what data is processed, where it is stored, and how to control it.",
     "terms": {
       "title": "Terms of Service",
-      "body": "Anglicus is an educational tool. The service is provided \"as is\" and may change over time. You are responsible for the content you share and for complying with applicable law. If you are a minor, use the app with guardian permission."
+      "intro": "By using Anglicus, you agree to these terms.",
+      "point1": "Anglicus is an educational platform. We do not guarantee specific learning outcomes, exam results, or uninterrupted availability.",
+      "point2": "You are responsible for account security, for content you submit, and for activity performed through your account.",
+      "point3": "You may not use the service for unlawful activity, abuse, automated scraping, security probing, or attempts to bypass limits.",
+      "point4": "AI-generated answers can be incorrect or incomplete. You should verify important information before relying on it.",
+      "point5": "Paid features and discounts follow the billing flow shown in the app. Crypto payments are irreversible once confirmed on-chain.",
+      "point6": "We may update, suspend, or remove features to improve reliability, safety, or legal compliance.",
+      "outro": "If you do not agree with these terms, you should stop using the service."
     },
     "privacy": {
       "title": "Privacy",
-      "body": "Your progress and settings are stored locally on your device only (localStorage). We do not collect or store any personal data on our servers. You can delete all data from Settings at any time."
+      "intro": "We minimize personal data and separate on-device learning data from limited server-side account data.",
+      "point1": "On your device, we store profile, learning progress, settings, mistakes, and speaking statistics in local browser storage (localStorage and IndexedDB).",
+      "point2": "For authentication, the API stores a user ID, hashed email, password hash (email login only), auth provider, and subscription status in our database.",
+      "point3": "For product operations, we store usage counters and selected analytics events linked to your user ID.",
+      "point4": "If you enable email reminders, we store email, reminder time, timezone offset, language, and frequency encrypted in reminder storage until you unsubscribe.",
+      "point5": "If you use paid checkout, we store checkout session data such as address, network, required amount, transaction ID, confirmation state, and paid-until date.",
+      "point6": "If you submit feedback, we process your message and optional contact email to respond and improve the product.",
+      "outro": "We do not sell personal data and we do not use third-party advertising trackers."
     },
     "cookies": {
       "title": "Cookies",
-      "body": "We use local storage and essential technical cookies for functionality and security. We do not use advertising cookies or tracking."
+      "intro": "Anglicus uses only essential cookies and application storage needed to run core features.",
+      "point1": "The `anglicus_promo` cookie stores a signed promo token for billing discounts. It is HttpOnly, SameSite=Lax, path-limited to `/api/billing`, and can last up to 1 year.",
+      "point2": "The `anglicus_referral` cookie stores a signed referral token with the same security settings and lifetime.",
+      "point3": "We do not set advertising, remarketing, or third-party analytics cookies.",
+      "point4": "The app also uses localStorage and sessionStorage for auth tokens, language preference, settings, active checkout state, and anti-abuse controls.",
+      "point5": "If you block or clear cookies/storage, some features (for example discounts or persistent login) may stop working until you sign in or apply codes again.",
+      "point6": "Browser controls let you manage or delete cookies and local data at any time.",
+      "outro": "Cookie values are signed tokens, not plain promo or referral codes."
     },
     "dataProtection": {
       "title": "Data Protection",
-      "body": "You have full control over your data. All data is stored locally on your device and can be deleted instantly from Settings (Delete all data). We do not retain any copies."
+      "intro": "We apply technical and organizational controls appropriate for a small educational platform.",
+      "point1": "Email identifiers are stored as hashes in auth records, and passwords are stored as bcrypt hashes.",
+      "point2": "Reminder subscriptions are encrypted before being stored in reminder infrastructure.",
+      "point3": "On-device profile storage uses encryption and integrity checks, with local backup logic to reduce tampering and accidental loss.",
+      "point4": "To prevent abuse, rate-limiting systems may process your IP address or a proxy-derived network identifier.",
+      "point5": "When required for service delivery, data can be sent to AI model providers, email delivery providers, payment or blockchain infrastructure, and Google Sign-In.",
+      "point6": "Retention varies by dataset: reminder entries remain until unsubscribe, rate-limit records are short-lived, and account/billing/analytics records are kept while needed for operations, fraud prevention, and legal obligations.",
+      "outro": "You can request access, correction, deletion, or reminder opt-out through Settings and in-app feedback. If local data remains, clear the site's browser storage for a full device-side wipe."
     }
   },
   "placement": {

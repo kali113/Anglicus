@@ -478,24 +478,53 @@
   },
   "legal": {
     "headTitle": "Legal | Anglicus",
-    "title": "Legal",
+    "title": "Legal, privacidad y protección de datos",
     "lastUpdated": "Última actualización: {date}",
-    "disclaimer": "Este resumen no es asesoramiento legal. Para dudas legales, consulta un profesional.",
+    "disclaimer": "Esta página describe cómo funciona Anglicus actualmente y no constituye asesoramiento legal.",
+    "overview": "Actualizamos esta política cuando cambia el producto, para que sepas qué datos se tratan, dónde se almacenan y cómo controlarlos.",
     "terms": {
-      "title": "Términos de Servicio",
-      "body": "Anglicus es una herramienta educativa. El servicio se ofrece \"tal cual\" y puede cambiar con el tiempo. Eres responsable del contenido que compartes y de cumplir la ley aplicable. Si eres menor, utiliza la app con permiso de tus tutores."
+      "title": "Términos de servicio",
+      "intro": "Al usar Anglicus, aceptas estos términos.",
+      "point1": "Anglicus es una plataforma educativa. No garantizamos resultados de aprendizaje concretos, resultados de exámenes ni disponibilidad ininterrumpida.",
+      "point2": "Eres responsable de la seguridad de tu cuenta, del contenido que envíes y de la actividad realizada con tu cuenta.",
+      "point3": "No puedes usar el servicio para actividades ilegales, abuso, scraping automatizado, pruebas de seguridad no autorizadas ni intentos de saltarte límites.",
+      "point4": "Las respuestas generadas por IA pueden ser incorrectas o incompletas. Debes verificar la información importante antes de confiar en ella.",
+      "point5": "Las funciones de pago y descuentos siguen el flujo de cobro mostrado en la app. Los pagos en cripto son irreversibles una vez confirmados en cadena.",
+      "point6": "Podemos actualizar, suspender o retirar funciones para mejorar fiabilidad, seguridad o cumplimiento legal.",
+      "outro": "Si no estás de acuerdo con estos términos, debes dejar de usar el servicio."
     },
     "privacy": {
-      "title": "Privacidad",
-      "body": "Tu progreso y configuración se guardan únicamente en tu dispositivo (localStorage). No recopilamos ni almacenamos datos personales en nuestros servidores. Puedes borrar todos los datos desde Configuración en cualquier momento."
+      "title": "Política de privacidad",
+      "intro": "Minimizamos los datos personales y separamos los datos de aprendizaje en tu dispositivo de los datos limitados de cuenta en servidor.",
+      "point1": "En tu dispositivo guardamos perfil, progreso, configuración, errores y estadísticas de speaking en almacenamiento local del navegador (localStorage e IndexedDB).",
+      "point2": "Para autenticación, la API guarda en base de datos un ID de usuario, email con hash, hash de contraseña (solo inicio por email), proveedor de acceso y estado de suscripción.",
+      "point3": "Para operar el producto, guardamos contadores de uso y ciertos eventos analíticos vinculados a tu ID de usuario.",
+      "point4": "Si activas recordatorios por email, guardamos email, hora, zona horaria, idioma y frecuencia cifrados en el almacenamiento de recordatorios hasta que te des de baja.",
+      "point5": "Si usas checkout de pago, guardamos datos de sesión como dirección, red, importe requerido, ID de transacción, estado de confirmación y fecha de vigencia.",
+      "point6": "Si envías feedback, tratamos tu mensaje y email opcional de contacto para responderte y mejorar el producto.",
+      "outro": "No vendemos datos personales ni usamos rastreadores publicitarios de terceros."
     },
     "cookies": {
-      "title": "Cookies",
-      "body": "Usamos almacenamiento local y cookies técnicas necesarias para el funcionamiento y la seguridad. No usamos cookies de publicidad ni de seguimiento."
+      "title": "Cookies y almacenamiento similar",
+      "intro": "Anglicus solo usa cookies esenciales y almacenamiento de aplicación necesario para funciones clave.",
+      "point1": "La cookie `anglicus_promo` guarda un token firmado de promoción para descuentos. Es HttpOnly, SameSite=Lax, limitada a `/api/billing` y puede durar hasta 1 año.",
+      "point2": "La cookie `anglicus_referral` guarda un token firmado de referido con la misma configuración de seguridad y vigencia.",
+      "point3": "No instalamos cookies de publicidad, remarketing ni analítica de terceros.",
+      "point4": "La app también usa localStorage y sessionStorage para token de acceso, idioma, configuración, estado de checkout activo y controles antiabuso.",
+      "point5": "Si bloqueas o borras cookies/almacenamiento, algunas funciones (por ejemplo descuentos o sesión persistente) pueden dejar de funcionar hasta que inicies sesión o apliques códigos de nuevo.",
+      "point6": "Puedes gestionar o borrar cookies y datos locales en cualquier momento desde tu navegador.",
+      "outro": "Los valores de cookies son tokens firmados, no códigos promocionales o de referido en texto plano."
     },
     "dataProtection": {
       "title": "Protección de datos",
-      "body": "Tienes control total sobre tus datos. Todos los datos se almacenan localmente en tu dispositivo y pueden eliminarse al instante desde Configuración (Borrar todos los datos). No conservamos copias de ningún dato."
+      "intro": "Aplicamos controles técnicos y organizativos adecuados para una plataforma educativa pequeña.",
+      "point1": "Los identificadores de email se guardan como hash en autenticación y las contraseñas se guardan con hash bcrypt.",
+      "point2": "Las suscripciones de recordatorios se cifran antes de almacenarse en la infraestructura de recordatorios.",
+      "point3": "El perfil local usa cifrado y comprobaciones de integridad, con lógica de respaldo local para reducir manipulación y pérdida accidental.",
+      "point4": "Para prevenir abuso, los sistemas de rate limit pueden tratar tu IP o un identificador de red derivado del proxy.",
+      "point5": "Cuando es necesario para prestar el servicio, los datos pueden enviarse a proveedores de modelos de IA, proveedores de email, infraestructura de pagos o blockchain y Google Sign-In.",
+      "point6": "La retención varía por conjunto: los recordatorios siguen hasta la baja, los registros de rate limit son de corta duración, y los registros de cuenta/facturación/analítica se mantienen mientras sean necesarios para operación, prevención de fraude y obligaciones legales.",
+      "outro": "Puedes solicitar acceso, rectificación, eliminación o baja de recordatorios desde Configuración y feedback en la app. Si quedan datos locales, borra el almacenamiento del sitio en tu navegador para una limpieza completa en el dispositivo."
     }
   },
   "placement": {

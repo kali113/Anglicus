@@ -1,5 +1,72 @@
 <script lang="ts">
   import { t } from "$lib/i18n";
+
+  type LegalSection = {
+    id: string;
+    titleKey: string;
+    introKey: string;
+    points: string[];
+    outroKey?: string;
+  };
+
+  const sections: LegalSection[] = [
+    {
+      id: "terms",
+      titleKey: "legal.terms.title",
+      introKey: "legal.terms.intro",
+      points: [
+        "legal.terms.point1",
+        "legal.terms.point2",
+        "legal.terms.point3",
+        "legal.terms.point4",
+        "legal.terms.point5",
+        "legal.terms.point6",
+      ],
+      outroKey: "legal.terms.outro",
+    },
+    {
+      id: "privacy",
+      titleKey: "legal.privacy.title",
+      introKey: "legal.privacy.intro",
+      points: [
+        "legal.privacy.point1",
+        "legal.privacy.point2",
+        "legal.privacy.point3",
+        "legal.privacy.point4",
+        "legal.privacy.point5",
+        "legal.privacy.point6",
+      ],
+      outroKey: "legal.privacy.outro",
+    },
+    {
+      id: "cookies",
+      titleKey: "legal.cookies.title",
+      introKey: "legal.cookies.intro",
+      points: [
+        "legal.cookies.point1",
+        "legal.cookies.point2",
+        "legal.cookies.point3",
+        "legal.cookies.point4",
+        "legal.cookies.point5",
+        "legal.cookies.point6",
+      ],
+      outroKey: "legal.cookies.outro",
+    },
+    {
+      id: "data-protection",
+      titleKey: "legal.dataProtection.title",
+      introKey: "legal.dataProtection.intro",
+      points: [
+        "legal.dataProtection.point1",
+        "legal.dataProtection.point2",
+        "legal.dataProtection.point3",
+        "legal.dataProtection.point4",
+        "legal.dataProtection.point5",
+        "legal.dataProtection.point6",
+      ],
+      outroKey: "legal.dataProtection.outro",
+    },
+  ];
 </script>
 
 <svelte:head>
@@ -9,29 +76,25 @@
 <div class="legal-page">
   <header class="legal-header">
     <h1>{$t("legal.title")}</h1>
-    <p>{$t("legal.lastUpdated", { date: "2026-02-10" })}</p>
+    <p>{$t("legal.lastUpdated", { date: "2026-02-24" })}</p>
     <p>{$t("legal.disclaimer")}</p>
+    <p class="legal-overview">{$t("legal.overview")}</p>
   </header>
 
-  <section id="terms" class="legal-section">
-    <h2>{$t("legal.terms.title")}</h2>
-    <p>{$t("legal.terms.body")}</p>
-  </section>
-
-  <section id="privacy" class="legal-section">
-    <h2>{$t("legal.privacy.title")}</h2>
-    <p>{$t("legal.privacy.body")}</p>
-  </section>
-
-  <section id="cookies" class="legal-section">
-    <h2>{$t("legal.cookies.title")}</h2>
-    <p>{$t("legal.cookies.body")}</p>
-  </section>
-
-  <section id="data-protection" class="legal-section">
-    <h2>{$t("legal.dataProtection.title")}</h2>
-    <p>{$t("legal.dataProtection.body")}</p>
-  </section>
+  {#each sections as section}
+    <section id={section.id} class="legal-section">
+      <h2>{$t(section.titleKey)}</h2>
+      <p>{$t(section.introKey)}</p>
+      <ul class="legal-list">
+        {#each section.points as point}
+          <li>{$t(point)}</li>
+        {/each}
+      </ul>
+      {#if section.outroKey}
+        <p>{$t(section.outroKey)}</p>
+      {/if}
+    </section>
+  {/each}
 </div>
 
 <style>
@@ -52,6 +115,12 @@
     color: var(--text-muted);
   }
 
+  .legal-overview {
+    margin-top: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
   .legal-section {
     padding: 1.5rem;
     border-radius: 16px;
@@ -69,5 +138,19 @@
   .legal-section p {
     margin: 0;
     color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .legal-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .legal-list li {
+    line-height: 1.5;
   }
 </style>
