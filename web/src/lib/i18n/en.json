@@ -39,9 +39,9 @@
   },
   "consent": {
     "title": "Privacy choices",
-    "body": "We use analytics storage to understand traffic, conversion funnels, and product usage. Accept to enable analytics tracking.",
+    "body": "We use non-essential storage for analytics and ad delivery to understand traffic and keep free access sustainable. Accept to enable this tracking.",
     "learnMore": "Read cookies policy",
-    "accept": "Accept analytics",
+    "accept": "Accept analytics and ads",
     "reject": "Reject non-essential"
   },
   "auth": {
@@ -245,10 +245,22 @@
     "checkoutUnavailable": "Checkout session unavailable right now. Please try again.",
     "noPaymentToCheck": "No payment found yet to check.",
     "noPendingPayment": "Last payment is no longer pending.",
+    "rewardedPitch": "Watch a short sponsor break to unlock +{count} extra {feature} uses today.",
+    "rewardedCta": "Watch sponsor break (+{count})",
+    "rewardedLoading": "Playing sponsor break...",
+    "rewardedGranted": "Reward unlocked: +{count} extra free uses for today.",
+    "rewardedUnavailable": "Rewarded break is unavailable right now. Please try again.",
     "cryptoNote": "Want to support the project with crypto? These addresses include verification links.",
     "byok": "BYOK is always free.",
     "byokLink": "Set up your API key",
     "keepFree": "Keep free"
+  },
+  "ads": {
+    "sponsored": "Sponsored",
+    "continue": "Continue",
+    "continueIn": "Continue in {seconds}s",
+    "breakTitle": "Quick sponsor break",
+    "breakBody": "Free users may see short sponsor breaks between activities. Pro users stay ad-free."
   },
   "billing": {
     "features": {
@@ -553,17 +565,17 @@
       "point4": "If you enable email reminders, we store email, reminder time, timezone offset, language, and frequency encrypted in reminder storage until you unsubscribe.",
       "point5": "If you use paid checkout, we store checkout session data such as address, network, required amount, transaction ID, confirmation state, and paid-until date.",
       "point6": "If you submit feedback, we process your message and optional contact email to respond and improve the product.",
-      "outro": "We do not sell personal data and we do not use third-party advertising trackers."
+      "outro": "We do not sell personal data. When ads are enabled, ad partners may process limited identifiers for delivery, measurement, and fraud prevention."
     },
     "cookies": {
       "title": "Cookies",
       "intro": "Anglicus uses only essential cookies and application storage needed to run core features.",
       "point1": "The `anglicus_promo` cookie stores a signed promo token for billing discounts. It is HttpOnly, SameSite=Lax, path-limited to `/api/billing`, and can last up to 1 year.",
       "point2": "The `anglicus_referral` cookie stores a signed referral token with the same security settings and lifetime.",
-      "point3": "We do not set advertising, remarketing, or third-party analytics cookies.",
+      "point3": "When ads are enabled, third-party advertising cookies or similar identifiers can be set for ad delivery, frequency capping, and measurement.",
       "point4": "The app also uses localStorage and sessionStorage for auth tokens, language preference, settings, active checkout state, and anti-abuse controls.",
       "point5": "If you block or clear cookies/storage, some features (for example discounts or persistent login) may stop working until you sign in or apply codes again.",
-      "point6": "Browser controls let you manage or delete cookies and local data at any time, and our in-app banner lets you accept or reject non-essential analytics storage.",
+      "point6": "Browser controls let you manage or delete cookies and local data at any time, and our in-app banner lets you accept or reject non-essential analytics/ads storage.",
       "outro": "Cookie values are signed tokens, not plain promo or referral codes."
     },
     "dataProtection": {
@@ -573,7 +585,7 @@
       "point2": "Reminder subscriptions are encrypted before being stored in reminder infrastructure.",
       "point3": "On-device profile storage uses encryption and integrity checks, with local backup logic to reduce tampering and accidental loss.",
       "point4": "To prevent abuse, rate-limiting systems may process your IP address or a proxy-derived network identifier.",
-      "point5": "When required for service delivery, data can be sent to AI model providers, email delivery providers, payment or blockchain infrastructure, and Google Sign-In.",
+      "point5": "When required for service delivery, data can be sent to AI model providers, email delivery providers, ad providers, payment or blockchain infrastructure, and Google Sign-In.",
       "point6": "Retention varies by dataset: reminder entries remain until unsubscribe, rate-limit records are short-lived, and account/billing/analytics records are kept while needed for operations, fraud prevention, and legal obligations.",
       "outro": "You can request access, correction, deletion, or reminder opt-out through Settings and in-app feedback. If local data remains, clear the site's browser storage for a full device-side wipe."
     }

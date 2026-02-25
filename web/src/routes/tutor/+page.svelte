@@ -18,6 +18,7 @@
     getFeatureLabel,
     markPaywallShown,
     recordBillingUsage,
+    type BillingFeature,
   } from "$lib/billing/index.js";
   import { locale, t } from "$lib/i18n";
 
@@ -32,6 +33,7 @@
   let chatContainer: HTMLElement;
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeatureKey = $state<BillingFeature>("tutor");
   let paywallFeature = $state(getFeatureLabel("tutor"));
   const lastAssistantMessage = $derived(
     [...messages].reverse().find((message) => message.role === "assistant")
@@ -63,11 +65,11 @@
       const decision = await checkBillingAccess("tutor");
       if (decision) {
         if (decision.mode === "block") {
-          openPaywall("block", getFeatureLabel("tutor"));
+          openPaywall("block", "tutor", getFeatureLabel("tutor"));
           return;
         }
         if (decision.mode === "nag") {
-          openPaywall("nag", getFeatureLabel("tutor"));
+          openPaywall("nag", "tutor", getFeatureLabel("tutor"));
         }
       }
     }
@@ -119,7 +121,7 @@
     } catch (error) {
       if (error instanceof AiRequestError) {
         if (error.status === 429) {
-          await openPaywall("block", getFeatureLabel(feature));
+          await openPaywall("block", feature, getFeatureLabel(feature));
           return;
         }
         if (error.status === 401) {
@@ -161,11 +163,23 @@
     }, 50);
   }
 
-  async function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(
+    mode: "nag" | "block",
+    featureKey: BillingFeature,
+    feature: string,
+  ) {
     paywallMode = mode;
+    paywallFeatureKey = featureKey;
     paywallFeature = feature;
     showPaywall = true;
     await markPaywallShown();
+  }
+
+  async function handleSpeakingPaywall(
+    mode: "nag" | "block",
+    feature: string,
+  ): Promise<void> {
+    await openPaywall(mode, "speaking", feature);
   }
 
   async function speakAssistantResponse(text: string): Promise<void> {
@@ -204,7 +218,7 @@
     {targetLanguage}
     referenceText={lastAssistantMessage}
     onTranscript={handleVoiceTranscript}
-    onPaywall={openPaywall}
+    onPaywall={handleSpeakingPaywall}
   />
 
   <div bind:this={chatContainer} class="chat-container" data-testid="tutor-chat-container">
@@ -311,6 +325,7 @@
 <PaywallModal
   open={showPaywall}
   mode={paywallMode}
+  featureKey={paywallFeatureKey}
   featureLabel={paywallFeature}
   onclose={() => (showPaywall = false)}
   onpaid={() => (showPaywall = false)}

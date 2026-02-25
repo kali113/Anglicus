@@ -22,7 +22,14 @@
     getFeatureLabel,
     markPaywallShown,
     recordBillingUsage,
+    type BillingFeature,
   } from "$lib/billing/index.js";
+  import {
+    getInterstitialDecision,
+    markInterstitialShown,
+    type AdsBreakReason,
+  } from "$lib/ads/index.js";
+  import AdBreakModal from "$lib/components/AdBreakModal.svelte";
   import { t } from "$lib/i18n";
 
   interface Word {
@@ -155,7 +162,11 @@
   let showTutorBox = $state(false);
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeatureKey = $state<BillingFeature>("lessonExplanation");
   let paywallFeature = $state(getFeatureLabel("lessonExplanation"));
+  let showAdBreak = $state(false);
+  let adBreakReason = $state<AdsBreakReason>("lesson_complete");
+  let pendingLessonFinish = $state(false);
 
   // Word state - reset for each exercise
   let availableWords = $state<Word[]>([]);
@@ -230,12 +241,20 @@
       const decision = await checkBillingAccess("lessonExplanation");
       if (decision) {
         if (decision.mode === "block") {
-          openPaywall("block", getFeatureLabel("lessonExplanation"));
+          openPaywall(
+            "block",
+            "lessonExplanation",
+            getFeatureLabel("lessonExplanation"),
+          );
           showTutorBox = false;
           return;
         }
         if (decision.mode === "nag") {
-          openPaywall("nag", getFeatureLabel("lessonExplanation"));
+          openPaywall(
+            "nag",
+            "lessonExplanation",
+            getFeatureLabel("lessonExplanation"),
+          );
         }
       }
 
@@ -266,7 +285,11 @@
         await recordBillingUsage("lessonExplanation");
       } catch (err) {
         if (err instanceof AiRequestError && err.status === 429) {
-          await openPaywall("block", getFeatureLabel("lessonExplanation"));
+          await openPaywall(
+            "block",
+            "lessonExplanation",
+            getFeatureLabel("lessonExplanation"),
+          );
           showTutorBox = false;
           return;
         }
@@ -299,11 +322,11 @@
     const decision = await checkBillingAccess("tutorQuestion");
     if (decision) {
       if (decision.mode === "block") {
-        openPaywall("block", getFeatureLabel("tutorQuestion"));
+        openPaywall("block", "tutorQuestion", getFeatureLabel("tutorQuestion"));
         return;
       }
       if (decision.mode === "nag") {
-        openPaywall("nag", getFeatureLabel("tutorQuestion"));
+        openPaywall("nag", "tutorQuestion", getFeatureLabel("tutorQuestion"));
       }
     }
 
@@ -339,7 +362,11 @@ Student's question: "${tutorQuestion}"`,
       await recordBillingUsage("tutorQuestion");
     } catch (err) {
       if (err instanceof AiRequestError && err.status === 429) {
-        await openPaywall("block", getFeatureLabel("tutorQuestion"));
+        await openPaywall(
+          "block",
+          "tutorQuestion",
+          getFeatureLabel("tutorQuestion"),
+        );
         return;
       }
       tutorResponse = $t("lesson.tutorError");
@@ -357,12 +384,39 @@ Student's question: "${tutorQuestion}"`,
     }
   }
 
-  function finishLesson() {
+  async function maybeOpenAdBreak(reason: AdsBreakReason): Promise<boolean> {
+    const decision = getInterstitialDecision(profile?.billing);
+    if (!decision.allow) return false;
+
+    adBreakReason = reason;
+    showAdBreak = true;
+    await markInterstitialShown(reason);
+    return true;
+  }
+
+  function handleAdBreakClose() {
+    showAdBreak = false;
+    if (!pendingLessonFinish) return;
+    pendingLessonFinish = false;
     goto(`${base}/app`);
   }
 
-  async function openPaywall(mode: "nag" | "block", feature: string) {
+  async function finishLesson() {
+    pendingLessonFinish = true;
+    const opened = await maybeOpenAdBreak("lesson_complete");
+    if (opened) return;
+
+    pendingLessonFinish = false;
+    goto(`${base}/app`);
+  }
+
+  async function openPaywall(
+    mode: "nag" | "block",
+    featureKey: BillingFeature,
+    feature: string,
+  ) {
     paywallMode = mode;
+    paywallFeatureKey = featureKey;
     paywallFeature = feature;
     showPaywall = true;
     await markPaywallShown();
@@ -643,9 +697,20 @@ Student's question: "${tutorQuestion}"`,
 <PaywallModal
   open={showPaywall}
   mode={paywallMode}
+  featureKey={paywallFeatureKey}
   featureLabel={paywallFeature}
   onclose={() => (showPaywall = false)}
   onpaid={() => (showPaywall = false)}
+/>
+
+<AdBreakModal
+  open={showAdBreak}
+  title={$t("ads.breakTitle")}
+  body={$t("ads.breakBody")}
+  placement={`interstitial_${adBreakReason}`}
+  slotId={import.meta.env.VITE_ADSENSE_SLOT_INTERSTITIAL || ""}
+  billing={profile?.billing}
+  onclose={handleAdBreakClose}
 />
 
 <style>

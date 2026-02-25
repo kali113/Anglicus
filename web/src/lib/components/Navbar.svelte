@@ -165,6 +165,7 @@
 <PaywallModal
   open={isPaywallOpen}
   mode="nag"
+  featureKey="tutor"
   featureLabel={$t("paywall.featureDefault")}
   onclose={closePaywall}
   onpaid={handlePaywallPaid}

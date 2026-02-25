@@ -8,8 +8,6 @@ TypeScript monorepo:
 - `web/`: SvelteKit + Vite PWA frontend.
 - `api/`: Cloudflare Workers + Hono API router.
 - `docs/`: Product and technical documentation (ES/EN).
-- `desktop/`: Electron packaging.
-- `twa/`: Trusted Web Activity assets.
 
 ## Working Agreement (HOW)
 1. Confirm task scope, then inspect only relevant files.

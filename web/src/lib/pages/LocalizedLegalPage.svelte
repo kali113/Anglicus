@@ -87,7 +87,7 @@
 <div class="legal-page">
   <header class="legal-header">
     <h1>{tx("legal.title")}</h1>
-    <p>{tx("legal.lastUpdated", { date: "2026-02-24" })}</p>
+    <p>{tx("legal.lastUpdated", { date: "2026-02-25" })}</p>
     <p>{tx("legal.disclaimer")}</p>
     <p class="legal-overview">{tx("legal.overview")}</p>
   </header>

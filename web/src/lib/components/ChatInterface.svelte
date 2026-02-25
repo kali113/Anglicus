@@ -18,6 +18,7 @@
     getFeatureLabel,
     markPaywallShown,
     recordBillingUsage,
+    type BillingFeature,
   } from "$lib/billing/index.js";
   import { BACKEND_URL } from "$lib/config/backend-url.js";
   import { t } from "$lib/i18n";
@@ -36,6 +37,7 @@
   let chatContainer: HTMLElement;
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeatureKey = $state<BillingFeature>("lessonChat");
   let paywallFeature = $state(getFeatureLabel("lessonChat"));
   let targetLanguage = $state<LanguageCode>("en");
   let learnerName = $state("");
@@ -61,11 +63,11 @@
     const decision = await checkBillingAccess("lessonChat");
     if (decision) {
       if (decision.mode === "block") {
-        openPaywall("block", getFeatureLabel("lessonChat"));
+        openPaywall("block", "lessonChat", getFeatureLabel("lessonChat"));
         return;
       }
       if (decision.mode === "nag") {
-        openPaywall("nag", getFeatureLabel("lessonChat"));
+        openPaywall("nag", "lessonChat", getFeatureLabel("lessonChat"));
       }
     }
 
@@ -108,7 +110,7 @@
         return;
       }
       if (response.status === 429) {
-        await openPaywall("block", getFeatureLabel("lessonChat"));
+        await openPaywall("block", "lessonChat", getFeatureLabel("lessonChat"));
         return;
       }
 
@@ -161,8 +163,13 @@
     }
   }
 
-  async function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(
+    mode: "nag" | "block",
+    featureKey: BillingFeature,
+    feature: string,
+  ) {
     paywallMode = mode;
+    paywallFeatureKey = featureKey;
     paywallFeature = feature;
     showPaywall = true;
     await markPaywallShown();
@@ -227,6 +234,7 @@
 <PaywallModal
   open={showPaywall}
   mode={paywallMode}
+  featureKey={paywallFeatureKey}
   featureLabel={paywallFeature}
   onclose={() => (showPaywall = false)}
   onpaid={() => (showPaywall = false)}

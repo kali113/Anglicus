@@ -16,6 +16,7 @@
     getFeatureLabel,
     markPaywallShown,
     recordBillingUsage,
+    type BillingFeature,
   } from "$lib/billing/index.js";
   import { locale, t } from "$lib/i18n";
 
@@ -33,6 +34,7 @@
   let chatContainer = $state<HTMLElement | null>(null);
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
+  let paywallFeatureKey = $state<BillingFeature>("quickChat");
   let paywallFeature = $state(getFeatureLabel("quickChat"));
 
   onMount(async () => {
@@ -50,11 +52,11 @@
     const decision = await checkBillingAccess("quickChat");
     if (decision) {
       if (decision.mode === "block") {
-        openPaywall("block", getFeatureLabel("quickChat"));
+        openPaywall("block", "quickChat", getFeatureLabel("quickChat"));
         return;
       }
       if (decision.mode === "nag") {
-        openPaywall("nag", getFeatureLabel("quickChat"));
+        openPaywall("nag", "quickChat", getFeatureLabel("quickChat"));
       }
     }
 
@@ -103,7 +105,7 @@
           return;
         }
         if (error.status === 429) {
-          await openPaywall("block", getFeatureLabel("quickChat"));
+          await openPaywall("block", "quickChat", getFeatureLabel("quickChat"));
           return;
         }
       }
@@ -142,8 +144,13 @@
     isExpanded = false;
   }
 
-  async function openPaywall(mode: "nag" | "block", feature: string) {
+  async function openPaywall(
+    mode: "nag" | "block",
+    featureKey: BillingFeature,
+    feature: string,
+  ) {
     paywallMode = mode;
+    paywallFeatureKey = featureKey;
     paywallFeature = feature;
     showPaywall = true;
     await markPaywallShown();
@@ -216,6 +223,7 @@
 <PaywallModal
   open={showPaywall}
   mode={paywallMode}
+  featureKey={paywallFeatureKey}
   featureLabel={paywallFeature}
   onclose={() => (showPaywall = false)}
   onpaid={() => (showPaywall = false)}

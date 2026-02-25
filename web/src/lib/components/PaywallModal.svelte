@@ -12,6 +12,13 @@
     type CheckoutAsset,
     type CheckoutNetwork,
   } from "$lib/billing/index.js";
+  import {
+    canOfferRewardedBoost,
+    getRewardedGrantAmount,
+    grantRewardedBoost,
+    type AdsRewardFeature,
+  } from "$lib/ads/index.js";
+  import AdSlot from "$lib/components/AdSlot.svelte";
   import SupportCryptoCard from "$lib/components/SupportCryptoCard.svelte";
   import { t } from "$lib/i18n";
 
@@ -19,16 +26,20 @@
     open?: boolean;
     mode?: "nag" | "block";
     featureLabel?: string;
+    featureKey?: AdsRewardFeature;
     onclose?: () => void;
     onpaid?: (payload: { paidUntil?: string }) => void;
+    onrewarded?: (payload: { feature: AdsRewardFeature; amount: number }) => void;
   }
 
   let {
     open = false,
     mode = "block",
     featureLabel,
+    featureKey = undefined,
     onclose,
     onpaid,
+    onrewarded = undefined,
   } = $props();
 
   const resolvedFeatureLabel = $derived(
@@ -49,6 +60,14 @@
   let selectedAsset = $state<CheckoutAsset | null>(null);
   let selectedNetwork = $state<CheckoutNetwork | null>(null);
   let checkoutInterval: ReturnType<typeof window.setInterval> | null = null;
+  let isRewarding = $state(false);
+  let shouldCloseAfterReward = $state(false);
+  const rewardAmount = $derived(
+    featureKey ? getRewardedGrantAmount(featureKey) : 0,
+  );
+  const canOfferReward = $derived.by(() =>
+    mode === "block" && canOfferRewardedBoost(featureKey ?? null, billing),
+  );
 
   $effect(() => {
     if (!open) {
@@ -273,7 +292,38 @@
 
   function closeModal() {
     stopCheckoutPolling();
+    shouldCloseAfterReward = false;
     onclose?.();
+  }
+
+  async function handleRewardedBoost() {
+    if (!featureKey || isRewarding) return;
+
+    isRewarding = true;
+    errorMessage = "";
+    statusMessage = "";
+
+    // Simulate rewarded-ad playback window before granting the boost.
+    await new Promise((resolve) => window.setTimeout(resolve, 2200));
+
+    const result = await grantRewardedBoost(featureKey);
+    if (!result.success) {
+      errorMessage = $t("paywall.rewardedUnavailable");
+      isRewarding = false;
+      return;
+    }
+
+    statusMessage = $t("paywall.rewardedGranted", { count: result.amount });
+    onrewarded?.({ feature: featureKey, amount: result.amount });
+    shouldCloseAfterReward = true;
+
+    window.setTimeout(() => {
+      if (shouldCloseAfterReward) {
+        closeModal();
+      }
+    }, 900);
+
+    isRewarding = false;
   }
 
   function getRequiredAmountText(): string | null {
@@ -451,7 +501,35 @@
           </div>
         {/if}
 
+        {#if canOfferReward}
+          <div class="rewarded-boost">
+            <p>
+              {$t("paywall.rewardedPitch", {
+                feature: resolvedFeatureLabel,
+                count: rewardAmount,
+              })}
+            </p>
+            <button
+              class="rewarded-btn"
+              type="button"
+              data-testid="paywall-rewarded-boost"
+              onclick={handleRewardedBoost}
+              disabled={isRewarding}
+            >
+              {isRewarding
+                ? $t("paywall.rewardedLoading")
+                : $t("paywall.rewardedCta", { count: rewardAmount })}
+            </button>
+          </div>
+        {/if}
+
       </div>
+
+      <AdSlot
+        placement="paywall"
+        slotId={import.meta.env.VITE_ADSENSE_SLOT_PAYWALL || ""}
+        billing={billing}
+      />
 
       <div class="crypto-support">
         <p class="crypto-note">
@@ -652,6 +730,39 @@
   .tx-check-row {
     display: flex;
     justify-content: flex-end;
+  }
+
+  .rewarded-boost {
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 12px;
+    background: rgba(45, 212, 191, 0.08);
+    padding: 0.65rem 0.75rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .rewarded-boost p {
+    margin: 0;
+    font-size: 0.83rem;
+    color: rgba(226, 232, 240, 0.92);
+    line-height: 1.4;
+  }
+
+  .rewarded-btn {
+    justify-self: flex-start;
+    border: 1px solid rgba(45, 212, 191, 0.65);
+    background: rgba(15, 118, 110, 0.34);
+    color: #ccfbf1;
+    border-radius: 9px;
+    padding: 0.45rem 0.78rem;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .rewarded-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
   }
 
   .check-btn {

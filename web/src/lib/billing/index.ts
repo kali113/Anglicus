@@ -16,18 +16,16 @@ import {
   PROMO_CODE_DISCOUNT_PERCENT,
 } from "$lib/billing/promo-codes.js";
 import { BACKEND_URL } from "$lib/config/backend-url.js";
+import {
+  getRewardedBoostForFeature,
+  type AdsRewardFeature,
+} from "$lib/ads/index.js";
 
 const PROMO_COOKIE_NAME = "anglicus_promo";
 const BILLING_CONFIG_TIMEOUT_MS = 12_000;
 const ACTIVE_CHECKOUT_SESSION_KEY = "anglicus_active_checkout_session_id_v1";
 
-export type BillingFeature =
-  | "tutor"
-  | "lessonChat"
-  | "quickChat"
-  | "lessonExplanation"
-  | "tutorQuestion"
-  | "speaking";
+export type BillingFeature = AdsRewardFeature;
 
 type UsageKey = Exclude<keyof BillingUsage, "date">;
 
@@ -349,7 +347,9 @@ export async function checkBillingAccess(feature: BillingFeature): Promise<Billi
   const billing = snapshot.billing;
   const usageKey = FEATURE_USAGE_MAP[feature];
   const used = billing.usage[usageKey];
-  const limit = FREE_LIMITS[usageKey];
+  const baseLimit = FREE_LIMITS[usageKey];
+  const rewardedBoost = getRewardedBoostForFeature(feature);
+  const limit = baseLimit + rewardedBoost;
 
   if (billing.status === "active" && billing.plan === "pro") {
     return { allow: true, mode: "allow", reason: "ok", used, limit, billing };

@@ -11,7 +11,14 @@
 	import type { Exercise } from '$lib/types/exercise.js';
 	import type { UserProfile } from '$lib/types/user.js';
 	import PaywallModal from '$lib/components/PaywallModal.svelte';
-	import { getFeatureLabel, markPaywallShown } from '$lib/billing/index.js';
+	import AdBreakModal from '$lib/components/AdBreakModal.svelte';
+	import AdSlot from '$lib/components/AdSlot.svelte';
+	import { getFeatureLabel, markPaywallShown, type BillingFeature } from '$lib/billing/index.js';
+	import {
+		getInterstitialDecision,
+		markInterstitialShown,
+		type AdsBreakReason,
+	} from '$lib/ads/index.js';
 	import { t } from '$lib/i18n';
 
 	let profile = $state<Awaited<ReturnType<typeof getUserProfile>>>(null);
@@ -26,7 +33,11 @@
 	let errorMessage = $state('');
 	let showPaywall = $state(false);
 	let paywallMode = $state<'nag' | 'block'>('block');
+	let paywallFeatureKey = $state<BillingFeature>('tutor');
 	let paywallFeature = $state(getFeatureLabel('tutor'));
+	let showAdBreak = $state(false);
+	let adBreakReason = $state<AdsBreakReason>('exercises_complete');
+	let pendingExerciseReset = $state(false);
 
 	onMount(async () => {
 		profile = await getUserProfile();
@@ -69,7 +80,7 @@
 			}
 		} catch (error) {
 			if (error instanceof AiRequestError && error.status === 429) {
-				await openPaywall('block', getFeatureLabel('tutor'));
+				await openPaywall('block', 'tutor', getFeatureLabel('tutor'));
 				return;
 			}
 			console.error('Failed to generate exercises:', error);
@@ -198,11 +209,47 @@
 		activeFillBlankIndex = nextEmptyIndex === -1 ? targetIndex : nextEmptyIndex;
 	}
 
-	async function openPaywall(mode: 'nag' | 'block', feature: string) {
+	async function openPaywall(
+		mode: 'nag' | 'block',
+		featureKey: BillingFeature,
+		feature: string
+	) {
 		paywallMode = mode;
+		paywallFeatureKey = featureKey;
 		paywallFeature = feature;
 		showPaywall = true;
 		await markPaywallShown();
+	}
+
+	async function maybeOpenAdBreak(reason: AdsBreakReason): Promise<boolean> {
+		const decision = getInterstitialDecision(profile?.billing);
+		if (!decision.allow) return false;
+
+		adBreakReason = reason;
+		showAdBreak = true;
+		await markInterstitialShown(reason);
+		return true;
+	}
+
+	function resetExerciseSet() {
+		exercises = [];
+		currentExerciseIndex = 0;
+	}
+
+	async function handleGenerateMore() {
+		pendingExerciseReset = true;
+		const opened = await maybeOpenAdBreak('exercises_complete');
+		if (opened) return;
+
+		pendingExerciseReset = false;
+		resetExerciseSet();
+	}
+
+	function handleAdBreakClose() {
+		showAdBreak = false;
+		if (!pendingExerciseReset) return;
+		pendingExerciseReset = false;
+		resetExerciseSet();
 	}
 
 	function checkAnswer() {
@@ -279,6 +326,12 @@
 		<h1>{$t('exercises.title')}</h1>
 		<p class="subtitle">{$t('exercises.subtitle')}</p>
 	</header>
+
+	<AdSlot
+		placement="exercises_top"
+		slotId={import.meta.env.VITE_ADSENSE_SLOT_EXERCISES || ''}
+		billing={profile?.billing}
+	/>
 
 	{#if exercises.length === 0}
 		<div class="empty-state">
@@ -412,24 +465,35 @@
 						</button>
 					{/if}
 			</div>
-		{:else}
-			<div class="completion">
-				<h2>{$t('exercises.completedTitle')}</h2>
-				<p>{$t('exercises.completedDescription')}</p>
-				<button class="btn primary" onclick={() => { exercises = []; currentExerciseIndex = 0; }}>
-					{$t('exercises.generateMore')}
-				</button>
-			</div>
+			{:else}
+				<div class="completion">
+					<h2>{$t('exercises.completedTitle')}</h2>
+					<p>{$t('exercises.completedDescription')}</p>
+					<button class="btn primary" onclick={handleGenerateMore}>
+						{$t('exercises.generateMore')}
+					</button>
+				</div>
+			{/if}
 		{/if}
-	{/if}
 </div>
 
 <PaywallModal
 	open={showPaywall}
 	mode={paywallMode}
+	featureKey={paywallFeatureKey}
 	featureLabel={paywallFeature}
 	onclose={() => (showPaywall = false)}
 	onpaid={() => (showPaywall = false)}
+/>
+
+<AdBreakModal
+	open={showAdBreak}
+	title={$t('ads.breakTitle')}
+	body={$t('ads.breakBody')}
+	placement={`interstitial_${adBreakReason}`}
+	slotId={import.meta.env.VITE_ADSENSE_SLOT_INTERSTITIAL || ''}
+	billing={profile?.billing}
+	onclose={handleAdBreakClose}
 />
 
 <style>

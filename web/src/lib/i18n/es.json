@@ -39,9 +39,9 @@
   },
   "consent": {
     "title": "Preferencias de privacidad",
-    "body": "Usamos almacenamiento de analitica para entender trafico, embudos de conversion y uso del producto. Acepta para activar analitica.",
+    "body": "Usamos almacenamiento no esencial para analitica y entrega de anuncios, para entender trafico y sostener el acceso gratuito. Acepta para activarlo.",
     "learnMore": "Leer politica de cookies",
-    "accept": "Aceptar analitica",
+    "accept": "Aceptar analitica y anuncios",
     "reject": "Rechazar no esencial"
   },
   "auth": {
@@ -245,10 +245,22 @@
     "checkoutUnavailable": "La sesión de checkout no está disponible ahora. Inténtalo de nuevo.",
     "noPaymentToCheck": "Aún no hay un pago para comprobar.",
     "noPendingPayment": "El último pago ya no está pendiente.",
+    "rewardedPitch": "Mira una pausa breve patrocinada para desbloquear +{count} usos extra de {feature} hoy.",
+    "rewardedCta": "Ver pausa patrocinada (+{count})",
+    "rewardedLoading": "Reproduciendo pausa patrocinada...",
+    "rewardedGranted": "Recompensa activada: +{count} usos gratis extra por hoy.",
+    "rewardedUnavailable": "La pausa recompensada no está disponible ahora. Inténtalo de nuevo.",
     "cryptoNote": "¿Quieres apoyar el proyecto con crypto? Estas direcciones incluyen enlaces de verificación.",
     "byok": "BYOK siempre es gratis.",
     "byokLink": "Configura tu API key",
     "keepFree": "Seguir gratis"
+  },
+  "ads": {
+    "sponsored": "Patrocinado",
+    "continue": "Continuar",
+    "continueIn": "Continuar en {seconds}s",
+    "breakTitle": "Pausa breve patrocinada",
+    "breakBody": "Los usuarios gratis pueden ver pausas patrocinadas entre actividades. Pro permanece sin anuncios."
   },
   "billing": {
     "features": {
@@ -553,17 +565,17 @@
       "point4": "Si activas recordatorios por email, guardamos email, hora, zona horaria, idioma y frecuencia cifrados en el almacenamiento de recordatorios hasta que te des de baja.",
       "point5": "Si usas checkout de pago, guardamos datos de sesión como dirección, red, importe requerido, ID de transacción, estado de confirmación y fecha de vigencia.",
       "point6": "Si envías feedback, tratamos tu mensaje y email opcional de contacto para responderte y mejorar el producto.",
-      "outro": "No vendemos datos personales ni usamos rastreadores publicitarios de terceros."
+      "outro": "No vendemos datos personales. Cuando los anuncios están activos, socios publicitarios pueden tratar identificadores limitados para entrega, medición y prevención de fraude."
     },
     "cookies": {
       "title": "Cookies y almacenamiento similar",
       "intro": "Anglicus solo usa cookies esenciales y almacenamiento de aplicación necesario para funciones clave.",
       "point1": "La cookie `anglicus_promo` guarda un token firmado de promoción para descuentos. Es HttpOnly, SameSite=Lax, limitada a `/api/billing` y puede durar hasta 1 año.",
       "point2": "La cookie `anglicus_referral` guarda un token firmado de referido con la misma configuración de seguridad y vigencia.",
-      "point3": "No instalamos cookies de publicidad, remarketing ni analítica de terceros.",
+      "point3": "Cuando los anuncios están activos, pueden instalarse cookies publicitarias o identificadores similares para entrega de anuncios, control de frecuencia y medición.",
       "point4": "La app también usa localStorage y sessionStorage para token de acceso, idioma, configuración, estado de checkout activo y controles antiabuso.",
       "point5": "Si bloqueas o borras cookies/almacenamiento, algunas funciones (por ejemplo descuentos o sesión persistente) pueden dejar de funcionar hasta que inicies sesión o apliques códigos de nuevo.",
-      "point6": "Puedes gestionar o borrar cookies y datos locales en cualquier momento desde tu navegador, y nuestro banner te permite aceptar o rechazar almacenamiento analitico no esencial.",
+      "point6": "Puedes gestionar o borrar cookies y datos locales en cualquier momento desde tu navegador, y nuestro banner te permite aceptar o rechazar almacenamiento no esencial de analitica/anuncios.",
       "outro": "Los valores de cookies son tokens firmados, no códigos promocionales o de referido en texto plano."
     },
     "dataProtection": {
@@ -573,7 +585,7 @@
       "point2": "Las suscripciones de recordatorios se cifran antes de almacenarse en la infraestructura de recordatorios.",
       "point3": "El perfil local usa cifrado y comprobaciones de integridad, con lógica de respaldo local para reducir manipulación y pérdida accidental.",
       "point4": "Para prevenir abuso, los sistemas de rate limit pueden tratar tu IP o un identificador de red derivado del proxy.",
-      "point5": "Cuando es necesario para prestar el servicio, los datos pueden enviarse a proveedores de modelos de IA, proveedores de email, infraestructura de pagos o blockchain y Google Sign-In.",
+      "point5": "Cuando es necesario para prestar el servicio, los datos pueden enviarse a proveedores de modelos de IA, proveedores de email, proveedores de anuncios, infraestructura de pagos o blockchain y Google Sign-In.",
       "point6": "La retención varía por conjunto: los recordatorios siguen hasta la baja, los registros de rate limit son de corta duración, y los registros de cuenta/facturación/analítica se mantienen mientras sean necesarios para operación, prevención de fraude y obligaciones legales.",
       "outro": "Puedes solicitar acceso, rectificación, eliminación o baja de recordatorios desde Configuración y feedback en la app. Si quedan datos locales, borra el almacenamiento del sitio en tu navegador para una limpieza completa en el dispositivo."
     }

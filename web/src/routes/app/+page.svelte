@@ -14,6 +14,7 @@
   import InteractiveTree from "$lib/components/InteractiveTree.svelte";
   import DashboardSidebar from "$lib/components/DashboardSidebar.svelte";
   import QuickChat from "$lib/components/QuickChat.svelte";
+  import AdSlot from "$lib/components/AdSlot.svelte";
   import { trackEvent } from "$lib/analytics/index.js";
   import { getSettings } from "$lib/storage/settings-store.js";
   import { t } from "$lib/i18n";
@@ -123,6 +124,12 @@
           <a class="reactivation-link" href="{base}/settings">{$t("dashboard.reactivationCta")}</a>
         </div>
       {/if}
+
+      <AdSlot
+        placement="dashboard_top"
+        slotId={import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD || ""}
+        billing={user?.billing}
+      />
 
       <!-- Quick Chat Section -->
       <QuickChat />

@@ -23,7 +23,6 @@ This repository contains the PWA (web/) and the serverless backend (api/).
 - Node.js 20+ and npm
 - Git
 - (API) Wrangler CLI (via devDependencies)
-- (APK) Java 17+ and Android SDK when building
 
 ## Quick setup
 ### Web
@@ -51,19 +50,9 @@ npm run dev
 - `npm run test`
 - `npm run deploy`
 
-## APK (TWA)
-To generate an APK from the PWA, use Bubblewrap (TWA). It requires the app to be deployed.
-
-```
-npx @bubblewrap/cli init --manifest https://kali113.github.io/Anglicus/manifest.json
-cd android && gradlew.bat assembleRelease
-```
-
-The base config lives in `twa/twa-manifest.json`.
-
 ## Workflows (GitHub Actions)
-- **Build APK** builds a signed APK on each push to main/master or release and uploads it as the `anglicus-apk` artifact.
-- **Analyze (actions)** and **Analyze (javascript-typescript)** are required checks on `master`.
+- **Tests** runs web check/test and API tests on pushes and pull requests.
+- **Deploy to GitHub Pages** publishes the web app from `web/`.
 
 ## Security
 - Never commit API keys to the repo.
@@ -76,4 +65,4 @@ The base config lives in `twa/twa-manifest.json`.
 4. Open a Pull Request with a clear summary.
 
 ## Branch protection
-The `master` branch is protected: force-pushes/deletion are blocked, and status checks are required (Analyze (actions), Analyze (javascript-typescript)).
+The `master` branch is protected: force-pushes/deletion are blocked, and required status checks must pass before merge.
