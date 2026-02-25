@@ -3,7 +3,7 @@
   "version": "0.6.0-alpha",
   "description": "Anglicus Desktop Wrapper",
   "private": true,
-  "main": "dist/main.js",
+  "main": "lib/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
@@ -23,10 +23,10 @@
     "productName": "Anglicus",
     "asar": true,
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
-      "dist/**",
+      "lib/main.js",
       "assets/**",
       "package.json"
     ],

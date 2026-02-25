@@ -42,11 +42,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: anglicus-desktop-installer
-          path: desktop/dist/*.exe
+          path: desktop/release/*.exe
           if-no-files-found: error
 
       - name: Upload installer to release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: desktop/dist/*.exe
+          files: desktop/release/*.exe

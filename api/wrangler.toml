@@ -1,4 +1,4 @@
-name = "anglicus-api"
+name = "anglicus"
 main = "src/index.ts"
 compatibility_date = "2024-04-01"
 
