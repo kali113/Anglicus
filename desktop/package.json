@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
-    "dev": "npm run build && cross-env ANGLICUS_URL=http://localhost:5173 electron .",
+    "dev": "npm run build && cross-env ANGLICUS_URL=https://kali113.github.io/Anglicus/ electron .",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win nsis"
   },

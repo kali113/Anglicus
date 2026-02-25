@@ -78,7 +78,7 @@ export const PROVIDERS: Record<string, ProviderConfig> = {
     headerPrefix: "Bearer ",
   },
   ollama: {
-    url: "http://localhost:11434/v1/chat/completions",
+    url: "http://127.0.0.1:11434/v1/chat/completions",
     key: "OLLAMA_API_KEY",
     header: "Authorization",
     headerPrefix: "Bearer ",
@@ -101,7 +101,7 @@ export type Provider = keyof typeof PROVIDERS;
 
 function isLocalProvider(provider: Provider): boolean {
   const url = PROVIDERS[provider].url;
-  return url.startsWith("http://localhost") || url.startsWith("http://127.0.0.1");
+  return url.startsWith("http://127.0.0.1");
 }
 
 /**

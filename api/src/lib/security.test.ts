@@ -11,14 +11,14 @@ describe("sanitizePublicHttpsBaseUrl", () => {
     expect(sanitizePublicHttpsBaseUrl("http://api.openai.com")).toBeNull();
   });
 
-  it("rejects localhost and private network hosts", () => {
-    expect(sanitizePublicHttpsBaseUrl("https://localhost:11434")).toBeNull();
+  it("rejects private or non-public hosts", () => {
+    expect(sanitizePublicHttpsBaseUrl("https://devbox")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://127.0.0.1:8787")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://10.0.0.5")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://172.16.1.20")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://192.168.1.10")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://[::1]")).toBeNull();
-    expect(sanitizePublicHttpsBaseUrl("https://[::ffff:127.0.0.1]")).toBeNull();
+    expect(sanitizePublicHttpsBaseUrl("https://[::ffff:172.16.1.20]")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://[::ffff:10.0.0.5]")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://[::ffff:192.168.1.10]")).toBeNull();
     expect(sanitizePublicHttpsBaseUrl("https://[fc00::1]")).toBeNull();

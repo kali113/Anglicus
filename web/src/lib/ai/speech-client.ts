@@ -1,7 +1,7 @@
 import { base } from "$app/paths";
 import { getToken } from "$lib/auth/index.js";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 const FEATURE_HEADER = "X-Anglicus-Feature";
 const CHUNK_THRESHOLD_BYTES = 260_000;
 const CHUNK_SIZE_BYTES = 150_000;

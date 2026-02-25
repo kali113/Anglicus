@@ -19,6 +19,7 @@
     markPaywallShown,
     recordBillingUsage,
   } from "$lib/billing/index.js";
+  import { BACKEND_URL } from "$lib/config/backend-url.js";
   import { t } from "$lib/i18n";
   import { getToken } from "$lib/auth/index.js";
 
@@ -38,8 +39,6 @@
   let paywallFeature = $state(getFeatureLabel("lessonChat"));
   let targetLanguage = $state<LanguageCode>("en");
   let learnerName = $state("");
-  const BACKEND_URL =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
   onMount(async () => {
     const profile = await getUserProfile();

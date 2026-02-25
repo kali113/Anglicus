@@ -1,6 +1,6 @@
 import { isBrowser } from "$lib/storage/base-store.js";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 const GOOGLE_CLIENT_ID =
   import.meta.env.GOOGLE_CLIENT_ID ||
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||

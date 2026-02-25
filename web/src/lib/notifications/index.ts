@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 
 export type ReminderFrequency = "daily" | "weekly";
 

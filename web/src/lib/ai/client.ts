@@ -6,6 +6,7 @@
  */
 
 import { base } from "$app/paths";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
@@ -22,9 +23,6 @@ import { isBrowser } from "$lib/storage/base-store.js";
 
 // Default model to use
 const DEFAULT_MODEL = "llama-3.1-8b"; // Cerebras (fast), will fallback to others if needed
-
-// Backend URL (owner's Cloudflare Worker)
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 
 function redirectToLogin(): void {
   if (!isBrowser()) return;

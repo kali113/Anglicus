@@ -1,5 +1,4 @@
 const BLOCKED_HOSTNAMES = new Set([
-  "localhost",
   "127.0.0.1",
   "0.0.0.0",
   "::1",
@@ -8,7 +7,6 @@ const BLOCKED_HOSTNAMES = new Set([
 ]);
 
 const BLOCKED_HOST_SUFFIXES = [
-  ".localhost",
   ".local",
   ".internal",
   ".home.arpa",

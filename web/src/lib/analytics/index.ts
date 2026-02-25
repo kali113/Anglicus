@@ -1,8 +1,7 @@
 import { getToken, refreshToken, setToken } from "$lib/auth/index.js";
 import { isBrowser } from "$lib/storage/base-store.js";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
 const DEDUPE_KEY = "anglicus_event_dedupe_v1";
 const DEDUPE_WINDOW_MS = 15_000;
 const DEDUPE_MAX_ENTRIES = 200;

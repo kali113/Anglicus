@@ -15,9 +15,7 @@ import type { BillingInfo, BillingUsage } from "$lib/types/user.js";
 import {
   PROMO_CODE_DISCOUNT_PERCENT,
 } from "$lib/billing/promo-codes.js";
-
-const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL || "http://localhost:8787";
+import { BACKEND_URL } from "$lib/config/backend-url.js";
 
 const PROMO_COOKIE_NAME = "anglicus_promo";
 const BILLING_CONFIG_TIMEOUT_MS = 12_000;

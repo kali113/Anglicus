@@ -16,7 +16,7 @@ compatibility_date = "2024-04-01"
 # Rate limiting (requests per minute)
 [vars]
 RATE_LIMIT_PER_MINUTE = "20"
-ALLOWED_ORIGINS = "http://localhost:5173,http://localhost:4173,https://kali113.github.io"
+ALLOWED_ORIGINS = "http://127.0.0.1:5173,http://127.0.0.1:4173,https://kali113.github.io"
 EMAIL_PROVIDER = "brevo"
 REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
 AUTH_FROM_EMAIL = "Anglicus <auth@anglicus.app>"
