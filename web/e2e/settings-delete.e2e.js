@@ -1,101 +1,103 @@
 import { expect, test } from "@playwright/test";
+import {
+  clearClientState,
+  getMistakeCount,
+  installBackendStubs,
+  seedMistake,
+  seedUserProfile,
+  setAppSettings,
+  setAuthToken,
+  waitForHydration,
+} from "./helpers/app-fixtures.js";
 
-async function seedMistake(page) {
-  await page.evaluate(async () => {
-    await new Promise((resolve, reject) => {
-      const request = indexedDB.open("AnglicusMistakes", 1);
-
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        if (!db.objectStoreNames.contains("mistakes")) {
-          const store = db.createObjectStore("mistakes", { keyPath: "id" });
-          store.createIndex("category", "category", { unique: false });
-          store.createIndex("timestamp", "timestamp", { unique: false });
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error ?? new Error("Could not open mistakes database"));
-      };
-
-      request.onsuccess = () => {
-        const db = request.result;
-        const tx = db.transaction(["mistakes"], "readwrite");
-        const store = tx.objectStore("mistakes");
-
-        store.put({
-          id: "delete-e2e-mistake",
-          sentence: "She have two cats.",
-          correction: "She has two cats.",
-          explanation: "Use 'has' for third person singular.",
-          category: "present_perfect",
-          timestamp: new Date().toISOString(),
-          source: "lesson",
-        });
-
-        tx.onerror = () => {
-          reject(tx.error ?? new Error("Could not seed mistake"));
-        };
-
-        tx.oncomplete = () => {
-          db.close();
-          resolve();
-        };
-      };
-    });
-  });
-}
-
-async function getMistakeCount(page) {
-  return await page.evaluate(async () => {
-    return await new Promise((resolve, reject) => {
-      const request = indexedDB.open("AnglicusMistakes", 1);
-
-      request.onerror = () => {
-        reject(request.error ?? new Error("Could not open mistakes database"));
-      };
-
-      request.onsuccess = () => {
-        const db = request.result;
-        const tx = db.transaction(["mistakes"], "readonly");
-        const store = tx.objectStore("mistakes");
-        const readRequest = store.getAll();
-
-        readRequest.onerror = () => {
-          reject(readRequest.error ?? new Error("Could not read mistakes"));
-        };
-
-        readRequest.onsuccess = () => {
-          db.close();
-          resolve(readRequest.result.length);
-        };
-      };
-    });
-  });
-}
-
-test("delete flow clears browser state and redirects to onboarding", async ({ page }) => {
+async function openSeededSettings(page) {
   await page.goto("/settings");
+  await waitForHydration(page);
+  await seedUserProfile(page, {
+    email: "cleanup@example.com",
+    name: "Cleanup User",
+  });
+  await setAuthToken(page, "cleanup-token");
+  await setAppSettings(page, {
+    theme: "dark",
+    notificationsEnabled: true,
+    emailRemindersEnabled: true,
+  });
+  await page.reload();
+  await waitForHydration(page);
   await expect(page.getByTestId("clear-data-trigger")).toBeVisible();
+}
+
+async function openDeleteModal(page) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByTestId("clear-data-trigger").click();
+    try {
+      await expect(page.locator(".modal-backdrop")).toBeVisible({ timeout: 2000 });
+      return;
+    } catch {
+      // Retry in case hydration finished between attempts.
+    }
+  }
+
+  await expect(page.locator(".modal-backdrop")).toBeVisible();
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.goto("/");
+  await clearClientState(page);
+});
+
+test("delete confirmation cancel keeps local and indexed state intact", async ({ page }) => {
+  await installBackendStubs(page);
+  await openSeededSettings(page);
 
   await page.evaluate(() => {
-    localStorage.setItem("anglicus_settings", JSON.stringify({ theme: "dark" }));
-    localStorage.setItem("anglicus_delete_probe", "true");
+    localStorage.setItem("anglicus_delete_probe", "keep-me");
   });
-  await seedMistake(page);
+  await seedMistake(page, "cancel-preserve-mistake");
 
-  await page.getByTestId("clear-data-trigger").click();
+  await openDeleteModal(page);
+  await page.getByTestId("clear-data-cancel").click();
+
+  await expect(page).toHaveURL(/\/settings(?:\?.*)?$/);
+
+  await expect.poll(async () => {
+    return page.evaluate(() => localStorage.getItem("anglicus_delete_probe"));
+  }).toBe("keep-me");
+
+  await expect.poll(async () => getMistakeCount(page)).toBe(1);
+});
+
+test("delete confirmation clears auth/profile/settings state and redirects", async ({ page }) => {
+  const backend = await installBackendStubs(page);
+  await openSeededSettings(page);
+
+  await page.evaluate(() => {
+    localStorage.setItem("anglicus_delete_probe", "delete-me");
+  });
+  await seedMistake(page, "delete-flow-mistake");
+
+  await openDeleteModal(page);
   await page.getByTestId("clear-data-confirm").click();
 
-  await expect(page).toHaveURL(/\/onboarding(?:\?.*)?$/);
+  await expect(page).toHaveURL(/\/placement-test(?:\?.*)?$/);
 
-  await expect.poll(async () => {
-    return await page.evaluate(() => localStorage.getItem("anglicus_settings"));
-  }).toBeNull();
+  const expectedClearedKeys = [
+    "anglicus_settings",
+    "anglicus_auth_token",
+    "anglicus_delete_probe",
+  ];
 
-  await expect.poll(async () => {
-    return await page.evaluate(() => localStorage.getItem("anglicus_delete_probe"));
-  }).toBeNull();
+  for (const key of expectedClearedKeys) {
+    await expect.poll(async () => {
+      return page.evaluate((storageKey) => localStorage.getItem(storageKey), key);
+    }).toBeNull();
+  }
 
-  await expect.poll(async () => await getMistakeCount(page)).toBe(0);
+  await expect.poll(async () => getMistakeCount(page)).toBe(0);
+
+  expect(backend.calls.remindersUnsubscribe).toHaveLength(1);
+  expect(backend.calls.remindersUnsubscribe[0].body).toEqual({
+    email: "cleanup@example.com",
+  });
 });

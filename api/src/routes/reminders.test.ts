@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../index.js";
 import {
+  handleReminderCron,
   handleReminderSubscribe,
   handleReminderUnsubscribe,
-  handleReminderTest,
 } from "./reminders.js";
 
 class MemoryKV {
@@ -30,12 +30,14 @@ class MemoryKV {
   }
 }
 
-const validEnv: Env = {
-  EMAIL_PROVIDER: "brevo",
-  REMINDER_KV: new MemoryKV() as unknown as KVNamespace,
-  REMINDER_ENCRYPTION_KEY: "test-secret",
-  BREVO_API_KEY: "test-key",
-};
+function createEnv(kv: MemoryKV): Env {
+  return {
+    EMAIL_PROVIDER: "brevo",
+    REMINDER_KV: kv as unknown as KVNamespace,
+    REMINDER_ENCRYPTION_KEY: "test-secret",
+    BREVO_API_KEY: "test-key",
+  };
+}
 
 function createRequest(body: Record<string, unknown>): Request {
   return new Request("http://test", {
@@ -45,14 +47,23 @@ function createRequest(body: Record<string, unknown>): Request {
   });
 }
 
+function formatTime(date: Date): string {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(
+    date.getMinutes(),
+  ).padStart(2, "0")}`;
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
-describe("reminder endpoints", () => {
-  it("subscribes and unsubscribes", async () => {
-    const subscribeResponse = await handleReminderSubscribe(
+describe("reminder endpoints strict contracts", () => {
+  it("stores encrypted subscription data at rest and supports unsubscribe", async () => {
+    const kv = new MemoryKV();
+    const env = createEnv(kv);
+
+    const response = await handleReminderSubscribe(
       createRequest({
         email: "user@test.com",
         reminderTime: "20:00",
@@ -60,40 +71,88 @@ describe("reminder endpoints", () => {
         frequency: "daily",
         language: "es",
       }),
-      validEnv,
+      env,
     );
 
-    expect(subscribeResponse.status).toBe(200);
+    expect(response.status).toBe(200);
 
-    const kv = validEnv.REMINDER_KV as unknown as MemoryKV;
-    const listAfterSubscribe = await kv.list({ prefix: "reminder:" });
-    expect(listAfterSubscribe.keys.length).toBe(1);
+    const listed = await kv.list({ prefix: "reminder:" });
+    expect(listed.keys.length).toBe(1);
 
-    const unsubscribeResponse = await handleReminderUnsubscribe(
+    const stored = await kv.get(listed.keys[0].name);
+    expect(stored).toBeTruthy();
+    expect(stored).not.toContain("user@test.com");
+    expect(stored?.startsWith("[")).toBe(true);
+
+    const unsubscribe = await handleReminderUnsubscribe(
       createRequest({ email: "user@test.com" }),
-      validEnv,
+      env,
     );
-    expect(unsubscribeResponse.status).toBe(200);
+    expect(unsubscribe.status).toBe(200);
 
-    const listAfterUnsubscribe = await kv.list({ prefix: "reminder:" });
-    expect(listAfterUnsubscribe.keys.length).toBe(0);
+    const listedAfterDelete = await kv.list({ prefix: "reminder:" });
+    expect(listedAfterDelete.keys.length).toBe(0);
   });
 
-  it("sends test reminder email", async () => {
+  it("sends reminder once per local day when within due window", async () => {
+    const kv = new MemoryKV();
+    const env = createEnv(kv);
+    const now = new Date("2026-02-25T20:05:00.000Z");
+
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ id: "email-1" }), { status: 200 }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await handleReminderTest(
-      createRequest({ email: "user@test.com", language: "en" }),
-      validEnv,
+    const subscribe = await handleReminderSubscribe(
+      createRequest({
+        email: "daily@test.com",
+        reminderTime: formatTime(now),
+        timezoneOffsetMinutes: 0,
+        frequency: "daily",
+        language: "en",
+      }),
+      env,
     );
-    expect(response.status).toBe(200);
+    expect(subscribe.status).toBe(200);
+
+    await handleReminderCron(now, env);
+    await handleReminderCron(new Date(now.getTime() + 5 * 60 * 1000), env);
+
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("does not send reminder when current time is outside send window", async () => {
+    const kv = new MemoryKV();
+    const env = createEnv(kv);
+    const now = new Date("2026-02-25T20:05:00.000Z");
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "email-1" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const subscribe = await handleReminderSubscribe(
+      createRequest({
+        email: "late@test.com",
+        reminderTime: "23:45",
+        timezoneOffsetMinutes: 0,
+        frequency: "daily",
+        language: "en",
+      }),
+      env,
+    );
+    expect(subscribe.status).toBe(200);
+
+    await handleReminderCron(now, env);
+
+    expect(fetchMock).toHaveBeenCalledTimes(0);
+  });
+
   it("rejects non-integer timezone offsets", async () => {
+    const kv = new MemoryKV();
+    const env = createEnv(kv);
+
     const response = await handleReminderSubscribe(
       createRequest({
         email: "user@test.com",
@@ -102,11 +161,10 @@ describe("reminder endpoints", () => {
         frequency: "daily",
         language: "es",
       }),
-      validEnv,
+      env,
     );
 
     expect(response.status).toBe(400);
-    const payload = (await response.json()) as { error: { message: string } };
-    expect(payload.error.message).toBe("Timezone offset is invalid");
+    expect((await response.json()).error.message).toBe("Timezone offset is invalid");
   });
 });

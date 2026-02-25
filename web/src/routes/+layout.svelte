@@ -94,6 +94,8 @@
   });
 
   onMount(() => {
+    document.documentElement.setAttribute("data-anglicus-hydrated", "true");
+
     const refreshAuthSession = async () => {
       const tokenBeforeRefresh = getToken();
       if (!tokenBeforeRefresh) return;

@@ -299,6 +299,7 @@
 {#if open}
   <div
     class="paywall-backdrop"
+    data-testid="paywall-backdrop"
     role="button"
     tabindex="0"
     aria-label={$t("common.close")}
@@ -307,11 +308,17 @@
       (e.key === "Escape" || e.key === "Enter" || e.key === " ") &&
       closeModal()}
   >
-    <div class="paywall-card" role="dialog" aria-modal="true">
+    <div class="paywall-card" data-testid="paywall-modal" role="dialog" aria-modal="true">
       <header>
         <div class="header-row">
           <h2>{$t("paywall.title")}</h2>
-          <button class="close-icon" type="button" onclick={closeModal} aria-label={$t("common.close")}>
+          <button
+            class="close-icon"
+            data-testid="paywall-close-icon"
+            type="button"
+            onclick={closeModal}
+            aria-label={$t("common.close")}
+          >
             ×
           </button>
         </div>
@@ -361,10 +368,10 @@
 
       <div class="payment-box">
         {#if errorMessage}
-          <div class="error">{errorMessage}</div>
+          <div class="error" data-testid="paywall-error">{errorMessage}</div>
         {/if}
         {#if statusMessage}
-          <div class="status">{statusMessage}</div>
+          <div class="status" data-testid="paywall-status">{statusMessage}</div>
         {/if}
 
         {#if getCheckoutRails().length > 0}
@@ -372,6 +379,7 @@
             <label class="selector">
               <span>{$t("paywall.assetLabel")}</span>
               <select
+                data-testid="paywall-asset-select"
                 value={selectedAsset ?? ""}
                 onchange={handleAssetChange}
                 disabled={isCreatingSession || isCheckingStatus}
@@ -384,6 +392,7 @@
             <label class="selector">
               <span>{$t("paywall.networkLabel")}</span>
               <select
+                data-testid="paywall-network-select"
                 value={selectedNetwork ?? ""}
                 onchange={handleNetworkChange}
                 disabled={isCreatingSession || isCheckingStatus || getNetworkOptions(selectedAsset).length <= 1}
@@ -404,7 +413,7 @@
                 network: $t(`paywall.network.${checkoutSession.network}`),
               })}
             </div>
-            <div class="address">{checkoutSession.address}</div>
+            <div class="address" data-testid="paywall-address">{checkoutSession.address}</div>
           </div>
           <div class="session-meta">
             {$t("paywall.sessionExpires", { at: new Date(checkoutSession.expiresAt).toLocaleString() })}
@@ -415,6 +424,7 @@
           <div class="tx-check-row">
             <button
               class="secondary check-btn"
+              data-testid="paywall-check-status"
               type="button"
               onclick={handleCheckPaymentStatus}
               disabled={isCheckingStatus}
@@ -431,6 +441,7 @@
           <div class="tx-check-row">
             <button
               class="secondary check-btn"
+              data-testid="paywall-retry-checkout"
               type="button"
               onclick={handleRetryCheckoutFlow}
               disabled={isLoading || isCreatingSession || isCheckingStatus}
@@ -459,7 +470,7 @@
       </div>
 
       <footer>
-        <button class="secondary" onclick={closeModal}>
+        <button class="secondary" data-testid="paywall-close" onclick={closeModal}>
           {mode === "nag" ? $t("paywall.keepFree") : $t("common.close")}
         </button>
       </footer>

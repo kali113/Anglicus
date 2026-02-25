@@ -508,10 +508,14 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <p class="subtitle">{$t("placement.step0.subtitle")}</p>
       <div class="language-options">
         {#each languageOptions as option}
-          <button class="language-card" onclick={() => {
+          <button
+            class="language-card"
+            data-testid={`placement-language-${option.value}`}
+            onclick={() => {
             targetLanguage = option.value;
             step = 1;
-          }}>
+          }}
+          >
             <span class="language-name">{option.label}</span>
             <span class="language-subtitle">{option.subtitle}</span>
           </button>
@@ -540,7 +544,13 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <h1>{$t("placement.step1.title")}</h1>
       <p>{$t("placement.step1.description", { language: targetLabelDisplay })}</p>
       <p class="subtitle">{$t("placement.step1.subtitle")}</p>
-      <button class="btn primary" onclick={() => (step = 2)}>{$t("placement.step1.start")}</button>
+      <button
+        class="btn primary"
+        data-testid="placement-start-intro"
+        onclick={() => (step = 2)}
+      >
+        {$t("placement.step1.start")}
+      </button>
     </div>
   {:else if step === 2}
     <div class="step">
@@ -548,6 +558,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="text"
         bind:value={userName}
+        data-testid="placement-name-input"
         placeholder={$t("placement.step2.namePlaceholder")}
         class="input"
         onkeydown={(e) =>
@@ -559,6 +570,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="email"
         bind:value={userEmail}
+        data-testid="placement-email-input"
         placeholder={$t("placement.step2.emailPlaceholder")}
         class="input"
         oninput={handleEmailInput}
@@ -582,6 +594,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
         </a>
         <button
           class="btn primary"
+          data-testid="placement-identity-continue"
           onclick={() => (step = 3)}
           disabled={!userName.trim() || (!!userEmail.trim() && !isEmailValid(userEmail))}
         >
@@ -599,6 +612,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <input
         type="text"
         bind:value={promoCode}
+        data-testid="placement-promo-input"
         placeholder={$t("placement.step3.placeholder")}
         class="input"
         onkeydown={(e) => e.key === "Enter" && handleApplyPromo()}
@@ -609,12 +623,17 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <div class="actions">
         <button
           class="btn secondary"
+          data-testid="placement-promo-apply"
           onclick={handleApplyPromo}
           disabled={!promoCode.trim() || promoSaving}
         >
           {promoSaving ? $t("placement.step3.validating") : $t("placement.step3.apply")}
         </button>
-        <button class="btn primary" onclick={() => (step = 4)}>
+        <button
+          class="btn primary"
+          data-testid="placement-promo-continue"
+          onclick={() => (step = 4)}
+        >
           {$t("common.continue")}
         </button>
       </div>
@@ -628,6 +647,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
           <button
             class="goal-card"
             class:selected={userGoals.includes(goal.value)}
+            data-testid={`placement-goal-${goal.value}`}
             onclick={() => toggleGoal(goal.value)}
           >
             <span class="goal-emoji">{goal.emoji}</span>
@@ -638,6 +658,7 @@ Make sure the correctAnswer matches exactly one of the options.`;
       <div class="actions">
         <button
           class="btn primary"
+          data-testid="placement-start-test"
           onclick={startTest}
           disabled={userGoals.length === 0}
         >
@@ -685,7 +706,11 @@ Make sure the correctAnswer matches exactly one of the options.`;
             <p>{$t("placement.results.proHint")}</p>
           </div>
 
-          <button class="btn primary" onclick={completeOnboarding}>
+          <button
+            class="btn primary"
+            data-testid="placement-complete"
+            onclick={completeOnboarding}
+          >
             {$t("placement.results.startLearning")}
           </button>
         </div>
@@ -713,10 +738,11 @@ Make sure the correctAnswer matches exactly one of the options.`;
             <h2 class="question-text">{questions[currentQuestion].question}</h2>
 
             <div class="options">
-              {#each questions[currentQuestion].options as option}
+              {#each questions[currentQuestion].options as option, optionIndex}
                 <button
                   class="option-btn"
                   class:selected={answers[currentQuestion] === option}
+                  data-testid={`placement-option-${optionIndex}`}
                   onclick={() => selectAnswer(option)}
                 >
                   {option}
