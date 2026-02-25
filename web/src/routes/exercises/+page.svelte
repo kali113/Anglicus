@@ -18,6 +18,8 @@
 	let loading = $state(false);
 	let currentExerciseIndex = $state(0);
 	let selectedAnswer = $state('');
+	let fillBlankAnswers = $state<string[]>([]);
+	let activeFillBlankIndex = $state(0);
 	let showResult = $state(false);
 	let isCorrect = $state(false);
 	let errorMessage = $state('');
@@ -58,6 +60,7 @@
 			if (jsonMatch) {
 				const data = JSON.parse(jsonMatch[0]);
 				exercises = data.exercises || [];
+				currentExerciseIndex = 0;
 			}
 		} catch (error) {
 			if (error instanceof AiRequestError && error.status === 429) {
@@ -71,6 +74,125 @@
 		}
 	}
 
+	function normalizeAnswer(value: string): string {
+		return value.trim().toLowerCase().replace(/\s+/g, ' ');
+	}
+
+	function countQuestionGaps(question: string): number {
+		return question.match(/_{3,}/g)?.length ?? 0;
+	}
+
+	function parseFillBlankCorrectAnswers(exercise: Exercise): string[] {
+		if (Array.isArray(exercise.correctAnswer)) {
+			return exercise.correctAnswer;
+		}
+		const gapCount = countQuestionGaps(exercise.question);
+		if (gapCount <= 1) {
+			return [exercise.correctAnswer];
+		}
+		const splitAnswer = exercise.correctAnswer
+			.split(/[|,]/)
+			.map((item) => item.trim())
+			.filter(Boolean);
+		return splitAnswer.length === gapCount ? splitAnswer : [exercise.correctAnswer];
+	}
+
+	function getOptionMatchCount(values: string[], target: string): number {
+		const normalizedTarget = normalizeAnswer(target);
+		return values.filter((value) => normalizeAnswer(value) === normalizedTarget).length;
+	}
+
+	function getCorrectAnswerForResult(exercise: Exercise): string {
+		if (exercise.type === 'fill_blank') {
+			return parseFillBlankCorrectAnswers(exercise).join(', ');
+		}
+		return Array.isArray(exercise.correctAnswer)
+			? exercise.correctAnswer.join(', ')
+			: exercise.correctAnswer;
+	}
+
+	function isOptionCorrect(option: string, exercise: Exercise): boolean {
+		if (Array.isArray(exercise.correctAnswer)) {
+			return exercise.correctAnswer.some(
+				(answer) => normalizeAnswer(answer) === normalizeAnswer(option)
+			);
+		}
+		return normalizeAnswer(exercise.correctAnswer) === normalizeAnswer(option);
+	}
+
+	function getFillBlankOptionLimit(option: string): number {
+		if (!currentExercise?.options) return 0;
+		return getOptionMatchCount(currentExercise.options, option);
+	}
+
+	function getFillBlankOptionUsage(option: string): number {
+		return getOptionMatchCount(
+			fillBlankAnswers.filter((answer) => answer.trim().length > 0),
+			option
+		);
+	}
+
+	function isFillBlankOptionUsed(option: string): boolean {
+		return getFillBlankOptionUsage(option) > 0;
+	}
+
+	function isFillBlankOptionDisabled(option: string): boolean {
+		if (!isFillBlankWordBank || showResult) return true;
+
+		let targetIndex = activeFillBlankIndex;
+		if (targetIndex < 0 || targetIndex >= fillBlankAnswers.length) {
+			targetIndex = fillBlankAnswers.findIndex((answer) => !answer);
+		}
+
+		const targetValue = targetIndex >= 0 ? fillBlankAnswers[targetIndex] : '';
+		const optionLimit = getFillBlankOptionLimit(option);
+		const optionUsage = getFillBlankOptionUsage(option);
+		const targetUsesSameOption =
+			targetValue.length > 0 && normalizeAnswer(targetValue) === normalizeAnswer(option);
+
+		if (targetUsesSameOption) {
+			return optionUsage > optionLimit;
+		}
+		return optionUsage >= optionLimit;
+	}
+
+	function focusFillBlank(index: number) {
+		if (!isFillBlankWordBank || showResult) return;
+		if (activeFillBlankIndex === index && fillBlankAnswers[index]) {
+			fillBlankAnswers = fillBlankAnswers.map((answer, answerIndex) =>
+				answerIndex === index ? '' : answer
+			);
+			return;
+		}
+		activeFillBlankIndex = index;
+	}
+
+	function selectFillBlankOption(option: string) {
+		if (!isFillBlankWordBank || showResult) return;
+
+		let targetIndex = activeFillBlankIndex;
+		if (targetIndex < 0 || targetIndex >= fillBlankAnswers.length) {
+			targetIndex = fillBlankAnswers.findIndex((answer) => !answer);
+		}
+		if (targetIndex === -1) {
+			targetIndex = 0;
+		}
+
+		const previousValue = fillBlankAnswers[targetIndex];
+		const selectingSameOption =
+			previousValue.length > 0 && normalizeAnswer(previousValue) === normalizeAnswer(option);
+		if (!selectingSameOption && isFillBlankOptionDisabled(option)) {
+			return;
+		}
+
+		const updatedAnswers = fillBlankAnswers.map((answer, index) =>
+			index === targetIndex ? option : answer
+		);
+		fillBlankAnswers = updatedAnswers;
+		const nextEmptyIndex = updatedAnswers.findIndex((answer) => !answer);
+		activeFillBlankIndex = nextEmptyIndex === -1 ? targetIndex : nextEmptyIndex;
+	}
+
 	async function openPaywall(mode: 'nag' | 'block', feature: string) {
 		paywallMode = mode;
 		paywallFeature = feature;
@@ -79,22 +201,72 @@
 	}
 
 	function checkAnswer() {
-		if (!selectedAnswer) return;
 		const current = exercises[currentExerciseIndex];
-		isCorrect = selectedAnswer === current.correctAnswer;
+		if (!current) return;
+
+		if (isFillBlankWordBank) {
+			if (!canSubmit) return;
+			const expectedAnswers = parseFillBlankCorrectAnswers(current);
+			isCorrect =
+				expectedAnswers.length === fillBlankAnswers.length &&
+				expectedAnswers.every(
+					(answer, index) =>
+						normalizeAnswer(answer) === normalizeAnswer(fillBlankAnswers[index] ?? '')
+				);
+			showResult = true;
+			return;
+		}
+
+		if (!selectedAnswer.trim()) return;
+		isCorrect =
+			normalizeAnswer(selectedAnswer) ===
+			normalizeAnswer(
+				Array.isArray(current.correctAnswer)
+					? current.correctAnswer.join(' ')
+					: current.correctAnswer
+			);
 		showResult = true;
 	}
 
 	function nextExercise() {
 		currentExerciseIndex++;
-		selectedAnswer = '';
-		showResult = false;
-		isCorrect = false;
 	}
 
 	let currentExercise = $derived(exercises[currentExerciseIndex]);
+	let fillBlankParts = $derived(
+		currentExercise?.type === 'fill_blank' ? currentExercise.question.split(/_{3,}/g) : []
+	);
+	let fillBlankCount = $derived(Math.max(fillBlankParts.length - 1, 0));
+	let isFillBlankWordBank = $derived(
+		currentExercise?.type === 'fill_blank' &&
+			fillBlankCount > 0 &&
+			Array.isArray(currentExercise.options) &&
+			currentExercise.options.length > 0
+	);
+	let canSubmit = $derived(
+		currentExercise
+			? isFillBlankWordBank
+				? fillBlankAnswers.length === fillBlankCount &&
+					fillBlankAnswers.every((answer) => answer.trim().length > 0)
+				: selectedAnswer.trim().length > 0
+			: false
+	);
 	let progress = $derived(currentExerciseIndex + 1);
 	let total = $derived(exercises.length);
+
+	$effect(() => {
+		if (!currentExercise) return;
+		selectedAnswer = '';
+		showResult = false;
+		isCorrect = false;
+		if (isFillBlankWordBank) {
+			fillBlankAnswers = Array.from({ length: fillBlankCount }, () => '');
+			activeFillBlankIndex = 0;
+			return;
+		}
+		fillBlankAnswers = [];
+		activeFillBlankIndex = 0;
+	});
 </script>
 
 <div class="exercises-page">
@@ -139,32 +311,70 @@
 					{currentExercise.type.replace('_', ' ')}
 				</div>
 
-				<h2 class="question">{currentExercise.question}</h2>
+					{#if isFillBlankWordBank}
+						<div class="gap-card">
+							<h2 class="question">{currentExercise.question}</h2>
+							<div class="gap-sentence">
+								{#each fillBlankParts as part, index}
+									<span>{part}</span>
+									{#if index < fillBlankCount}
+										<button
+											type="button"
+											class="gap-slot"
+											class:active={activeFillBlankIndex === index && !showResult}
+											class:filled={fillBlankAnswers[index]?.trim().length > 0}
+											onclick={() => focusFillBlank(index)}
+											disabled={showResult}
+										>
+											{fillBlankAnswers[index] || '_____'}
+										</button>
+									{/if}
+								{/each}
+							</div>
+						</div>
 
-				{#if currentExercise.options}
-					<div class="options">
-						{#each currentExercise.options as option}
-							<button
-								class="option-btn"
-								class:selected={selectedAnswer === option}
-								class:correct={showResult && option === currentExercise.correctAnswer}
-								class:incorrect={showResult && selectedAnswer === option && !isCorrect}
-								onclick={() => !showResult && (selectedAnswer = option)}
-							>
-								{option}
-							</button>
-						{/each}
-					</div>
+						<p class="gap-hint">{$t('exercises.fillBlankHint')}</p>
 
-				{:else}
-					<input
-						type="text"
-						class="text-input"
-						bind:value={selectedAnswer}
-						disabled={showResult}
-						placeholder={$t('exercises.answerPlaceholder')}
-					/>
-				{/if}
+						<div class="gap-options">
+							{#each currentExercise.options ?? [] as option}
+								<button
+									type="button"
+									class="gap-option"
+									class:used={isFillBlankOptionUsed(option)}
+									onclick={() => selectFillBlankOption(option)}
+									disabled={isFillBlankOptionDisabled(option)}
+								>
+									{option}
+								</button>
+							{/each}
+						</div>
+					{:else}
+						<h2 class="question">{currentExercise.question}</h2>
+
+						{#if currentExercise.options}
+							<div class="options">
+								{#each currentExercise.options as option}
+									<button
+										class="option-btn"
+										class:selected={selectedAnswer === option}
+										class:correct={showResult && isOptionCorrect(option, currentExercise)}
+										class:incorrect={showResult && selectedAnswer === option && !isCorrect}
+										onclick={() => !showResult && (selectedAnswer = option)}
+									>
+										{option}
+									</button>
+								{/each}
+							</div>
+						{:else}
+							<input
+								type="text"
+								class="text-input"
+								bind:value={selectedAnswer}
+								disabled={showResult}
+								placeholder={$t('exercises.answerPlaceholder')}
+							/>
+						{/if}
+					{/if}
 
 				{#if showResult}
 					<div class="result" class:correct={isCorrect} class:incorrect={!isCorrect}>
@@ -174,14 +384,12 @@
 						{:else}
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
 							<span>
-								{$t('exercises.incorrect', {
-									answer: Array.isArray(currentExercise.correctAnswer)
-										? currentExercise.correctAnswer.join(', ')
-										: currentExercise.correctAnswer
-								})}
-							</span>
-						{/if}
-					</div>
+									{$t('exercises.incorrect', {
+										answer: getCorrectAnswerForResult(currentExercise)
+									})}
+								</span>
+							{/if}
+						</div>
 
 					{#if currentExercise.explanation}
 						<div class="explanation">
@@ -194,10 +402,10 @@
 						{progress < total ? $t('exercises.next') : $t('exercises.finish')}
 					</button>
 				{:else}
-					<button class="btn primary" onclick={checkAnswer} disabled={!selectedAnswer}>
-						{$t('exercises.answer')}
-					</button>
-				{/if}
+						<button class="btn primary" onclick={checkAnswer} disabled={!canSubmit}>
+							{isFillBlankWordBank ? $t('exercises.check') : $t('exercises.answer')}
+						</button>
+					{/if}
 			</div>
 		{:else}
 			<div class="completion">
@@ -330,6 +538,95 @@
 		font-size: 1.25rem;
 	}
 
+	.gap-card {
+		background: linear-gradient(145deg, #111827, #0f172a);
+		border: 1px solid #1f2937;
+		border-radius: 14px;
+		padding: 1rem;
+	}
+
+	.gap-card .question {
+		font-size: 1rem;
+		color: #cbd5e1;
+		margin-bottom: 0.75rem;
+	}
+
+	.gap-sentence {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+		color: #f8fafc;
+		line-height: 1.7;
+		font-size: 1.1rem;
+	}
+
+	.gap-slot {
+		border: 1px solid #334155;
+		border-radius: 999px;
+		background: #0b1120;
+		color: #e2e8f0;
+		padding: 0.35rem 0.8rem;
+		font-size: 0.95rem;
+		font-weight: 600;
+		min-width: 5.75rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.gap-slot.active {
+		border-color: #60a5fa;
+		box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+	}
+
+	.gap-slot.filled {
+		background: #1e293b;
+		border-color: #475569;
+	}
+
+	.gap-slot:disabled {
+		opacity: 0.8;
+		cursor: default;
+	}
+
+	.gap-hint {
+		margin: -0.25rem 0 0;
+		font-size: 0.85rem;
+		color: var(--text-secondary);
+	}
+
+	.gap-options {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.65rem;
+	}
+
+	.gap-option {
+		padding: 0.7rem 0.9rem;
+		border: 1px solid #334155;
+		border-radius: 999px;
+		background: #111827;
+		color: #e2e8f0;
+		font-size: 0.95rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.gap-option:hover:not(:disabled) {
+		transform: translateY(-1px);
+		border-color: #60a5fa;
+		background: #172033;
+	}
+
+	.gap-option.used {
+		background: #1e293b;
+	}
+
+	.gap-option:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
 	.options {
 		display: flex;
 		flex-direction: column;
@@ -430,5 +727,11 @@
 
 	.error-message p {
 		margin: 0 0 1rem 0;
+	}
+
+	@media (max-width: 420px) {
+		.gap-options {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>
