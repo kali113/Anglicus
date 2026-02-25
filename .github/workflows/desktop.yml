@@ -26,13 +26,32 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: desktop/package-lock.json
 
       - name: Install dependencies
         working-directory: desktop
-        run: npm ci --no-audit --no-fund --prefer-offline
+        shell: pwsh
+        run: |
+          $maxAttempts = 3
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            Write-Host "npm ci attempt $attempt/$maxAttempts"
+            npm ci --no-audit --no-fund --prefer-offline
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+
+            if ($attempt -lt $maxAttempts) {
+              Write-Host "npm ci failed with exit code $LASTEXITCODE. Retrying in 15 seconds."
+              if (Test-Path node_modules) {
+                Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
+              }
+              Start-Sleep -Seconds 15
+            } else {
+              exit $LASTEXITCODE
+            }
+          }
 
       - name: Build NSIS installer
         working-directory: desktop
