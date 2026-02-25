@@ -28,8 +28,9 @@ export interface MultipleChoiceExercise extends Exercise {
 
 export interface FillBlankExercise extends Exercise {
   type: "fill_blank";
-  question: string; // "I want ___ apple."
-  correctAnswer: string;
+  question: string; // Sentence with one or more gaps: "I want ___ apple."
+  options?: string[]; // Optional word bank for gap-fill interaction
+  correctAnswer: string | string[]; // Supports single gap or multi-gap answers
 }
 
 export interface TranslationExercise extends Exercise {

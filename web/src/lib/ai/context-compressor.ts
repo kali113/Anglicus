@@ -169,7 +169,19 @@ Exercise format:
       "weakArea": "..."
     }
   ]
-}`;
+}
+
+Fill-in-the-blank requirements:
+- Use 1-3 "___" gaps in the question text.
+- Provide 5-7 options including distractors.
+- Set "correctAnswer" as an array ordered by gap position.
+- Example:
+  {
+    "type": "fill_blank",
+    "question": "Despite the ___ weather, we had a ___ hike.",
+    "options": ["rough", "rewarding", "silent", "stormy", "quick"],
+    "correctAnswer": ["stormy", "rewarding"]
+  }`;
 }
 
 /**
