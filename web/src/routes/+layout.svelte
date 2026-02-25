@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import { base } from "$app/paths";
   import { page } from "$app/stores";
   import { get } from "svelte/store";
@@ -45,6 +46,11 @@
     initialPage.url.pathname,
     initialPage.data?.locale,
   );
+
+  const ssrFallbackLocale: Locale = "en";
+  if (!browser && get(locale) !== ssrFallbackLocale) {
+    setLocale(ssrFallbackLocale);
+  }
   if (initialRouteLocale && initialRouteLocale !== get(locale)) {
     setLocale(initialRouteLocale);
   }
