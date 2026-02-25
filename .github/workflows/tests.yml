@@ -31,28 +31,17 @@ jobs:
             web/package-lock.json
             api/package-lock.json
 
-      - name: Install root dependencies
-        run: npm ci --no-audit --no-fund --prefer-offline
-
-      - name: Install web dependencies
-        working-directory: web
-        run: npm ci --no-audit --no-fund --prefer-offline
-
-      - name: Install api dependencies
-        working-directory: api
-        run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Install workspace dependencies
+        run: npm ci --workspaces --include-workspace-root --no-audit --no-fund --prefer-offline
 
       - name: Web typecheck
-        working-directory: web
-        run: npm run check
+        run: npm --workspace web run check
 
       - name: Web unit tests
-        working-directory: web
-        run: npm run test
+        run: npm --workspace web run test
 
       - name: API tests
-        working-directory: api
-        run: npm run test -- --run
+        run: npm --workspace api run test -- --run
 
   e2e:
     runs-on: ubuntu-latest
@@ -77,17 +66,11 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
 
-      - name: Install root dependencies
-        run: npm ci --no-audit --no-fund --prefer-offline
-
-      - name: Install web dependencies
-        working-directory: web
-        run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Install workspace dependencies
+        run: npm ci --workspaces --include-workspace-root --no-audit --no-fund --prefer-offline
 
       - name: Install Playwright Chromium
-        working-directory: web
-        run: npx playwright install --with-deps chromium
+        run: npm --workspace web exec playwright install --with-deps chromium
 
       - name: Run web e2e tests
-        working-directory: web
-        run: npm run test:e2e
+        run: npm --workspace web run test:e2e
