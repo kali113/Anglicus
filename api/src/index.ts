@@ -29,6 +29,8 @@ import {
 } from "./routes/auth.js";
 import {
   handleAnalyticsTrack,
+  handleAnalyticsWebTrack,
+  handleAnalyticsDashboard,
 } from "./routes/analytics.js";
 import { handleFeedback } from "./routes/feedback.js";
 import {
@@ -143,6 +145,7 @@ export interface Env {
   REFERRAL_CODE_PEPPER?: string;
   REFERRAL_CODE_HASHES?: string;
   REFERRAL_DISCOUNT_PERCENT?: string;
+  ANALYTICS_ADMIN_USER_IDS?: string;
 }
 
 // Module-level rate limiter (persists within isolate lifecycle)
@@ -506,6 +509,26 @@ app.post("/api/analytics/event", async (c) => {
   return c.newResponse(
     response.body,
     response.status as 200 | 400 | 401 | 415 | 503 | 500,
+    headers,
+  );
+});
+
+app.post("/api/analytics/web-event", async (c) => {
+  const response = await handleAnalyticsWebTrack(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 415 | 500 | 503,
+    headers,
+  );
+});
+
+app.get("/api/analytics/dashboard", async (c) => {
+  const response = await handleAnalyticsDashboard(c.req.raw, c.env);
+  const headers = Object.fromEntries(response.headers.entries());
+  return c.newResponse(
+    response.body,
+    response.status as 200 | 400 | 401 | 403 | 500 | 503,
     headers,
   );
 });

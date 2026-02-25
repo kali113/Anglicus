@@ -7,6 +7,7 @@
     "lessons": "Lecciones",
     "practice": "Práctica",
     "profile": "Perfil",
+    "analytics": "Analitica",
     "buyPro": "Comprar Pro",
     "notifications": "Notificaciones",
     "settings": "Configuración",
@@ -35,6 +36,13 @@
     "cancel": "Cancelar",
     "continue": "Continuar",
     "retry": "Reintentar"
+  },
+  "consent": {
+    "title": "Preferencias de privacidad",
+    "body": "Usamos almacenamiento de analitica para entender trafico, embudos de conversion y uso del producto. Acepta para activar analitica.",
+    "learnMore": "Leer politica de cookies",
+    "accept": "Aceptar analitica",
+    "reject": "Rechazar no esencial"
   },
   "auth": {
     "loginTitle": "Iniciar sesion",
@@ -92,6 +100,46 @@
     "reactivationTitle": "¡Qué bueno verte de nuevo! Reactivemos tu impulso",
     "reactivationBody": "Estuviste fuera {days} días. Activa recordatorios para mantener tu racha esta semana.",
     "reactivationCta": "Configurar recordatorios"
+  },
+  "analytics": {
+    "eyebrow": "Centro de decisiones",
+    "title": "Analitica de crecimiento",
+    "subtitle": "Inteligencia de trafico y embudo en vivo con tracking first-party.",
+    "rangeDays": "{days}d",
+    "refresh": "Actualizar",
+    "refreshing": "Actualizando...",
+    "lastUpdated": "Actualizado: {date}",
+    "loadError": "No se pudieron cargar los datos de analitica.",
+    "accessDenied": "Esta cuenta no tiene permiso para ver el dashboard de analitica.",
+    "notConfigured": "El dashboard de analitica no esta configurado. Define ANALYTICS_ADMIN_USER_IDS en la API.",
+    "noData": "Sin datos aun",
+    "kpi": {
+      "pageViews": "Vistas de pagina",
+      "uniqueVisitors": "Visitantes unicos",
+      "signupCompleted": "Registros completados",
+      "paymentConfirmed": "Pagos confirmados"
+    },
+    "funnel": {
+      "title": "Conversion del embudo",
+      "signupCompletion": "Inicio de registro a verificado",
+      "onboarding": "Verificado a onboarding completado",
+      "paywallToCheckout": "Paywall a pago iniciado",
+      "checkoutToPayment": "Pago iniciado a confirmado",
+      "paywallToPayment": "Paywall a pago confirmado"
+    },
+    "trend": {
+      "title": "Tendencia diaria"
+    },
+    "legend": {
+      "pageViews": "Vistas",
+      "signups": "Registros",
+      "payments": "Pagos"
+    },
+    "topPages": "Paginas principales",
+    "topReferrers": "Referrers principales",
+    "topCampaigns": "Campanas principales",
+    "eventMixWeb": "Mezcla de eventos web",
+    "eventMixProduct": "Mezcla de eventos de producto"
   },
   "nextLesson": {
     "label": "Siguiente lección:",
@@ -515,7 +563,7 @@
       "point3": "No instalamos cookies de publicidad, remarketing ni analítica de terceros.",
       "point4": "La app también usa localStorage y sessionStorage para token de acceso, idioma, configuración, estado de checkout activo y controles antiabuso.",
       "point5": "Si bloqueas o borras cookies/almacenamiento, algunas funciones (por ejemplo descuentos o sesión persistente) pueden dejar de funcionar hasta que inicies sesión o apliques códigos de nuevo.",
-      "point6": "Puedes gestionar o borrar cookies y datos locales en cualquier momento desde tu navegador.",
+      "point6": "Puedes gestionar o borrar cookies y datos locales en cualquier momento desde tu navegador, y nuestro banner te permite aceptar o rechazar almacenamiento analitico no esencial.",
       "outro": "Los valores de cookies son tokens firmados, no códigos promocionales o de referido en texto plano."
     },
     "dataProtection": {

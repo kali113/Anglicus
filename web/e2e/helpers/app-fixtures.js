@@ -299,6 +299,15 @@ export async function installBackendStubs(page, options = {}) {
       return route.fulfill(withResponse(options.onAnalyticsEvent?.(), { ok: true }, 200));
     }
 
+    if (
+      method === "POST" &&
+      matchesPath(normalizedPath, "/api/analytics/web-event")
+    ) {
+      return route.fulfill(
+        withResponse(options.onAnalyticsEvent?.(), { success: true }, 200),
+      );
+    }
+
     calls.unhandled.push({ method, path, normalizedPath, headers, body });
 
     return route.fulfill(

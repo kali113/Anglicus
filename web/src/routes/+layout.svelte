@@ -17,6 +17,7 @@
     refreshActiveCheckoutSessionStatus,
     refreshPaymentStatus,
   } from "$lib/billing/index.js";
+  import { trackPageView } from "$lib/analytics/index.js";
   import {
     AuthRequestError,
     clearToken,
@@ -24,6 +25,7 @@
     refreshToken,
     setToken,
   } from "$lib/auth/index.js";
+  import CookieConsentBanner from "$lib/components/CookieConsentBanner.svelte";
   import { locale, resolveLocaleFromPath, setLocale, t, type Locale } from "$lib/i18n";
   import { isIndexableSeoPath, normalizePath } from "$lib/seo/meta";
 
@@ -32,6 +34,7 @@
   let showFooter = $state(true);
   let onboardingComplete = $state(false);
   let user = $state<UserProfile | null>(null);
+  let lastTrackedPath = $state("");
 
   const isLocale = (value: unknown): value is Locale =>
     value === "en" || value === "es";
@@ -91,6 +94,16 @@
     if (routeLocale && $locale !== routeLocale) {
       setLocale(routeLocale);
     }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    const pathname = $page.url.pathname || "/";
+    const search = $page.url.search || "";
+    const pathWithSearch = `${pathname}${search}`;
+    if (lastTrackedPath === pathWithSearch) return;
+    lastTrackedPath = pathWithSearch;
+    void trackPageView(pathWithSearch);
   });
 
   onMount(() => {
@@ -220,6 +233,8 @@
       <p class="footer-note">{$t("footer.tagline")}</p>
     </footer>
   {/if}
+
+  <CookieConsentBanner legalHref={legalBaseHref} />
 </div>
 
 <style>

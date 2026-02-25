@@ -7,6 +7,7 @@
     "lessons": "Lessons",
     "practice": "Practice",
     "profile": "Profile",
+    "analytics": "Analytics",
     "buyPro": "Buy Pro",
     "notifications": "Notifications",
     "settings": "Settings",
@@ -35,6 +36,13 @@
     "cancel": "Cancel",
     "continue": "Continue",
     "retry": "Retry"
+  },
+  "consent": {
+    "title": "Privacy choices",
+    "body": "We use analytics storage to understand traffic, conversion funnels, and product usage. Accept to enable analytics tracking.",
+    "learnMore": "Read cookies policy",
+    "accept": "Accept analytics",
+    "reject": "Reject non-essential"
   },
   "auth": {
     "loginTitle": "Sign in",
@@ -92,6 +100,46 @@
     "reactivationTitle": "Welcome back - let's restart your momentum",
     "reactivationBody": "You were away for {days} days. Enable reminders to keep your streak alive this week.",
     "reactivationCta": "Set reminders"
+  },
+  "analytics": {
+    "eyebrow": "Decision Center",
+    "title": "Growth Analytics",
+    "subtitle": "Live funnel and traffic intelligence from first-party tracking.",
+    "rangeDays": "{days}d",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "lastUpdated": "Updated: {date}",
+    "loadError": "Could not load analytics data.",
+    "accessDenied": "This account is not allowed to access the analytics dashboard.",
+    "notConfigured": "Analytics dashboard is not configured yet. Set ANALYTICS_ADMIN_USER_IDS on the API.",
+    "noData": "No data yet",
+    "kpi": {
+      "pageViews": "Page views",
+      "uniqueVisitors": "Unique visitors",
+      "signupCompleted": "Signups completed",
+      "paymentConfirmed": "Payments confirmed"
+    },
+    "funnel": {
+      "title": "Funnel conversion",
+      "signupCompletion": "Signup start to verified",
+      "onboarding": "Verified to onboarding complete",
+      "paywallToCheckout": "Paywall to payment initiated",
+      "checkoutToPayment": "Payment initiated to confirmed",
+      "paywallToPayment": "Paywall to payment confirmed"
+    },
+    "trend": {
+      "title": "Daily trend"
+    },
+    "legend": {
+      "pageViews": "Page views",
+      "signups": "Signups",
+      "payments": "Payments"
+    },
+    "topPages": "Top pages",
+    "topReferrers": "Top referrers",
+    "topCampaigns": "Top campaigns",
+    "eventMixWeb": "Web event mix",
+    "eventMixProduct": "Product event mix"
   },
   "nextLesson": {
     "label": "Next lesson:",
@@ -515,7 +563,7 @@
       "point3": "We do not set advertising, remarketing, or third-party analytics cookies.",
       "point4": "The app also uses localStorage and sessionStorage for auth tokens, language preference, settings, active checkout state, and anti-abuse controls.",
       "point5": "If you block or clear cookies/storage, some features (for example discounts or persistent login) may stop working until you sign in or apply codes again.",
-      "point6": "Browser controls let you manage or delete cookies and local data at any time.",
+      "point6": "Browser controls let you manage or delete cookies and local data at any time, and our in-app banner lets you accept or reject non-essential analytics storage.",
       "outro": "Cookie values are signed tokens, not plain promo or referral codes."
     },
     "dataProtection": {

@@ -80,6 +80,13 @@
         {$t("nav.profile")}
       </a
       >
+      <a
+        href="{base}/analytics"
+        class:active={$page.url.pathname.startsWith(`${base}/analytics`)}
+      >
+        {$t("nav.analytics")}
+      </a
+      >
     </div>
 
     <div class="user-menu">
