@@ -11,7 +11,11 @@
   } from "$lib/storage/user-store";
   import type { LanguageCode } from "$lib/types/user";
   import { getLanguageLabel } from "$lib/types/user";
-  import { AiRequestError, streamCompletion } from "$lib/ai/client";
+  import {
+    AiRequestError,
+    streamCompletion,
+    shouldRedirectToLoginBeforeAiRequest,
+  } from "$lib/ai/client";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
     checkBillingAccess,
@@ -218,6 +222,11 @@
       await incrementWordsLearned(currentExercise.target.length);
       await updateWeeklyActivity(1);
     } else {
+      if (await shouldRedirectToLoginBeforeAiRequest()) {
+        window.location.href = `${base}/login`;
+        return;
+      }
+
       const decision = await checkBillingAccess("lessonExplanation");
       if (decision) {
         if (decision.mode === "block") {
@@ -282,6 +291,10 @@
 
   async function askTutor() {
     if (!tutorQuestion.trim() || isAskingTutor) return;
+    if (await shouldRedirectToLoginBeforeAiRequest()) {
+      window.location.href = `${base}/login`;
+      return;
+    }
 
     const decision = await checkBillingAccess("tutorQuestion");
     if (decision) {

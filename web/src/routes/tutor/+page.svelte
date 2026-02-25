@@ -8,6 +8,7 @@
     getCompletion,
     ContextEngine,
     getSpeechSynthesisHint,
+    shouldRedirectToLoginBeforeAiRequest,
   } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
@@ -53,6 +54,10 @@
   ): Promise<void> {
     if (!content.trim() || isLoading || !profile) return;
     const feature = source === "voice" ? "speaking" : "tutor";
+    if (await shouldRedirectToLoginBeforeAiRequest()) {
+      window.location.href = `${base}/login`;
+      return;
+    }
 
     if (source === "text") {
       const decision = await checkBillingAccess("tutor");
@@ -112,9 +117,14 @@
         void speakAssistantResponse(response.content);
       }
     } catch (error) {
-      if (error instanceof AiRequestError && error.status === 429) {
-        await openPaywall("block", getFeatureLabel(feature));
-        return;
+      if (error instanceof AiRequestError) {
+        if (error.status === 429) {
+          await openPaywall("block", getFeatureLabel(feature));
+          return;
+        }
+        if (error.status === 401) {
+          return;
+        }
       }
       errorMessage = $t("tutor.connectionError");
       messages = [
@@ -197,7 +207,7 @@
     onPaywall={openPaywall}
   />
 
-  <div bind:this={chatContainer} class="chat-container">
+  <div bind:this={chatContainer} class="chat-container" data-testid="tutor-chat-container">
     {#if messages.length === 0}
       <div class="empty-state">
         <svg
@@ -253,6 +263,7 @@
 
   <form
     class="input-form"
+    data-testid="tutor-input-form"
     onsubmit={(e) => {
       e.preventDefault();
       sendMessage();
@@ -267,6 +278,7 @@
     <input
       type="text"
       bind:value={inputMessage}
+      data-testid="tutor-input"
       placeholder={$t("tutor.placeholder")}
       disabled={isLoading}
       onkeydown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
@@ -275,6 +287,7 @@
       type="submit"
       disabled={!inputMessage.trim() || isLoading}
       class="send-btn"
+      data-testid="tutor-send"
       aria-label={$t("tutor.send")}
     >
       <svg

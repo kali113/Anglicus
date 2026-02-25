@@ -3,8 +3,12 @@
   import { onMount } from "svelte";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import type { LanguageCode } from "$lib/types/user.js";
-  import { AiRequestError, getCompletion, ContextEngine } from "$lib/ai/index.js";
-  import { getToken } from "$lib/auth/index.js";
+  import {
+    AiRequestError,
+    getCompletion,
+    ContextEngine,
+    shouldRedirectToLoginBeforeAiRequest,
+  } from "$lib/ai/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
@@ -38,7 +42,7 @@
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
-    if (!getToken()) {
+    if (await shouldRedirectToLoginBeforeAiRequest()) {
       window.location.href = `${base}/login`;
       return;
     }

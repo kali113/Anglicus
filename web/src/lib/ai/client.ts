@@ -97,6 +97,33 @@ export class AiRequestError extends Error {
   }
 }
 
+export interface AiAccessState {
+  hasAuthToken: boolean;
+  canUseByokTier: boolean;
+  canUsePuterTier: boolean;
+}
+
+export async function getAiAccessState(): Promise<AiAccessState> {
+  const settings = getSettings();
+  const hasAuthToken = Boolean(getToken());
+  const hasByokApiKey = Boolean(await getApiKey());
+  const hasPuterToken = Boolean(import.meta.env.VITE_PUTER_TOKEN);
+  const isAutoTier = settings.apiConfig.tier === "auto";
+
+  return {
+    hasAuthToken,
+    canUseByokTier:
+      (settings.apiConfig.tier === "byok" || isAutoTier) && hasByokApiKey,
+    canUsePuterTier:
+      (settings.apiConfig.tier === "puter" || isAutoTier) && hasPuterToken,
+  };
+}
+
+export async function shouldRedirectToLoginBeforeAiRequest(): Promise<boolean> {
+  const aiAccess = await getAiAccessState();
+  return !aiAccess.hasAuthToken && !aiAccess.canUseByokTier && !aiAccess.canUsePuterTier;
+}
+
 const FEATURE_HEADER = "X-Anglicus-Feature";
 
 /**
@@ -312,6 +339,7 @@ export async function streamCompletion(
   config: AiClientConfig = {}
 ): Promise<void> {
   const settings = getSettings();
+  const hasAuthToken = Boolean(getToken());
   const request: ChatCompletionRequest = {
     model: config.model || "llama-3.1-8b",
     messages,
@@ -320,23 +348,64 @@ export async function streamCompletion(
     stream: true,
   };
   const feature = config.feature ?? "tutor";
-  const token = requireAuthToken();
 
   let endpoint = "";
+  let route: "backend" | "byok" | "puter" = "backend";
   let headers: Record<string, string> = { "Content-Type": "application/json" };
 
-  // Tier configuration
-  if (settings.apiConfig.tier === "byok") {
+  const configureByokRoute = async (): Promise<boolean> => {
     const apiKey = await getApiKey();
-    if (!apiKey) throw new Error("BYOK not configured");
+    if (!apiKey) return false;
     const baseUrl = (settings.apiConfig.customBaseUrl || DEFAULT_BYOK_BASE_URL).replace(/\/$/, "");
     endpoint = `${baseUrl}/v1/chat/completions`;
-    headers["Authorization"] = `Bearer ${apiKey}`;
-  } else {
-    // Default to backend
+    headers.Authorization = `Bearer ${apiKey}`;
+    route = "byok";
+    return true;
+  };
+
+  const configureBackendRoute = (): void => {
     endpoint = `${BACKEND_URL}/v1/chat/completions`;
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${requireAuthToken()}`;
     headers[FEATURE_HEADER] = feature;
+    route = "backend";
+  };
+
+  // Tier configuration
+  switch (settings.apiConfig.tier) {
+    case "byok": {
+      const configured = await configureByokRoute();
+      if (!configured) throw new Error("BYOK not configured");
+      break;
+    }
+    case "puter":
+      route = "puter";
+      break;
+    case "auto": {
+      if (hasAuthToken) {
+        configureBackendRoute();
+        break;
+      }
+      const configuredByok = await configureByokRoute();
+      if (configuredByok) break;
+      if (import.meta.env.VITE_PUTER_TOKEN) {
+        route = "puter";
+        break;
+      }
+      requireAuthToken();
+      break;
+    }
+    case "backend":
+    default:
+      configureBackendRoute();
+      break;
+  }
+
+  if (route === "puter") {
+    const fallback = await getCompletion(messages, config);
+    if (fallback.content) {
+      onChunk(fallback.content);
+    }
+    return;
   }
 
   try {
@@ -346,11 +415,11 @@ export async function streamCompletion(
       body: JSON.stringify(request),
     });
 
-    if (response.status === 401 && settings.apiConfig.tier !== "byok") {
+    if (response.status === 401 && route === "backend") {
       try {
         const refreshed = await refreshToken();
         setToken(refreshed);
-        headers["Authorization"] = `Bearer ${refreshed}`;
+        headers.Authorization = `Bearer ${refreshed}`;
         response = await fetch(endpoint, {
           method: "POST",
           headers,
@@ -363,16 +432,22 @@ export async function streamCompletion(
     }
 
     if (!response.ok) {
-      if (response.status === 401) {
+      if (response.status === 401 && route === "backend") {
         redirectToLogin();
         throw new AiRequestError("auth_required", 401, "auth_required");
       }
-      if (response.status === 429) {
+      if (response.status === 429 && route === "backend") {
         const data = await response.json().catch(() => null);
         const code = data?.error || "limit_reached";
         throw new AiRequestError("limit_reached", 429, code);
       }
-      throw new Error(`Stream request failed: ${response.statusText}`);
+      const data = await response.json().catch(() => null);
+      const message =
+        data?.error?.message ||
+        data?.error ||
+        response.statusText ||
+        "Stream request failed";
+      throw new Error(message);
     }
 
     if (!response.body) throw new Error("No response body");

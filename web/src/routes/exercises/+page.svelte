@@ -5,7 +5,8 @@
 	import {
 		AiRequestError,
 		getCompletion,
-		buildExerciseSystemPrompt
+		buildExerciseSystemPrompt,
+		shouldRedirectToLoginBeforeAiRequest,
 	} from '$lib/ai/index.js';
 	import type { Exercise } from '$lib/types/exercise.js';
 	import type { UserProfile } from '$lib/types/user.js';
@@ -37,6 +38,10 @@
 
 	async function generateExercises() {
 		if (!profile) return;
+		if (await shouldRedirectToLoginBeforeAiRequest()) {
+			window.location.href = `${base}/login`;
+			return;
+		}
 		loading = true;
 		errorMessage = '';
 		try {
