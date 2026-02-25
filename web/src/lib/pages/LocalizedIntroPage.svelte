@@ -19,13 +19,9 @@
   const tx = (key: string, vars?: Record<string, string | number>) =>
     translateLocale(locale, key, vars);
 
-  const redirectHref = $derived(
-    destination === "app" ? `${base}/app` : `${base}/onboarding`,
-  );
-
-  const ctaLabel = $derived(
-    destination === "app" ? tx("intro.ctaApp") : tx("intro.ctaStart"),
-  );
+  const placementHref = `${base}/onboarding`;
+  const appHref = `${base}/app`;
+  const ctaLabel = $derived(tx("intro.ctaStart"));
 
   const highlights = $derived([
     {
@@ -97,7 +93,7 @@
   });
 
   function continueNow() {
-    window.location.replace(redirectHref);
+    window.location.replace(placementHref);
   }
 </script>
 
@@ -115,6 +111,9 @@
         <button class="btn primary" type="button" onclick={continueNow}>
           {ctaLabel}
         </button>
+        {#if destination === "app"}
+          <a class="secondary" href={appHref}>{tx("intro.ctaApp")}</a>
+        {/if}
         <a class="secondary" href="#how-it-works">{tx("intro.secondaryAction")}</a>
       </div>
 
