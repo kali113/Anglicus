@@ -2,6 +2,8 @@
   import { page } from "$app/stores";
   import { base } from "$app/paths";
   import type { UserProfile } from "$lib/types/user";
+  import PaywallModal from "$lib/components/PaywallModal.svelte";
+  import { refreshPaymentStatus } from "$lib/billing/index.js";
   import { locale, t, toggleLocale } from "$lib/i18n";
 
   interface $$Props {
@@ -10,6 +12,27 @@
 
   let { user = null } = $props();
   const nextLocale = $derived($locale === "es" ? "en" : "es");
+  let isPaywallOpen = $state(false);
+  const hasActivePro = $derived(
+    user?.billing.plan === "pro" && user?.billing.status === "active",
+  );
+
+  function openPaywall() {
+    isPaywallOpen = true;
+  }
+
+  function closePaywall() {
+    isPaywallOpen = false;
+  }
+
+  async function handlePaywallPaid() {
+    isPaywallOpen = false;
+    try {
+      await refreshPaymentStatus();
+    } catch (error) {
+      console.error("Failed to refresh payment status:", error);
+    }
+  }
 </script>
 
 <nav class="navbar">
@@ -70,6 +93,11 @@
       >
         {$t(`languages.short.${nextLocale}`)}
       </button>
+      {#if !hasActivePro}
+        <button class="buy-pro-btn" type="button" onclick={openPaywall}>
+          {$t("nav.buyPro")}
+        </button>
+      {/if}
       {#if user}
         <div class="user-info">
           <div class="avatar">
@@ -126,6 +154,14 @@
     </div>
   </div>
 </nav>
+
+<PaywallModal
+  open={isPaywallOpen}
+  mode="nag"
+  featureLabel={$t("paywall.featureDefault")}
+  onclose={closePaywall}
+  onpaid={handlePaywallPaid}
+/>
 
 <style>
   .navbar {
@@ -251,6 +287,26 @@
     background: var(--border);
     color: var(--text);
     transform: translateY(-1px);
+  }
+
+  .buy-pro-btn {
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    color: #06251f;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+    box-shadow: 0 8px 20px rgba(45, 212, 191, 0.22);
+    white-space: nowrap;
+  }
+
+  .buy-pro-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+    box-shadow: 0 10px 24px rgba(45, 212, 191, 0.3);
   }
 
   .icon-btn {
