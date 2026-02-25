@@ -240,8 +240,7 @@ export async function getCompletion(
     max_tokens: config.maxTokens || 500,
   };
   const feature = config.feature ?? "tutor";
-
-  requireAuthToken();
+  const hasAuthToken = Boolean(getToken());
 
   // Tier routing based on settings
   let lastError: Error | null = null;
@@ -276,11 +275,13 @@ export async function getCompletion(
     case "auto":
     default:
       // Auto: Try backend -> BYOK -> Puter
-      try {
-        return await tryBackend(request, feature);
-      } catch (e) {
-        if (shouldAbortFallback(e)) throw e as Error;
-        lastError = e as Error;
+      if (hasAuthToken) {
+        try {
+          return await tryBackend(request, feature);
+        } catch (e) {
+          if (shouldAbortFallback(e)) throw e as Error;
+          lastError = e as Error;
+        }
       }
 
       try {
@@ -416,7 +417,6 @@ export interface ConnectionTestResult {
 export async function testConnection(
   tier: "backend" | "byok" | "puter",
 ): Promise<ConnectionTestResult> {
-  const settings = getSettings();
   const feature: AiFeature = "tutor";
   
   // Pre-flight checks based on tier
@@ -429,7 +429,6 @@ export async function testConnection(
   }
 
   try {
-    requireAuthToken();
     // Create a minimal test request
     const request: ChatCompletionRequest = {
       model: DEFAULT_MODEL,
@@ -442,6 +441,7 @@ export async function testConnection(
     // Test specific tier
     switch (tier) {
       case "backend":
+        requireAuthToken();
         result = await tryBackend(request, feature);
         break;
       case "byok":
