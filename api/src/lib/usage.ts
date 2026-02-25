@@ -7,12 +7,12 @@ export type UsageFeature =
   | "speaking";
 
 export const FREE_LIMITS: Record<UsageFeature, number> = {
-  tutor: 14,
-  quickChat: 8,
-  lessonChat: 14,
-  lessonExplanation: 5,
-  tutorQuestion: 3,
-  speaking: 6,
+  tutor: 20,
+  quickChat: 12,
+  lessonChat: 20,
+  lessonExplanation: 8,
+  tutorQuestion: 5,
+  speaking: 10,
 };
 
 export const FEATURE_HEADER = "X-Anglicus-Feature";

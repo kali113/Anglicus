@@ -34,15 +34,17 @@ export type BillingFeature =
 type UsageKey = Exclude<keyof BillingUsage, "date">;
 
 const FREE_LIMITS: Record<UsageKey, number> = {
-  tutorMessages: 14,
-  quickChatMessages: 8,
-  lessonExplanations: 5,
-  tutorQuestions: 3,
-  speakingSessions: 6,
+  tutorMessages: 20,
+  quickChatMessages: 12,
+  lessonExplanations: 8,
+  tutorQuestions: 5,
+  speakingSessions: 10,
 };
 
 const NAG_PROBABILITY = 0.30;
 const NAG_COOLDOWN_MS = 1000 * 60 * 5;
+const NAG_START_RATIO = 0.60;
+const MIN_USAGE_BEFORE_NAG = 5;
 
 const FEATURE_USAGE_MAP: Record<BillingFeature, UsageKey> = {
   tutor: "tutorMessages",
@@ -284,11 +286,19 @@ async function getBillingSnapshot(): Promise<{ billing: BillingInfo } | null> {
   return { billing };
 }
 
-const EARLY_NAG_USAGE_THRESHOLD = 3;
+function getNagStartUsage(limit: number): number {
+  const ratioThreshold = Math.ceil(limit * NAG_START_RATIO);
+  return Math.min(limit, Math.max(MIN_USAGE_BEFORE_NAG, ratioThreshold));
+}
 
-function shouldNag(billing: BillingInfo, used: number): boolean {
-  // Early nag on 3rd usage to encourage upgrade sooner
-  if (used === EARLY_NAG_USAGE_THRESHOLD && !billing.lastPaywallShownAt) {
+function shouldNag(billing: BillingInfo, used: number, limit: number): boolean {
+  const nagStartUsage = getNagStartUsage(limit);
+  if (used < nagStartUsage) {
+    return false;
+  }
+
+  // First upsell appears only after meaningful free usage.
+  if (used === nagStartUsage && !billing.lastPaywallShownAt) {
     return true;
   }
 
@@ -351,7 +361,7 @@ export async function checkBillingAccess(feature: BillingFeature): Promise<Billi
     return { allow: false, mode: "block", reason: "limit", used, limit, billing };
   }
 
-  if (shouldNag(billing, used)) {
+  if (shouldNag(billing, used, limit)) {
     return { allow: true, mode: "nag", reason: "nag", used, limit, billing };
   }
 
