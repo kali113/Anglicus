@@ -11,6 +11,7 @@ export type HreflangAlternate = {
 };
 
 const LOCALE_PREFIX_RE = /^\/(en|es)(?=\/|$)/;
+const FILE_EXTENSION_RE = /\/[^/]+\.[^/]+$/;
 
 const INDEXABLE_PATHS = new Set(["/en", "/es", "/en/legal", "/es/legal"]);
 
@@ -28,9 +29,25 @@ export const normalizePath = (path: string): string => {
   return withoutIndexSuffix;
 };
 
-export const toAbsoluteUrl = (path: string): string => {
+const toCanonicalPath = (path: string): string => {
   const normalized = normalizePath(path);
-  return normalized === "/" ? `${SITE_URL}/` : `${SITE_URL}${normalized}`;
+  if (normalized === "/" || FILE_EXTENSION_RE.test(normalized)) {
+    return normalized;
+  }
+  return `${normalized}/`;
+};
+
+type AbsoluteUrlOptions = {
+  trailingSlash?: boolean;
+};
+
+export const toAbsoluteUrl = (
+  path: string,
+  options: AbsoluteUrlOptions = {},
+): string => {
+  const normalized = normalizePath(path);
+  const finalPath = options.trailingSlash ? toCanonicalPath(normalized) : normalized;
+  return finalPath === "/" ? `${SITE_URL}/` : `${SITE_URL}${finalPath}`;
 };
 
 const stripLocalePrefix = (path: string): string => {
@@ -49,7 +66,9 @@ export const buildHreflangAlternates = (path: string): HreflangAlternate[] => {
 
   const alternates: HreflangAlternate[] = SUPPORTED_LOCALES.map((locale) => ({
     hreflang: locale,
-    href: toAbsoluteUrl(toLocalizedPath(normalized, locale)),
+    href: toAbsoluteUrl(toLocalizedPath(normalized, locale), {
+      trailingSlash: true,
+    }),
   }));
 
   const xDefaultPath =
@@ -57,7 +76,7 @@ export const buildHreflangAlternates = (path: string): HreflangAlternate[] => {
 
   alternates.push({
     hreflang: "x-default",
-    href: toAbsoluteUrl(xDefaultPath),
+    href: toAbsoluteUrl(xDefaultPath, { trailingSlash: true }),
   });
 
   return alternates;
