@@ -17,6 +17,10 @@
     refreshActiveCheckoutSessionStatus,
     refreshPaymentStatus,
   } from "$lib/billing/index.js";
+  import {
+    hasAnalyticsConsent,
+    onConsentChanged,
+  } from "$lib/consent/index.js";
   import { trackPageView } from "$lib/analytics/index.js";
   import {
     AuthRequestError,
@@ -35,6 +39,14 @@
   let onboardingComplete = $state(false);
   let user = $state<UserProfile | null>(null);
   let lastTrackedPath = $state("");
+  let cloudflareWebAnalyticsEnabled = $state(false);
+  const cloudflareWebAnalyticsToken = (
+    import.meta.env.VITE_CF_WEB_ANALYTICS_TOKEN || ""
+  ).trim();
+  const cloudflareWebAnalyticsConfig = JSON.stringify({
+    token: cloudflareWebAnalyticsToken,
+    spa: true,
+  });
 
   const isLocale = (value: unknown): value is Locale =>
     value === "en" || value === "es";
@@ -161,8 +173,19 @@
       startBrowserReminder(settings.dailyReminderTime);
     }
 
+    if (cloudflareWebAnalyticsToken && hasAnalyticsConsent()) {
+      cloudflareWebAnalyticsEnabled = true;
+    }
+
+    const unsubscribeConsent = onConsentChanged((state) => {
+      if (cloudflareWebAnalyticsToken && state.analytics) {
+        cloudflareWebAnalyticsEnabled = true;
+      }
+    });
+
     return () => {
       clearInterval(paymentInterval);
+      unsubscribeConsent();
     };
   });
 
@@ -208,6 +231,13 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
     rel="stylesheet"
   />
+  {#if cloudflareWebAnalyticsEnabled && cloudflareWebAnalyticsToken}
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={cloudflareWebAnalyticsConfig}
+    ></script>
+  {/if}
 </svelte:head>
 
 <div class="app">
