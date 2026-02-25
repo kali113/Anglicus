@@ -262,6 +262,15 @@
     await refreshPaymentStatus();
   }
 
+  async function handleRetryCheckoutFlow() {
+    if (isLoading || isCreatingSession || isCheckingStatus) return;
+    stopCheckoutPolling();
+    checkoutSession = null;
+    errorMessage = "";
+    statusMessage = "";
+    await initializeCheckoutFlow();
+  }
+
   function closeModal() {
     stopCheckoutPolling();
     onclose?.();
@@ -416,7 +425,19 @@
         {:else if isCreatingSession}
           <div class="session-meta">{$t("paywall.loadingCheckoutSession")}</div>
         {:else}
-          <div class="session-meta">{$t("paywall.checkoutUnavailable")}</div>
+          {#if !errorMessage}
+            <div class="session-meta">{$t("paywall.checkoutUnavailable")}</div>
+          {/if}
+          <div class="tx-check-row">
+            <button
+              class="secondary check-btn"
+              type="button"
+              onclick={handleRetryCheckoutFlow}
+              disabled={isLoading || isCreatingSession || isCheckingStatus}
+            >
+              {$t("common.retry")}
+            </button>
+          </div>
         {/if}
 
       </div>
