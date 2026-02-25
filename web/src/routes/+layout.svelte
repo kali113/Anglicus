@@ -95,13 +95,21 @@
 
   onMount(() => {
     const refreshAuthSession = async () => {
-      const token = getToken();
-      if (!token) return;
+      const tokenBeforeRefresh = getToken();
+      if (!tokenBeforeRefresh) return;
       try {
         const refreshed = await refreshToken();
-        setToken(refreshed);
+        // Avoid clobbering a newer token set by an interactive login flow.
+        if (getToken() === tokenBeforeRefresh) {
+          setToken(refreshed);
+        }
       } catch (error) {
-        if (error instanceof AuthRequestError && error.status === 401) {
+        // Only clear the token if the failed refresh still matches the original token.
+        if (
+          error instanceof AuthRequestError &&
+          error.status === 401 &&
+          getToken() === tokenBeforeRefresh
+        ) {
           clearToken();
         }
         console.error("Token refresh failed:", error);
