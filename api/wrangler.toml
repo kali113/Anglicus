@@ -36,7 +36,7 @@ ANALYTICS_ADMIN_USER_IDS = "*"
 [[d1_databases]]
 binding = "DB"
 database_name = "anglicus-auth"
-# database_id = "replace-with-id"
+database_id = "e223a399-1154-4012-87b1-68a68b38f24f"
 
 [triggers]
 crons = ["*/15 * * * *"]
