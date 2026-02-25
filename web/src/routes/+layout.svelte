@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import { base } from "$app/paths";
   import { page } from "$app/stores";
+  import { get } from "svelte/store";
   import {
     hasCompletedOnboarding,
     getUserProfile,
@@ -22,14 +24,36 @@
     refreshToken,
     setToken,
   } from "$lib/auth/index.js";
-  import { locale, t } from "$lib/i18n";
-  import { normalizePath } from "$lib/seo/meta";
+  import { locale, resolveLocaleFromPath, setLocale, t, type Locale } from "$lib/i18n";
+  import { isIndexableSeoPath, normalizePath } from "$lib/seo/meta";
 
   let { children } = $props();
   let showNav = $state(true);
   let showFooter = $state(true);
   let onboardingComplete = $state(false);
   let user = $state<UserProfile | null>(null);
+
+  const isLocale = (value: unknown): value is Locale =>
+    value === "en" || value === "es";
+
+  const resolveRouteLocale = (pathname: string, dataLocale: unknown): Locale | null => {
+    if (isLocale(dataLocale)) return dataLocale;
+    return resolveLocaleFromPath(pathname);
+  };
+
+  const initialPage = get(page);
+  const initialRouteLocale = resolveRouteLocale(
+    initialPage.url.pathname,
+    initialPage.data?.locale,
+  );
+
+  const ssrFallbackLocale: Locale = "en";
+  if (!browser && get(locale) !== ssrFallbackLocale) {
+    setLocale(ssrFallbackLocale);
+  }
+  if (initialRouteLocale && initialRouteLocale !== get(locale)) {
+    setLocale(initialRouteLocale);
+  }
 
   const pathWithoutBase = $derived.by(() => {
     const pathname = $page.url.pathname || "/";
@@ -41,34 +65,33 @@
   });
 
   const normalizedRoutePath = $derived.by(() => normalizePath(pathWithoutBase));
+  const routeLocale = $derived.by(() =>
+    resolveRouteLocale(
+      $page.url.pathname,
+      ($page.data as { locale?: unknown }).locale,
+    ),
+  );
   const routeId = $derived($page.route.id ?? "");
 
   const robotsDirective = $derived.by(() =>
     routeId === "/en" ||
     routeId === "/es" ||
     routeId === "/en/legal" ||
-    routeId === "/es/legal"
+    routeId === "/es/legal" ||
+    isIndexableSeoPath(normalizedRoutePath)
       ? "index,follow,max-image-preview:large"
       : "noindex,follow",
   );
 
-  const legalLocale = $derived.by(() => {
-    if (routeId.startsWith("/en")) {
-      return "en";
-    }
-    if (routeId.startsWith("/es")) {
-      return "es";
-    }
-    if (normalizedRoutePath === "/en" || normalizedRoutePath.startsWith("/en/")) {
-      return "en";
-    }
-    if (normalizedRoutePath === "/es" || normalizedRoutePath.startsWith("/es/")) {
-      return "es";
-    }
-    return $locale;
-  });
+  const legalLocale = $derived.by(() => routeLocale ?? $locale);
 
   const legalBaseHref = $derived(`${base}/${legalLocale}/legal`);
+
+  $effect(() => {
+    if (routeLocale && $locale !== routeLocale) {
+      setLocale(routeLocale);
+    }
+  });
 
   onMount(() => {
     const refreshAuthSession = async () => {

@@ -14,10 +14,10 @@
             ? pathMatch[1]
             : null;
           const inferred =
-            stored === "en" || stored === "es"
-              ? stored
-              : pathLocale
-                ? pathLocale
+            pathLocale
+              ? pathLocale
+              : stored === "en" || stored === "es"
+                ? stored
               : (navigator.language || "").toLowerCase().startsWith("es")
                 ? "es"
                 : "en";

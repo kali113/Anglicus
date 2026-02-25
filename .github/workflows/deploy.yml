@@ -45,6 +45,10 @@ jobs:
           VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
 
+      - name: Run SEO artifact checks
+        run: npm run test:seo
+        working-directory: web
+
       - name: Resolve build output directory
         run: |
           if [ -f web/build/index.html ]; then

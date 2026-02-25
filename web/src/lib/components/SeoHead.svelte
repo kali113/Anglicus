@@ -3,6 +3,7 @@
   import {
     DEFAULT_SOCIAL_IMAGE_PATH,
     SITE_NAME,
+    SITE_URL,
     SUPPORTED_LOCALES,
   } from "$lib/seo/config";
   import { buildHreflangAlternates, toAbsoluteUrl } from "$lib/seo/meta";
@@ -16,6 +17,7 @@
     imagePath?: string;
     imageAlt?: string;
     includeAlternates?: boolean;
+    includeStructuredData?: boolean;
   };
 
   let {
@@ -27,9 +29,10 @@
     imagePath = DEFAULT_SOCIAL_IMAGE_PATH,
     imageAlt = `${SITE_NAME} preview`,
     includeAlternates = true,
+    includeStructuredData = false,
   }: Props = $props();
 
-  const canonicalUrl = $derived(toAbsoluteUrl(path));
+  const canonicalUrl = $derived(toAbsoluteUrl(path, { trailingSlash: true }));
   const imageUrl = $derived(toAbsoluteUrl(imagePath));
   const alternates = $derived(
     includeAlternates ? buildHreflangAlternates(path) : [],
@@ -40,6 +43,27 @@
     SUPPORTED_LOCALES.filter((value) => value !== locale).map((value) =>
       value === "es" ? "es_ES" : "en_US",
     ),
+  );
+
+  const structuredDataInLanguage = $derived(locale === "es" ? "es" : "en");
+  const organizationJsonLd = $derived(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: `${SITE_URL}/`,
+    }),
+  );
+  const websiteJsonLd = $derived(
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: `${SITE_URL}/`,
+      inLanguage: structuredDataInLanguage,
+    }),
   );
 </script>
 
@@ -70,4 +94,9 @@
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={imageUrl} />
+
+  {#if includeStructuredData}
+    {@html `<script type="application/ld+json">${organizationJsonLd}</script>`}
+    {@html `<script type="application/ld+json">${websiteJsonLd}</script>`}
+  {/if}
 </svelte:head>

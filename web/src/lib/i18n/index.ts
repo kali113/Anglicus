@@ -10,9 +10,11 @@ type Vars = Record<string, string | number>;
 const translations: Record<Locale, Dictionary> = { en, es };
 const STORAGE_KEY = "anglicus_locale";
 
-const defaultLocale: Locale = "es";
+const defaultLocale: Locale = "en";
 
 export const locale = writable<Locale>(defaultLocale);
+
+const LOCALE_PATH_RE = /\/(en|es)(?=\/|$)/;
 
 const resolvePath = (dictionary: Dictionary, path: string): string | undefined => {
   const value = path.split(".").reduce<unknown>((acc, key) => {
@@ -29,8 +31,17 @@ const format = (message: string, vars?: Vars): string =>
     vars && key in vars ? String(vars[key]) : `{${key}}`,
   );
 
+export const resolveLocaleFromPath = (path: string): Locale | null => {
+  const match = path.match(LOCALE_PATH_RE);
+  if (!match) return null;
+  return match[1] === "es" ? "es" : "en";
+};
+
 const detectLocale = (): Locale => {
   if (!browser) return defaultLocale;
+  const pathLocale = resolveLocaleFromPath(window.location.pathname);
+  if (pathLocale) return pathLocale;
+
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === "en" || stored === "es") return stored;
   const language = navigator.language?.toLowerCase() ?? "";
