@@ -20,8 +20,9 @@ ALLOWED_ORIGINS = "http://127.0.0.1:5173,http://127.0.0.1:4173,https://kali113.g
 EMAIL_PROVIDER = "brevo"
 REMINDER_FROM_EMAIL = "Anglicus <reminders@anglicus.app>"
 AUTH_FROM_EMAIL = "Anglicus <auth@anglicus.app>"
-# Comma-separated user IDs allowed to access /api/analytics/dashboard
-# ANALYTICS_ADMIN_USER_IDS = "user-id-1,user-id-2"
+# Comma-separated user IDs allowed to access /api/analytics/dashboard.
+# "*" allows any authenticated user (bootstrap mode; replace for production).
+ANALYTICS_ADMIN_USER_IDS = "*"
 # Optional billing auto-check defaults
 # BTC_CHECKOUT_ADDRESS_POOL = "bc1...,bc1...,bc1..."
 # BTC_CHECKOUT_SESSION_TTL_MINUTES = "60"

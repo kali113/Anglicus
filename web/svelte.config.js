@@ -11,6 +11,7 @@ const config = {
 					fallback: '404.html'
 				})
 			: cloudflare({
+					config: 'wrangler.toml',
 					// See below for an explanation of these options
 					routes: {
 						include: ['/*'],

@@ -509,7 +509,8 @@ async function requireAnalyticsAdmin(
     };
   }
 
-  if (!adminIds.includes(auth.context.user.id)) {
+  const allowAllAuthenticated = adminIds.includes("*");
+  if (!allowAllAuthenticated && !adminIds.includes(auth.context.user.id)) {
     return {
       error: jsonError("Forbidden", "invalid_request_error", 403),
     };
