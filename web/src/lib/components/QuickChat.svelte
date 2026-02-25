@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { base } from "$app/paths";
   import { onMount } from "svelte";
   import { getUserProfile } from "$lib/storage/user-store.js";
   import type { LanguageCode } from "$lib/types/user.js";
   import { AiRequestError, getCompletion, ContextEngine } from "$lib/ai/index.js";
+  import { getToken } from "$lib/auth/index.js";
   import type { ChatMessage } from "$lib/types/api.js";
   import PaywallModal from "$lib/components/PaywallModal.svelte";
   import {
@@ -36,6 +38,10 @@
 
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading || !profile) return;
+    if (!getToken()) {
+      window.location.href = `${base}/login`;
+      return;
+    }
 
     const decision = await checkBillingAccess("quickChat");
     if (decision) {
@@ -87,9 +93,15 @@
       messages = [...messages, assistantMessage];
       await recordBillingUsage("quickChat");
     } catch (error) {
-      if (error instanceof AiRequestError && error.status === 429) {
-        await openPaywall("block", getFeatureLabel("quickChat"));
-        return;
+      if (error instanceof AiRequestError) {
+        if (error.status === 401) {
+          window.location.href = `${base}/login`;
+          return;
+        }
+        if (error.status === 429) {
+          await openPaywall("block", getFeatureLabel("quickChat"));
+          return;
+        }
       }
       messages = [
         ...messages,
