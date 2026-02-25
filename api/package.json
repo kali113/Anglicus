@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "build": "XDG_CONFIG_HOME=.wrangler wrangler deploy --dry-run",
     "deploy": "wrangler deploy",
     "tail": "wrangler tail",
     "test": "vitest"
