@@ -11,11 +11,12 @@ TypeScript monorepo:
 
 ## Working Agreement (HOW)
 1. Confirm task scope, then inspect only relevant files.
-2. Prefer deterministic checks before subjective review.
-3. Make the smallest safe change that preserves existing intent.
-4. Run relevant validation commands before finishing.
-5. Report exactly what changed, what was validated, and any remaining risk.
-6. Commit and push completed changes.
+2. Default to execution: implement requested changes directly unless the user explicitly asks for options only.
+3. Prefer deterministic checks before subjective review.
+4. Make the smallest safe change that preserves existing intent.
+5. Run relevant validation commands before finishing.
+6. Report exactly what changed, what was validated, and any remaining risk.
+7. Commit and push completed changes.
 
 ## Validation Commands
 - Web lint/typecheck: `cd web && npm run check`
