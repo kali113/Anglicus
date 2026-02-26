@@ -8,6 +8,7 @@ import { onMount } from "svelte";
     getDefaultBilling,
     getDefaultSpeaking,
   } from "$lib/storage/user-store.js";
+  import { getToken } from "$lib/auth/index.js";
   import { getSettings, updateSettings } from "$lib/storage/settings-store.js";
   import {
     subscribeReminders,
@@ -118,8 +119,11 @@ import { onMount } from "svelte";
   let showPaywall = $state(false);
   let paywallMode = $state<"nag" | "block">("block");
   let paywallFeature = $state(getFeatureLabel("tutor"));
+  let hasAuthToken = $state(false);
 
   onMount(async () => {
+    hasAuthToken = Boolean(getToken());
+
     const existingProfile = await getUserProfile();
     if (existingProfile) {
       const existingName = existingProfile.name?.trim() || "";
@@ -588,10 +592,12 @@ Make sure the correctAnswer matches exactly one of the options.`;
       </label>
       <p class="consent-note">{@html consentHtml}</p>
       <div class="actions identity-actions">
-        <a class="google-shortcut" href="{base}/login">
-          <img class="google-icon" src="{base}/google-logo.svg" alt="" />
-          <span>{$t("auth.googleButton")}</span>
-        </a>
+        {#if !hasAuthToken}
+          <a class="google-shortcut" href="{base}/login">
+            <img class="google-icon" src="{base}/google-logo.svg" alt="" />
+            <span>{$t("auth.googleButton")}</span>
+          </a>
+        {/if}
         <button
           class="btn primary"
           data-testid="placement-identity-continue"
