@@ -35,3 +35,4 @@ Open deeper guidance only when needed:
 - Do not invent architecture or behavior not grounded in code or docs.
 - Keep AGENTS.md concise, universal, and current.
 - Put task-specific instructions in dedicated docs and link them here.
+- This repo may have multiple active contributors; unusual or unexpected changes can be normal and are not automatically a problem.
