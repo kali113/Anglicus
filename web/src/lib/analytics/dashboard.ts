@@ -61,8 +61,13 @@ async function parseError(response: Response): Promise<{
     .json()
     .catch(() => null)) as ErrorPayload | null;
 
+  const fallbackMessage =
+    response.status === 404
+      ? "Analytics endpoint not found (404). Deploy the latest API and verify VITE_BACKEND_URL."
+      : "Analytics request failed";
+
   return {
-    message: parsed?.error?.message || "Analytics request failed",
+    message: parsed?.error?.message || fallbackMessage,
     code: parsed?.error?.type,
   };
 }
