@@ -80,7 +80,7 @@
       const redirectPath = needsProfileNameSetup(profile)
         ? `${base}/onboarding?step=name`
         : `${base}/app`;
-      goto(redirectPath);
+      window.location.replace(redirectPath);
     } catch (error) {
       errorMessage =
         error instanceof Error
